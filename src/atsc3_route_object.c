@@ -684,8 +684,8 @@ int atsc3_route_object_lct_packet_received_generic_sbn_start_offset_comparator(c
 #endif
  */
 
-#define __ATSC3_ROUTE_OBJECT_PENDANTIC__
-#define __ATSC3_JJ_PENDANTIC_2021_07_07__
+//#define __ATSC3_ROUTE_OBJECT_PENDANTIC__
+//#define __ATSC3_JJ_PENDANTIC_2021_07_07__
 
 bool atsc3_route_object_is_complete(atsc3_route_object_t* atsc3_route_object) {
 	atsc3_route_object_lct_packet_received_t* atsc3_route_object_lct_packet_received = NULL;

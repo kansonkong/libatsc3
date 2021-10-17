@@ -37,9 +37,13 @@ LIBATSC3C := \
 LIBATSC3CPP := \
     $(wildcard $(LOCAL_PATH)/../../src/*.cpp)
 
+LIBATSC3_JNICORE_CPP := \
+    $(wildcard $(LOCAL_PATH)/src/jni/*.cpp)
+
 LOCAL_SRC_FILES += \
     $(LIBATSC3C:$(LOCAL_PATH)/%=%)  \
-    $(LIBATSC3CPP:$(LOCAL_PATH)/%=%)
+    $(LIBATSC3CPP:$(LOCAL_PATH)/%=%) \
+    $(LIBATSC3_JNICORE_CPP:$(LOCAL_PATH)/%=%)
 
 #for libatsc3 core bindings, application and phy interface including libpcre2
 LOCAL_C_INCLUDES += \

@@ -227,6 +227,8 @@ private:
     SL_ConfigResult_t configPlatformParams_aa_fx3();
     SL_ConfigResult_t configPlatformParams_aa_markone();
     SL_ConfigResult_t configPlatformParams_bb_fx3();
+    SL_ConfigResult_t configPlatformParams_bb_markone();
+
 
     void printToConsolePlfConfiguration(SL_PlatFormConfigParams_t cfgInfo);
     void printToConsoleDemodConfiguration(SL_DemodConfigInfo_t cfgInfo);

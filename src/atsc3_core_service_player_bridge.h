@@ -41,7 +41,7 @@ using namespace std;
 
 #include "atsc3_mmtp_packet_types.h"
 #include "atsc3_mmtp_parser.h"
-#include "atsc3_mmtp_ntp32_to_pts.h"
+#include "atsc3_ntp_utils.h"
 #include "atsc3_mmt_mpu_utils.h"
 #include "atsc3_mmt_context_mfu_depacketizer.h"
 

@@ -54,12 +54,11 @@ public class Atsc3NdkPHYBridge extends Atsc3BridgeNdkStaticJniLoader {
 
 
     int atsc3_rf_phy_status_callback(int rfstat_lock,
-                                     int rssi,
+                                     int rssi_1000,
                                      int modcod_valid,
                                      int plp_fec_type,
                                      int plp_mod,
                                      int plp_cod,
-                                     int nRfLevel1000,
                                      int nSnr1000,
                                      int ber_pre_ldpc_e7,
                                      int ber_pre_bch_e9,
@@ -70,12 +69,11 @@ public class Atsc3NdkPHYBridge extends Atsc3BridgeNdkStaticJniLoader {
                                      int plp_all) {
 
         RfPhyStatistics rfPhyStatistics = new RfPhyStatistics(rfstat_lock,
-                rssi,
+                rssi_1000,
                 modcod_valid,
                 plp_fec_type,
                 plp_mod,
                 plp_cod,
-                nRfLevel1000,
                 nSnr1000,
                 ber_pre_ldpc_e7,
                 ber_pre_bch_e9,

@@ -543,6 +543,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
                                 __ISOBMFF_JOINER_INFO("REBUILD MOOF: packet_id: %u, missing TRUN_Atom:Entry - adding trun entry: %u, sample_size: %u", lls_sls_monitor_buffer_isobmff->packet_id, j, trun_sample_entry_to_add->sample_length);
                                 AP4_TrunAtom::Entry* item = new AP4_TrunAtom::Entry();
                                 item->sample_size = trun_sample_entry_to_add->sample_length;
+
                                 item->sample_duration = last_sample_duration;
                                 item->sample_flags = last_sample_flags;
                                 item->sample_composition_time_offset = 0;
