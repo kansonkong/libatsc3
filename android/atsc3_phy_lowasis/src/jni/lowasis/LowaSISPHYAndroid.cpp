@@ -1081,7 +1081,7 @@ int LowaSISPHYAndroid::statusThread()
                 atsc3_ndk_phy_client_rf_metrics.plp_lock_all = s_fe_detail.lock.bPlpLockAll;
                 atsc3_ndk_phy_client_rf_metrics.plp_lock_by_setplp_index = s_fe_detail.lock.bmPlpLock;
 
-                atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = s_fe_detail.nRfLevel1000;
+                atsc3_ndk_phy_client_rf_metrics.rssi_1000 = s_fe_detail.nRfLevel1000;
                 atsc3_ndk_phy_client_rf_metrics.snr1000_global = s_fe_detail_lg.snr * 1000;
 
                 for(int i=0; i < 4; i++) {
@@ -1108,7 +1108,8 @@ int LowaSISPHYAndroid::statusThread()
                 atsc3_ndk_phy_client_rf_metrics.tuner_lock = lock;
 
                 ar = AT3DRV_FE_GetStatus(mhDevice, eAT3_RFSTAT_STRENGTH, &rssi);
-                atsc3_ndk_phy_client_rf_metrics.rssi = rssi;
+                atsc3_ndk_phy_client_rf_metrics.rssi_1000 = rssi * 1000;
+                //jjustman-2021-09-16 - todo - investigate s_fe_detail.nRfLevel1000 property
 
                 //s_fe_detail.flagRequest = FE_SIG_MASK_Lock; // | FE_SIG_MASK_RfLevel | FE_SIG_MASK_CarrierOffset | FE_SIG_MASK_SNR | FE_SIG_MASK_BER | FE_SIG_MASK_FecModCod | FE_SIG_MASK_BbpErr;
 
@@ -1118,7 +1119,6 @@ int LowaSISPHYAndroid::statusThread()
                 atsc3_ndk_phy_client_rf_metrics.plp_lock_all = s_fe_detail.lock.bPlpLockAll;
                 atsc3_ndk_phy_client_rf_metrics.plp_lock_by_setplp_index = s_fe_detail.lock.bmPlpLock;
 
-                atsc3_ndk_phy_client_rf_metrics.rfLevel1000 = s_fe_detail.nRfLevel1000;
                 atsc3_ndk_phy_client_rf_metrics.snr1000_global = s_fe_detail.nSnr1000;
 
                 for(int i=0; i < 4; i++) {

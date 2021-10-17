@@ -41,8 +41,9 @@ typedef struct atsc3_ndk_phy_client_rf_metrics {
 
     int32_t     cpu_status;
 
-    int32_t     rssi;
-    int32_t     rfLevel1000;
+    int32_t     rssi_1000;
+    //jjustman-2021-09-16 - deprecating rfLevel1000
+//    int32_t     rfLevel1000; //jjustman-
 
     int32_t     snr1000_global;
     int32_t     snr1000_l1b;

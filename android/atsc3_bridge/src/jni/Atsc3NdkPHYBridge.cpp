@@ -66,13 +66,12 @@ void Atsc3NdkPHYBridge::atsc3_notify_phy_error(const char* fmt, ...) {
 
 
 void Atsc3NdkPHYBridge::atsc3_update_rf_stats(int32_t tuner_lock,
-                                              int32_t rssi,
+                                              int32_t rssi_1000,
                                               uint8_t modcod_valid,
                                               uint8_t plp_fec_type,
                                               uint8_t plp_mod,
                                               uint8_t plp_cod,
-                                              int32_t nRfLevel1000,
-                                              int32_t nSnr1000,
+                                              int32_t nSnr_1000,
                                               uint32_t ber_pre_ldpc_e7,
                                               uint32_t ber_pre_bch_e9,
                                               uint32_t fer_post_bch_e6,
@@ -92,13 +91,12 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats(int32_t tuner_lock,
     int r = pinnedStatusJniEnv->Get()->CallIntMethod(jni_instance_globalRef,
                                                      atsc3_rf_phy_status_callback_ID,
                                                      tuner_lock,
-                                                     rssi,
+                                                     rssi_1000,
                                                      modcod_valid,
                                                      plp_fec_type,
                                                      plp_mod,
                                                      plp_cod,
-                                                     nRfLevel1000,
-                                                     nSnr1000,
+                                                     nSnr_1000,
                                                      ber_pre_ldpc_e7,
                                                      ber_pre_bch_e9,
                                                      fer_post_bch_e6,
@@ -140,12 +138,11 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metri
 
     env->SetIntField(jobj, env->GetFieldID(jcls, "cpu_status", "I"), atsc3_ndk_phy_client_rf_metrics->cpu_status);
 
-    env->SetIntField(jobj, env->GetFieldID(jcls, "rssi", "I"), atsc3_ndk_phy_client_rf_metrics->rssi);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "rssi_1000", "I"), atsc3_ndk_phy_client_rf_metrics->rssi_1000);
     env->SetIntField(jobj, env->GetFieldID(jcls, "snr1000_global", "I"), atsc3_ndk_phy_client_rf_metrics->snr1000_global);
     env->SetIntField(jobj, env->GetFieldID(jcls, "snr1000_l1b", "I"), atsc3_ndk_phy_client_rf_metrics->snr1000_l1b);
     env->SetIntField(jobj, env->GetFieldID(jcls, "snr1000_l1d", "I"), atsc3_ndk_phy_client_rf_metrics->snr1000_l1d);
 
-    env->SetIntField(jobj, env->GetFieldID(jcls, "rfLevel1000", "I"), atsc3_ndk_phy_client_rf_metrics->rfLevel1000);
 
     env->SetIntField(jobj, env->GetFieldID(jcls, "bootstrap_system_bw", "I"), (int32_t) atsc3_ndk_phy_client_rf_metrics->bootstrap_system_bw);
     env->SetIntField(jobj, env->GetFieldID(jcls, "bootstrap_ea_wakeup", "I"), (int32_t) atsc3_ndk_phy_client_rf_metrics->bootstrap_ea_wakeup);
@@ -317,7 +314,7 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkPHYBridge_init(JNIEnv *env, jobject in
         return -1;
     }
 
-    atsc3NdkPHYBridge->atsc3_rf_phy_status_callback_ID = env->GetMethodID(jniClassReference, "atsc3_rf_phy_status_callback", "(IIIIIIIIIIIIIII)I");
+    atsc3NdkPHYBridge->atsc3_rf_phy_status_callback_ID = env->GetMethodID(jniClassReference, "atsc3_rf_phy_status_callback", "(IIIIIIIIIIIIII)I");
     if (atsc3NdkPHYBridge->atsc3_rf_phy_status_callback_ID == NULL) {
         _NDK_PHY_BRIDGE_ERROR("Atsc3NdkPHYBridge_init: cannot find 'atsc3_rf_phy_status_callback' method id");
         return -1;

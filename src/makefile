@@ -128,6 +128,7 @@ clean:
 	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
 	-rm -f listener_tests/atsc3_lls_listener_test
 	-rm -f listener_tests/atsc3_mmt_listener_test
+	-rm -f listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets
 	-rm -f listener_tests/atsc3_mmt_sls_listener_test
 	-rm -f listener_tests/atsc3_stltp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_test
@@ -201,7 +202,7 @@ intermediate_mmt: 	xml.o \
 					atsc3_mmt_mpu_parser.o \
 					atsc3_mmt_mpu_sample_format_parser.o \
 					atsc3_mmt_signalling_message.o \
-					atsc3_mmtp_ntp32_to_pts.o \
+					atsc3_ntp_utils.o \
 					atsc3_utils.o \
 					fixups_timespec_get.o \
 					atsc3_mmt_mpu_utils.o \
@@ -271,6 +272,7 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_alc_listener_test_valgrind \
 				listener_tests/atsc3_lls_listener_test \
 				listener_tests/atsc3_mmt_listener_test \
+				listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets \
 				listener_tests/atsc3_mmt_sls_listener_test  \
 				listener_tests/atsc3_stltp_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_test \
@@ -443,8 +445,8 @@ atsc3_mmt_signalling_message_type.o:atsc3_mmt_signalling_message_type.h atsc3_mm
 atsc3_mmt_signalling_message.o:atsc3_mmt_signalling_message_types.h atsc3_mmt_signalling_message.h atsc3_mmt_signalling_message.c 
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_mmt_signalling_message.c
 
-atsc3_mmtp_ntp32_to_pts.o: atsc3_mmtp_ntp32_to_pts.c atsc3_mmtp_ntp32_to_pts.h
-	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_mmtp_ntp32_to_pts.c
+atsc3_ntp_utils.o: atsc3_ntp_utils.c atsc3_ntp_utils.h
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_ntp_utils.c
 
 atsc3_mmt_mpu_utils.o: atsc3_mmt_mpu_utils.h atsc3_mmt_mpu_utils.c
 	$(CC) $(CFLAGS) $(INCLUDE_PATHS) $(DEBUG)  -c atsc3_mmt_mpu_utils.c
@@ -736,7 +738,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_packet_utils.o \
 		atsc3_mmtp_parser.o \
-		atsc3_mmtp_ntp32_to_pts.o \
+		atsc3_ntp_utils.o \
 		atsc3_utils.o \
 		atsc3_mmt_signalling_message_types.o \
 		atsc3_mmt_signalling_message.o \
@@ -815,7 +817,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_packet_utils.o \
 		atsc3_mmtp_parser.o \
-		atsc3_mmtp_ntp32_to_pts.o \
+		atsc3_ntp_utils.o \
 		atsc3_utils.o \
 		atsc3_mmt_signalling_message_types.o \
 		atsc3_mmt_signalling_message.o \
@@ -895,7 +897,7 @@ libatsc3_intermediate_asan.o: \
 		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_packet_utils.o \
 		atsc3_mmtp_parser.o \
-		atsc3_mmtp_ntp32_to_pts.o \
+		atsc3_ntp_utils.o \
 		atsc3_utils.o \
 		atsc3_mmt_signalling_message_types.o \
 		atsc3_mmt_signalling_message.o \
@@ -971,7 +973,7 @@ libatsc3_intermediate_asan.o: \
 		atsc3_mmtp_packet_types.o \
 		atsc3_mmtp_packet_utils.o \
 		atsc3_mmtp_parser.o \
-		atsc3_mmtp_ntp32_to_pts.o \
+		atsc3_ntp_utils.o \
 		atsc3_utils.o \
 		atsc3_mmt_signalling_message_types.o \
 		atsc3_mmt_signalling_message.o \
@@ -1386,7 +1388,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 										atsc3_route_usbd.o \
 										atsc3_alc_utils.o \
 										xml.o \
-										atsc3_mmtp_ntp32_to_pts.o \
+										atsc3_ntp_utils.o \
 										atsc3_utils_sha256.o \
 										atsc3_route_object.o \
 										atsc3_sls_alc_flow.o \
@@ -1423,7 +1425,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 							atsc3_route_usbd.o \
 							atsc3_alc_utils.o \
 							xml.o \
-							atsc3_mmtp_ntp32_to_pts.o \
+							atsc3_ntp_utils.o \
 							atsc3_utils_sha256.o \
 							atsc3_route_object.o \
 							atsc3_sls_alc_flow.o \
@@ -1465,7 +1467,7 @@ test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 										atsc3_route_usbd.o \
 										atsc3_alc_utils.o \
 										xml.o \
-										atsc3_mmtp_ntp32_to_pts.o \
+										atsc3_ntp_utils.o \
 										atsc3_utils_sha256.o \
 										atsc3_route_object.o \
 										atsc3_sls_alc_flow.o \
@@ -1502,7 +1504,7 @@ test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 							atsc3_route_usbd.o \
 							atsc3_alc_utils.o \
 							xml.o \
-							atsc3_mmtp_ntp32_to_pts.o \
+							atsc3_ntp_utils.o \
 							atsc3_utils_sha256.o \
 							atsc3_route_object.o \
 							atsc3_sls_alc_flow.o \
@@ -1567,6 +1569,14 @@ listener_tests/atsc3_mmt_listener_test: listener_tests/atsc3_mmt_listener_test.c
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_listener_test
+		
+# simple MMT listener that dumps all mmt packets to mpu/ files for tracing
+listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets: listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets.cpp libatsc3_bento4_gpl.o
+	$(CXX)  $(ASAN) -D __ISOBMFF_LIB=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets.cpp \
+		libatsc3_bento4_gpl.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 listener_tests/atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o

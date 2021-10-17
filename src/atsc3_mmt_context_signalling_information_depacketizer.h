@@ -35,7 +35,7 @@ typedef void (*atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_
 typedef atsc3_mmt_mfu_mpu_timestamp_descriptor_t* (*atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mpu_sequence_number);
 
 //get mpu_timestamp_descriptor from a received MP_table emission with recovery fallback differential based upon mmtp_timestamp if SI message was not received
-typedef atsc3_mmt_mfu_mpu_timestamp_descriptor_t* (*atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number);
+typedef atsc3_mmt_mfu_mpu_timestamp_descriptor_t* (*atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential_f)(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number);
 
 
 

@@ -21,7 +21,7 @@ extern "C" {
 #include "atsc3_logging_externs.h"
 #include "atsc3_vector_builder.h"
 
-#include "atsc3_mmtp_ntp32_to_pts.h"
+#include "atsc3_ntp_utils.h"
 #include "atsc3_mmt_signalling_message_types.h"
 #include "atsc3_mmt_mpu_sample_format_type.h"
     
