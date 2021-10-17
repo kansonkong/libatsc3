@@ -19,6 +19,10 @@ extern "C" {
 //jjustman-2020-12-01 - TODO - refactor this out
 typedef struct atsc3_stpp_decoder_configuration_record {
     uint32_t        timebase;
+
+    //extracted from moof/fragment metadata, not quite applicable with stpp...
+    uint32_t        sample_duration_us;
+
 } atsc3_stpp_decoder_configuration_record_t;
 
 atsc3_stpp_decoder_configuration_record_t* atsc3_stpp_decoder_configuration_record_new();
