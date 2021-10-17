@@ -57,7 +57,7 @@ typedef struct atsc3_audio_decoder_configuration_record {
     uint32_t    timebase;  //14496-12:2015 - timescale is uint32_t
 
     //extracted from moof/fragment metadata
-    uint32_t    sample_duration;   //14496-12:2015 - duration is uint32_t
+    uint32_t    sample_duration_us;   //14496-12:2015 - duration is uint32_t
 
     atsc3_audio_ac4_sample_entry_box_t* atsc3_audio_ac4_sample_entry_box;
 

@@ -12,7 +12,7 @@
 #include <limits.h>
 
 #include "atsc3_logging_externs.h"
-#include "atsc3_mmtp_ntp32_to_pts.h"
+#include "atsc3_ntp_utils.h"
 #include "atsc3_listener_udp.h"
 #include "atsc3_mmt_signalling_message.h"
 #include "atsc3_mmtp_packet_types.h"

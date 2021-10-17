@@ -275,7 +275,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_
     jniEnv->Get()->SetLongField(jobj, timebase_valId, (int64_t)atsc3_audio_decoder_configuration_record->timebase);
 
     jfieldID sample_duration_valId = jniEnv->Get()->GetFieldID(jcls, "sample_duration", "J");
-    jniEnv->Get()->SetLongField(jobj, sample_duration_valId, (int64_t)atsc3_audio_decoder_configuration_record->sample_duration);
+    jniEnv->Get()->SetLongField(jobj, sample_duration_valId, (int64_t)atsc3_audio_decoder_configuration_record->sample_duration_us);
 
     if(atsc3_audio_decoder_configuration_record->atsc3_audio_ac4_sample_entry_box) {
         //build our ac4_sample_entry box

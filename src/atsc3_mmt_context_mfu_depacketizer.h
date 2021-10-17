@@ -64,9 +64,19 @@ typedef struct atsc3_mmt_mfu_mpu_timestamp_descriptor {
 
 	//jjustman-2021-01-19 - for when we "recover" the mpu_presentation_time values by a differential of the most recent <packet_id, mpu_sequence_number, mpu_presentation_time_ntp64>
 	bool 		mpu_presentation_time_computed_from_recovery_mmtp_timestamp_flag;
-	uint32_t	recovery_mmtp_timestamp;
-	uint32_t	recovery_mpu_sequence_number;
-	uint64_t	recovery_mpu_presentation_time_ntp64;
+
+    //jjustman-2021-10-05 - YOGA #16967 - in non-recovery cases, this value should be 0, otherwise
+    // keep track of our sample number if we have been created from an interpolated recovery timestamp descriptor
+    // so we can properly re-base to a correct sample[0] mpu_presentation_t
+
+    uint32_t	recovery_detected_at_mmtp_timestamp;
+    uint32_t    recovery_interpolated_from_sample_number;
+    uint32_t	recovery_interpolated_to_mmtp_timestamp_delta_ntp32;
+
+	uint32_t	recovery_anchor_mmtp_timestamp;
+	uint32_t	recovery_anchor_mpu_sequence_number;
+	uint32_t    recovery_anchor_sample_number;
+	uint64_t	recovery_anchor_mpu_presentation_time_ntp64;
 
 } atsc3_mmt_mfu_mpu_timestamp_descriptor_t;
 
@@ -189,7 +199,7 @@ atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id
 
 //jjustman-2021-01-19 - get our mpu_timestamp_descriptor, either from the SI messsage or from recovering via mmtp_timestamp differential if our SI message was lost
 //		note: injects a "synthetic" mpu_timestamp_descriptor for durability in the condition of a possibly sustained SI message loss
-atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number);
+atsc3_mmt_mfu_mpu_timestamp_descriptor_t* atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number);
 
 //Warning: cross boundary processing hooks with callback invocation - impl's in atsc3_mmt_context_mfu_depacketizer.c
 
