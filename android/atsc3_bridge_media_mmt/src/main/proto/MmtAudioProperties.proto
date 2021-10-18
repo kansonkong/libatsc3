@@ -8,7 +8,8 @@ message MmtAudioPropertiesDescriptor {
 
 message MmtAudioPropertiesAsset {
   string id = 1;
-  repeated MmtAudioPropertiesPresentation presentation = 2;
+  string codec = 2;
+  repeated MmtAudioPropertiesPresentation presentation = 3;
 }
 
 message MmtAudioPropertiesPresentation {
