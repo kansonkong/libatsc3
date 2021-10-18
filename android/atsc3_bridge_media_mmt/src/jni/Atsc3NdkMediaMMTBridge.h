@@ -66,6 +66,8 @@ public:
     void atsc3_onCaptionAssetProperties(mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_caption_asset_descriptor_message);
     void atsc3_onAudioStreamProperties(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_audio_stream_properties_descriptor_message);
 
+    void atsc3_onMpTableComplete(mp_table_t* mp_table);
+
     //Fragment Metadata callbacks
     void atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t extracted_sample_duration_us);
     void atsc3_setVideoWidthHeightFromTrak(uint16_t packet_id, uint32_t width, uint32_t height);
@@ -148,6 +150,8 @@ public:
     jmethodID atsc3_onVideoStreamProperties_ID = nullptr;  // java class method id
     jmethodID atsc3_onCaptionAssetProperties_ID = nullptr;  // java class method id
     jmethodID atsc3_onAudioStreamProperties_ID = nullptr;  // java class method id
+
+    jmethodID atsc3_onMpTableComplete_ID = nullptr;  // java class method id
 
     jmethodID atsc3_onExtractedSampleDurationID = nullptr;
     jmethodID atsc3_setVideoWidthHeightFromTrakID = nullptr;

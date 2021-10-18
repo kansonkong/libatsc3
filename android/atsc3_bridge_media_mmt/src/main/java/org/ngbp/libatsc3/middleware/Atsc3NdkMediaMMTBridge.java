@@ -12,6 +12,7 @@ import org.ngbp.libatsc3.middleware.android.mmt.MpuMetadata_HEVC_NAL_Payload;
 import org.ngbp.libatsc3.middleware.android.mmt.models.MMTAudioDecoderConfigurationRecord;
 import org.ngbp.libatsc3.middleware.mmt.pb.MmtAudioProperties;
 import org.ngbp.libatsc3.middleware.mmt.pb.MmtCaptionProperties;
+import org.ngbp.libatsc3.middleware.mmt.pb.MmtMpTable;
 import org.ngbp.libatsc3.middleware.mmt.pb.MmtVideoProperties;
 
 import java.nio.ByteBuffer;
@@ -139,6 +140,19 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
             try {
                 MmtAudioProperties.MmtAudioPropertiesDescriptor descriptor = MmtAudioProperties.MmtAudioPropertiesDescriptor.parseFrom(buffer);
                 mActivity.onAudioStreamProperties(descriptor);
+            } catch (InvalidProtocolBufferException e) {
+                e.printStackTrace();
+            }
+        } else {
+            //discard...
+        }
+    }
+
+    public void atsc3_onMpTableComplete(byte[] buffer) {
+        if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
+            try {
+                MmtMpTable.MmtAssetTable table = MmtMpTable.MmtAssetTable.parseFrom(buffer);
+                mActivity.onMpTableComplete(table);
             } catch (InvalidProtocolBufferException e) {
                 e.printStackTrace();
             }
