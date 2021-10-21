@@ -13,10 +13,12 @@ MY_CUR_PATH := $(LOCAL_PATH)
 
 
 # jjustman-2021-03-30 - TODO: use this as conditional compilation option for sample app
+ifneq ($(build_abi_x86_enabled), true)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libCodornicesRq
 LOCAL_SRC_FILES := $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-$(TARGET_ARCH_ABI)/lib/libCodornicesRq.so
 include $(PREBUILT_SHARED_LIBRARY)
+endif
 #---
 
 
@@ -71,6 +73,10 @@ LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP := \
     $(wildcard $(LOCAL_PATH)/../../srt/srtcore/*.cpp) \
     $(LOCAL_PATH)/../../srt/srtcore/srt_compat.c
 
+ifeq ($(build_abi_x86_enabled), true)
+LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP := $(filter-out $(LOCAL_PATH)/../../srt/srtcore/raptorq.cpp, $(LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP))
+endif
+
 # jjustman-2020-08-17 - note - renamed hcrypt_ut.c to z_hcrypt_ut.c as it is a unit test that does not compile and breaks the ndk build
 LIBATSC3JNI_SRT_HAICRYPT_PHYVIRTUALCPP := \
     $(wildcard $(LOCAL_PATH)/../../srt/haicrypt/hcrypt*.c) \
@@ -114,7 +120,9 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../src/phy/virtual/srt/haicrypt
 # jjustman-2020-09-30 - link against arch
 # LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Linux-armv7l/include
 
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-arm64-v8a/include
+ifneq ($(build_abi_x86_enabled), true)
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-$(TARGET_ARCH_ABI)/include
+endif
 
 #jjustman-2020-08-17 - special defines for SRT
 # -fpack-struct=8 -fPIE -fPIC
@@ -131,9 +139,12 @@ LOCAL_CFLAGS += -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_
                  -DSRT_ENABLE_ENCRYPTION \
                  -DSRT_VERSION=\"1.4.1\" \
                  -DUSE_OPENSSL \
-                 -DSRT_HAS_RAPTORQ=1 \
                  -Dsrt_shared_EXPORTS \
                  -D_GNU_SOURCE \
+
+ifneq ($(build_abi_x86_enabled), true)
+	LOCAL_CFLAGS += -DSRT_HAS_RAPTORQ=1
+endif
 
 # 2020-12-17 - working on Sony tv... but crashes in NDK flow
 # -DHCRYPT_DEV \
@@ -166,7 +177,11 @@ $(info 'before local shared libs' $(MAKECMDGOALS))
 
 ifneq ($(MAKECMDGOALS),clean)
 	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
-LOCAL_SHARED_LIBRARIES := libCodornicesRq ssl crypto
+		LOCAL_SHARED_LIBRARIES := ssl crypto
+		# remove libCodornicesRq because it doesn't contain x86 artifact
+		ifneq ($(build_abi_x86_enabled), true)
+			LOCAL_SHARED_LIBRARIES += libCodornicesRq
+		endif
 	endif
 endif
 
