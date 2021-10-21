@@ -45,7 +45,9 @@ using namespace std;
 
 #define SL_DEVICE_TYPE_MARKONE        0
 #define SL_DEVICE_TYPE_FX3_KAILASH    1
-#define SL_DEVICE_TYPE_FX3_YOGA       3
+#define SL_DEVICE_TYPE_FX3_KAILASH_2  2
+#define SL_DEVICE_TYPE_FX3_KAILASH_3  3
+#define SL_DEVICE_TYPE_FX3_YOGA       4
 
 #include "CircularBuffer.h"
 
@@ -226,7 +228,8 @@ private:
 
     SL_ConfigResult_t configPlatformParams_aa_fx3();
     SL_ConfigResult_t configPlatformParams_aa_markone();
-    SL_ConfigResult_t configPlatformParams_bb_fx3();
+    SL_ConfigResult_t configPlatformParams_kailash_3_bb_fx3();
+    SL_ConfigResult_t configPlatformParams_yoga_bb_fx3();
     SL_ConfigResult_t configPlatformParams_bb_markone();
 
 
