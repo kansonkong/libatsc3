@@ -1814,6 +1814,14 @@ void atsc3_preamble_packet_dump(atsc3_preamble_packet_t* atsc3_preamble_packet) 
 			atsc3_preamble_packet->L1_detail_signaling.L1D_subframe_parameters_v.count,
 			atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag
     );
+	
+	__STLTP_PARSER_DUMP("preamble: L1D_timing_info: L1B_time_info_flag: 0x%02x, time_sec: 0x%02x, time_msec: 0x%02x, time_usec: 0x%02x, time_nsec: 0x%02x",
+			atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag,
+			atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_sec,
+			atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_msec,
+			atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_usec,
+			atsc3_preamble_packet->L1_detail_signaling.L1D_time_sec_block.L1D_time_nsec
+	);
 
 	if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x0) {
 		if(atsc3_preamble_packet->L1_basic_signaling.L1B_time_info_flag != 0x01) {
