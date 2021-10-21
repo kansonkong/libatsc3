@@ -56,6 +56,8 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_internal_flows_new() {
     //internal related callbacks
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal = &atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_callback_internal;
 
+    atsc3_mmt_mfu_context->internal_sei.mmt_mpu_mfu_on_sample_complete_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_internal = &atsc3_mmt_mpu_mfu_on_sample_complete_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_internal;
+
 //    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_subset			= &atsc3_mmt_signalling_information_on_mp_table_subset_noop;
 //    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_complete 		= &atsc3_mmt_signalling_information_on_mp_table_complete_noop;
 
@@ -844,6 +846,26 @@ void mmtp_mfu_rebuild_from_packet_id_mpu_sequence_number(atsc3_mmt_mfu_context_t
                 //if we have our MMTHSampleHeader, then mfu_fragment_counter_mmthsample_header_start should tell us how many DU's we need to be completely recovered for this MFU
                 if (mfu_fragment_counter_mmthsample_header_start) {
                     if (mfu_fragment_counter_mmthsample_header_start - (mfu_fragment_count_rebuilt - 1) == 0) {
+
+                        //jjustman-2021-10-21 - perform any sei parsing checks and atsc3_mmt_mfu_context notification callbacks
+                        //for sl-hdr-1, only check keyframe (sample_num == 1) and only notify context callback once if itu_t_35 and country code found per session
+
+                        if(mmtp_mpu_packet_to_rebuild->sample_number == 1 && !atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->detected_sl_hdr_sei_itu_t_35_and_terminal_provider_code) {
+                            if(atsc3_mmt_mfu_context->internal_sei.mmt_mpu_mfu_on_sample_complete_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_internal) {
+                                //jjustman-2021-10-21 - todo - extract full sl-hdr-1 sei message instead of boolean return here..
+                                bool detected_sl_hdr_sei_itu_t_35_and_terminal_provider_code = false;
+
+                                detected_sl_hdr_sei_itu_t_35_and_terminal_provider_code = atsc3_mmt_mfu_context->internal_sei.mmt_mpu_mfu_on_sample_complete_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_internal(du_mfu_block_to_rebuild);
+                                if(detected_sl_hdr_sei_itu_t_35_and_terminal_provider_code) {
+                                    atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->detected_sl_hdr_sei_itu_t_35_and_terminal_provider_code = detected_sl_hdr_sei_itu_t_35_and_terminal_provider_code;
+
+                                    if(atsc3_mmt_mfu_context->external_sei.mmt_mpu_mfu_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_detected) {
+                                        atsc3_mmt_mfu_context->external_sei.mmt_mpu_mfu_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_detected(atsc3_mmt_mfu_context, mmtp_mpu_packet_to_rebuild->mmtp_packet_id, mmtp_mpu_packet_to_rebuild->mmtp_timestamp, mmtp_mpu_packet_to_rebuild->mpu_sequence_number, mmtp_mpu_packet_to_rebuild->sample_number);
+                                    }
+                                }
+                            }
+                        }
+
                         //REQUIRED
                         if(atsc3_mmt_mfu_context->atsc3_mmt_mpu_mfu_on_sample_complete) {
                             //jjustman-2021-01-19 - todo: use the mmtp_timestamp from the first packet emission, not the "last"
