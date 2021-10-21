@@ -28,7 +28,7 @@ done
 
  */
 
-#define __JJ_MARKONE_SMT_BB
+//#define __JJ_MARKONE_SMT_BB
 
 //set in android.mk LOCAL_CFLAGS to compute I Q offset values
 #ifdef __JJ_CALIBRATION_ENABLED
@@ -39,9 +39,6 @@ done
 int                       calibrationStatus;
 #endif
 
-#ifndef SL_YOGA_DONGLE
-#define SL_YOGA_DONGLE 31337
-#endif
 
 //jjustman-2021-06-07 - uncomment to enable 100ms sleep between tuner status thread i2c polling commands
 //#define _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
@@ -325,10 +322,14 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
     } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH) {
         //configure as aa FX3
         res = configPlatformParams_aa_fx3();
+    } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH_3) {
+        //configure as bb FX3
+        res = configPlatformParams_kailash_3_bb_fx3();
     } else if (device_type == SL_DEVICE_TYPE_FX3_YOGA) {
         //configure as bb FX3
-        res = configPlatformParams_bb_fx3();
+        res = configPlatformParams_yoga_bb_fx3();
     }
+
 
     _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect::return res: %d", res);
 
@@ -367,8 +368,13 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     unsigned int cFrequency = 0;
     SL_AfeIfConfigParams_t afeInfo;
     SL_OutIfConfigParams_t outPutInfo;
+    SL_ExtLnaConfigParams_t lnaMode = SL_EXT_LNA_CFG_MODE_NOT_PRESENT;
+
     SL_IQOffsetCorrectionParams_t iqOffSetCorrection;
     SL_DemodBootStatus_t bootStatus;
+    unsigned int lnaGpioNum = 0x00000000;
+//    SL_Atsc3p0ConfigParams_t  atsc3ConfigInfo;
+
 
     cres = SL_ConfigGetPlatform(&getPlfConfig);
     if (cres == SL_CONFIG_OK)
@@ -625,6 +631,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
                 afeInfo.spectrum = SL_SPECTRUM_NORMAL;
                 afeInfo.iftype = SL_IFTYPE_ZIF;
                 afeInfo.ifreq = 0.0;
+
             }
             else
             {
@@ -646,6 +653,16 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.qCoeff1 = 1;
             iqOffSetCorrection.iCoeff2 = 0;
             iqOffSetCorrection.qCoeff2 = 0;
+            lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
+            if (lnaMode != SL_EXT_LNA_CFG_MODE_NOT_PRESENT)
+            {
+                /*
+                 * GPIO12 is used for LNA Bypass/Enable in Yoga Dongle.
+                 * It may be different for other boards. Use bits 8 to 15 to specify the same
+                 */
+                lnaGpioNum = 0x00000C00;
+                lnaMode = static_cast<SL_ExtLnaConfigParams_t>(lnaMode | lnaGpioNum);
+            }
             break;
 
         default:
@@ -757,7 +774,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
                                 afeInfo.agcRefValue);
 
 
-    slres = SL_DemodConfigure(slUnit, SL_CONFIG_TYPE_IQ_OFFSET_CORRECTION, &iqOffSetCorrection);
+    slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_IQ_OFFSET_CORRECTION, &iqOffSetCorrection);
     if (slres != 0)
     {
         printToConsoleDemodError("SL_DemodConfigure:SL_CONFIG_TYPE_IQ_OFFSET_CORRECTION", slres);
@@ -770,6 +787,23 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         printToConsoleDemodError("SL_DemodConfigure:SL_CONFIGTYPE_OUTPUTIF", slres);
         goto ERROR;
     }
+
+    slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_EXT_LNA, (unsigned int *)&lnaMode);
+    if (slres != 0)
+    {
+        printToConsoleDemodError("SL_DemodConfigure:SL_CONFIGTYPE_EXT_LNA", slres);
+        goto ERROR;
+    }
+//
+//    slres = SL_DemodConfigureEx(slUnit, SL_DEMODSTD_ATSC3_0, &atsc3ConfigInfo);
+//    if (slres != 0)
+//    {
+//        printToConsoleDemodError("SL_DemodConfigure:SL_DEMODSTD_ATSC3_0", slres);
+//
+//        goto ERROR;
+//    }
+
+
 
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
     if (slres != 0)
@@ -842,8 +876,8 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 2021-09-23 00:12:33.305 13265-13471/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1035:INFO :1632373953.3051:I Off Set Value        : 11
 2021-09-23 00:12:33.305 13265-13471/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1036:INFO :1632373953.3051:Q Off Set Value        : 10
              */
-        tunerIQDcOffSet.iOffSet = 11;
-        tunerIQDcOffSet.qOffSet = 10;
+       // tunerIQDcOffSet.iOffSet = 11;
+       //tunerIQDcOffSet.qOffSet = 12;
 
         tres = SL_TunerExSetDcOffSet(tUnit, &tunerIQDcOffSet);
         if (tres != 0)
@@ -1508,8 +1542,8 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_markone() {
 }
 
 
-//jjustman-2020-09-09 YOGA dongle specific configuration
-SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_fx3() {
+//jjustman-2020-09-09 KAILASH_3 dongle specific configuration
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_kailash_3_bb_fx3() {
 
     SL_ConfigResult_t res = SL_CONFIG_OK;
 
@@ -1517,6 +1551,47 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_fx3() {
     sPlfConfig.chipRev = SL_CHIP_REV_BB;
     sPlfConfig.boardType = SL_KAILASH_DONGLE_3;
     sPlfConfig.tunerType = TUNER_SILABS;
+    sPlfConfig.hostInterfaceType = SL_HostInterfaceType_FX3;
+
+    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
+    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
+    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
+
+    sPlfConfig.demodResetGpioPin = 47;      /* FX3S GPIO 47 connected to Demod Reset Pin - S1_SD1/UART_CTS*/
+    sPlfConfig.cpldResetGpioPin = 43;       /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
+    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
+    sPlfConfig.demodI2cAddr3GpioPin = 37; /* FX3S GPIO 37 connected to SL3000_I2CADDR3 */
+
+    sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
+
+    /* Set Configuration Parameters */
+    res = SL_ConfigSetPlatform(sPlfConfig);
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_bb_fx3: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
+                                sPlfConfig.chipType,
+                                sPlfConfig.chipRev,
+                                sPlfConfig.boardType,
+                                sPlfConfig.tunerType,
+                                sPlfConfig.hostInterfaceType);
+
+
+    //reconfigure method callbacks for yoga dongle (bb)
+    SL_ConfigureGpio_slref();
+    SL_ConfigureI2c_slref();
+    SL_ConfigureTs_slref();
+
+    return res;
+}
+
+//jjustman-2020-09-09 KAILASH_3 dongle specific configuration
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_yoga_bb_fx3() {
+
+    SL_ConfigResult_t res = SL_CONFIG_OK;
+
+    sPlfConfig.chipType = SL_CHIP_4000;
+    sPlfConfig.chipRev = SL_CHIP_REV_BB;
+    sPlfConfig.boardType = SL_YOGA_DONGLE;
+    sPlfConfig.tunerType = TUNER_SI_P;
     sPlfConfig.hostInterfaceType = SL_HostInterfaceType_FX3;
 
     sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
@@ -1676,7 +1751,7 @@ void SaankhyaPHYAndroid::printToConsolePlfConfiguration(SL_PlatFormConfigParams_
             break;
 
         case SL_KAILASH_DONGLE_3:
-            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE_3 (Yoga)");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE_3");
             break;
 
         case SL_YOGA_DONGLE:
