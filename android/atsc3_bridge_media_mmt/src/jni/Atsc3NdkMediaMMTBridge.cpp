@@ -360,6 +360,17 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_
 }
 
 
+void Atsc3NdkMediaMMTBridge::atsc3_notify_sl_hdr_1_present(uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number) {
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+    if (!Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
+        return;
+    }
+
+    Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv()->Get()->CallIntMethod(jni_instance_globalRef, atsc3_notify_sl_hdr_1_present_ID, packet_id);
+
+}
+
 
 //MMT Signalling callbacks
 void Atsc3NdkMediaMMTBridge::atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
@@ -638,7 +649,12 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobje
         mediaMMTBridge->mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_global_ref = (jclass)(env->NewGlobalRef(mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_init_env));
     }
 
-
+    //atsc3_notify_sl_hdr_1_present_ID
+    mediaMMTBridge->atsc3_notify_sl_hdr_1_present_ID = env->GetMethodID(jniClassReference, "atsc3_notify_sl_hdr_1_present", "(I)I");
+    if (mediaMMTBridge->atsc3_notify_sl_hdr_1_present_ID == NULL) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_notify_sl_hdr_1_present_ID' method id");
+        return -1;
+    }
     //Signalling callbacks
 
     /*
@@ -646,6 +662,7 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobje
      *  public int atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(int audio_packet_id, int mpu_sequence_number, long mpu_presentation_time_ntp64, int mpu_presentation_time_seconds, int mpu_presentation_time_microseconds);
      *  public int atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(int audio_packet_id, int mpu_sequence_number, long mpu_presentation_time_ntp64, int mpu_presentation_time_seconds, int mpu_presentation_time_microseconds) {
     */
+
 
     mediaMMTBridge->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID = env->GetMethodID(jniClassReference, "atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor", "(IJJJI)I");
     if (mediaMMTBridge->atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID == NULL) {

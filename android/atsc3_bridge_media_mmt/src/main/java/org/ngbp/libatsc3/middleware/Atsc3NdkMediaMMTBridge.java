@@ -67,6 +67,12 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
+    public int atsc3_notify_sl_hdr_1_present(int packet_id) {
+        //jjustman-2021-10-21 - @TODO:
+
+        return 0;
+    }
+
     //jjustman-2020-08-10 - TODO - move these out of "global global" scope
     public int atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(int video_packet_id, long mpu_sequence_number, long mpu_presentation_time_ntp64, long mpu_presentation_time_seconds, int mpu_presentation_time_microseconds) {
         //jjustman-2021-06-02 - TODO: refactor this to packetStatistic collection
