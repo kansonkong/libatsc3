@@ -28,8 +28,8 @@ android {
                 } else if (project.hasProperty('org.gradle.project.debugging_g_optimization_zero_flags') && project.property('org.gradle.project.debugging_g_optimization_zero_flags').toString().toBoolean()) {
                     arguments "debugging_g_optimization_zero_flags=true"
                 }
-                if (project.getProperty('org.gradle.project.abi_x86_enabled').toBoolean()) {
-                    arguments "build_abi_x86_enabled=true"
+                if (project.getProperty('org.gradle.project.codornices_rq_enabled').toBoolean() == false) {
+                    arguments "codornices_rq_enabled=false"
                 }
             }
         }

@@ -13,7 +13,7 @@ MY_CUR_PATH := $(LOCAL_PATH)
 
 
 # jjustman-2021-03-30 - TODO: use this as conditional compilation option for sample app
-ifneq ($(build_abi_x86_enabled), true)
+ifneq ($(codornices_rq_enabled), false)
 include $(CLEAR_VARS)
 LOCAL_MODULE := libCodornicesRq
 LOCAL_SRC_FILES := $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-$(TARGET_ARCH_ABI)/lib/libCodornicesRq.so
@@ -73,7 +73,7 @@ LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP := \
     $(wildcard $(LOCAL_PATH)/../../srt/srtcore/*.cpp) \
     $(LOCAL_PATH)/../../srt/srtcore/srt_compat.c
 
-ifeq ($(build_abi_x86_enabled), true)
+ifeq ($(codornices_rq_enabled), false)
 LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP := $(filter-out $(LOCAL_PATH)/../../srt/srtcore/raptorq.cpp, $(LIBATSC3JNI_SRT_CORE_PHYVIRTUALCPP))
 endif
 
@@ -120,7 +120,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../src/phy/virtual/srt/haicrypt
 # jjustman-2020-09-30 - link against arch
 # LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Linux-armv7l/include
 
-ifneq ($(build_abi_x86_enabled), true)
+ifneq ($(codornices_rq_enabled), false)
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../codornicesrq/CodornicesRq-2.2-Android-$(TARGET_ARCH_ABI)/include
 endif
 
@@ -142,7 +142,7 @@ LOCAL_CFLAGS += -D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_
                  -Dsrt_shared_EXPORTS \
                  -D_GNU_SOURCE \
 
-ifneq ($(build_abi_x86_enabled), true)
+ifneq ($(codornices_rq_enabled), false)
 	LOCAL_CFLAGS += -DSRT_HAS_RAPTORQ=1
 endif
 
@@ -178,8 +178,7 @@ $(info 'before local shared libs' $(MAKECMDGOALS))
 ifneq ($(MAKECMDGOALS),clean)
 	ifneq ($(MAKECMDGOALS),generateJsonModelDebug)
 		LOCAL_SHARED_LIBRARIES := ssl crypto
-		# remove libCodornicesRq because it doesn't contain x86 artifact
-		ifneq ($(build_abi_x86_enabled), true)
+		ifneq ($(codornices_rq_enabled), false)
 			LOCAL_SHARED_LIBRARIES += libCodornicesRq
 		endif
 	endif
