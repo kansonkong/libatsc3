@@ -12,7 +12,7 @@ pool:
   vmImage: 'ubuntu-18.04'
 
 variables:
-  - group: MarkOne
+  - group: MarkOne-2
   - name: ARTIFACT_VERSION
     value: 0.0.0
 
