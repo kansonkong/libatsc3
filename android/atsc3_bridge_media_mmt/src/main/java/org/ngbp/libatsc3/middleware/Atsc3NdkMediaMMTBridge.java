@@ -2,14 +2,22 @@ package org.ngbp.libatsc3.middleware;
 
 import android.util.Log;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+
 import org.ngbp.libatsc3.middleware.android.ATSC3PlayerFlags;
 import org.ngbp.libatsc3.middleware.android.application.interfaces.IAtsc3NdkMediaMMTBridgeCallbacks;
 import org.ngbp.libatsc3.middleware.android.mmt.MfuByteBufferFragment;
 import org.ngbp.libatsc3.middleware.android.mmt.MmtPacketIdContext;
 import org.ngbp.libatsc3.middleware.android.mmt.MpuMetadata_HEVC_NAL_Payload;
 import org.ngbp.libatsc3.middleware.android.mmt.models.MMTAudioDecoderConfigurationRecord;
+import org.ngbp.libatsc3.middleware.mmt.pb.MmtAudioProperties;
+import org.ngbp.libatsc3.middleware.mmt.pb.MmtCaptionProperties;
+import org.ngbp.libatsc3.middleware.mmt.pb.MmtMpTable;
+import org.ngbp.libatsc3.middleware.mmt.pb.MmtVideoProperties;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /*
 Atsc3NdkMediaMMTBridge: for ExoPlayer plugin support
@@ -105,6 +113,58 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         MmtPacketIdContext.stpp_packet_signalling_information.mpu_presentation_time_microseconds = mpu_presentation_time_microseconds;
 
         return 0;
+    }
+
+    public void atsc3_onVideoStreamProperties(byte[] buffer) {
+        if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
+            try {
+                MmtVideoProperties.MmtVideoPropertiesDescriptor descriptor = MmtVideoProperties.MmtVideoPropertiesDescriptor.parseFrom(buffer);
+                mActivity.onVideoStreamProperties(descriptor);
+            } catch (InvalidProtocolBufferException e) {
+                e.printStackTrace();
+            }
+        } else {
+            //discard...
+        }
+    }
+
+    public void atsc3_onCaptionAssetProperties(byte[] buffer) {
+        if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
+            try {
+                MmtCaptionProperties.MmtCaptionPropertiesDescriptor descriptor = MmtCaptionProperties.MmtCaptionPropertiesDescriptor.parseFrom(buffer);
+                mActivity.onCaptionAssetProperties(descriptor);
+            } catch (InvalidProtocolBufferException e) {
+                e.printStackTrace();
+            }
+        } else {
+            //discard...
+        }
+    }
+
+    public void atsc3_onAudioStreamProperties(byte[] buffer) {
+        if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
+            try {
+                MmtAudioProperties.MmtAudioPropertiesDescriptor descriptor = MmtAudioProperties.MmtAudioPropertiesDescriptor.parseFrom(buffer);
+                mActivity.onAudioStreamProperties(descriptor);
+            } catch (InvalidProtocolBufferException e) {
+                e.printStackTrace();
+            }
+        } else {
+            //discard...
+        }
+    }
+
+    public void atsc3_onMpTableComplete(byte[] buffer) {
+        if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
+            try {
+                MmtMpTable.MmtAssetTable table = MmtMpTable.MmtAssetTable.parseFrom(buffer);
+                mActivity.onMpTableComplete(table);
+            } catch (InvalidProtocolBufferException e) {
+                e.printStackTrace();
+            }
+        } else {
+            //discard...
+        }
     }
 
     public int atsc3_onExtractedSampleDuration(int packet_id, long mpu_sequence_number, long extracted_sample_duration_us) {
