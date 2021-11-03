@@ -28,7 +28,7 @@ android {
                 } else if (project.hasProperty('org.gradle.project.debugging_g_optimization_zero_flags') && project.property('org.gradle.project.debugging_g_optimization_zero_flags').toString().toBoolean()) {
                     arguments "debugging_g_optimization_zero_flags=true"
                 }
-                if (project.getProperty('org.gradle.project.codornices_rq_enabled').toBoolean() == false) {
+                if (project.hasProperty('org.gradle.project.codornices_rq_enabled') && project.property('org.gradle.project.codornices_rq_enabled').toString().toBoolean() == false) {
                     arguments "codornices_rq_enabled=false"
                 }
             }
