@@ -215,7 +215,7 @@ restart_parsing:
 
     atsc3_sl_tlv_payload->reserved_b12_b15 = ntohl((*((uint32_t*)(buf))>>8 & 0x00FFFFFF));
     __SL_TLV_DEMOD_TRACE("  reserved_b12_b15: 0x%06x", atsc3_sl_tlv_payload->reserved_b12_b15);
-    buf+=3;
+    buf+=4;
     
     atsc3_sl_tlv_payload->reserved_b16 = *buf++;
     __SL_TLV_DEMOD_TRACE("  reserved_b16 packet size: 0x%02x", atsc3_sl_tlv_payload->reserved_b16);
@@ -227,9 +227,36 @@ restart_parsing:
     atsc3_sl_tlv_payload->reserved_b20_b23 = ntohl(*((uint32_t*)(buf)));
     __SL_TLV_DEMOD_TRACE("  reserved_b20_b23: 0x%08x", atsc3_sl_tlv_payload->reserved_b20_b23);
     buf+=4;
+
+#ifdef __JJ_MARKONE_SMT_BB
+
+    atsc3_sl_tlv_payload->reserved_b24_b27 = ntohl(*((uint32_t*)(buf)));
+    __SL_TLV_DEMOD_TRACE("  reserved_b24_b27: 0x%08x", atsc3_sl_tlv_payload->reserved_b24_b27);
+    buf+=4;
+
+    //jjustman-2021-10-24 - adding in support for l1d parsing
+    //todo: FIX ME to use block_t reader instead of manually incrementing buf pos...
+    atsc3_sl_tlv_payload->l1d_time_sec = *(uint32_t*)(buf);
+    __SL_TLV_DEMOD_TRACE("  l1d_time_sec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_sec);
+    buf+=4;
+
+    atsc3_sl_tlv_payload->l1d_time_msec = *(uint32_t*)(buf);
+    __SL_TLV_DEMOD_TRACE("  l1d_time_msec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_msec);
+    buf+=4;
+
+    atsc3_sl_tlv_payload->l1d_time_usec = *(uint32_t*)(buf);
+    __SL_TLV_DEMOD_TRACE("  l1d_time_usec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_usec);
+    buf+=4;
+
+    atsc3_sl_tlv_payload->l1d_time_nsec = *(uint32_t*)(buf);
+    __SL_TLV_DEMOD_TRACE("  l1d_time_nsec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_nsec);
+    buf+=4;
     
-    //increment past remaining TLV payload (23 bytes)
-    buf += (188 - 23);
+    //increment past remaining TLV payload (consumed 43 bytes so far.. bytes)
+    buf += (188 - 43);
+#else
+    buf += (188 - 24);
+#endif
 
     uint32_t remaining_block_t_size = buf_end - buf;
 
