@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package org.ngbp.libatsc3.middleware.mmt.pb;
+
+message MmtVideoPropertiesDescriptor {
+  repeated MmtVideoPropertiesAsset asset = 1;
+}
+
+message MmtVideoPropertiesAsset {
+  string id = 1;
+  string codec = 2;
+}

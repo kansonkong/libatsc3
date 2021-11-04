@@ -28,7 +28,7 @@ done
 
  */
 
-//#define __JJ_MARKONE_SMT_BB
+#define __JJ_MARKONE_SMT_BB
 
 //set in android.mk LOCAL_CFLAGS to compute I Q offset values
 #ifdef __JJ_CALIBRATION_ENABLED
@@ -314,6 +314,7 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
         //configure as aa_MarkONE
 #ifdef __JJ_MARKONE_SMT_BB
         res = configPlatformParams_bb_markone();
+        __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
 #else
         res = configPlatformParams_aa_markone();
 #endif
@@ -337,7 +338,15 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
 }
 int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 {
-    _SAANKHYA_PHY_ANDROID_DEBUG("open: with fd: %d, device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
+    if(device_type == JJ_DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE) {
+        //jjustman-2021-10-24 - hack!
+        device_type = last_download_bootloader_firmware_device_id;
+
+        _SAANKHYA_PHY_ANDROID_INFO("open: JJ_DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE, with fd: %d, updated to device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
+
+    } else {
+        _SAANKHYA_PHY_ANDROID_DEBUG("open: with fd: %d, device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
+    }
 
     SL_I2cResult_t i2cres;
 
@@ -1435,6 +1444,9 @@ UNLOCK:
 int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, int device_type, string device_path) {
     _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware, path: %s, device_type: %d, fd: %d", device_path.c_str(), device_type, fd);
 
+    //jjustman-2021-10-24 - super-hacky workaround for preboot firmware d/l and proper device type open on re-enumeration call for now..
+    this->last_download_bootloader_firmware_device_id = device_type;
+
     SL_ConfigResult_t sl_configResult = SL_CONFIG_OK;
     sl_configResult = configPlatformParams_autodetect(device_type, device_path);
 
@@ -1905,6 +1917,25 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
 
             if (atsc3_sl_tlv_payload) {
                 atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
+
+                uint64_t l1dTimeNs_value = atsc3_sl_tlv_payload->l1d_time_sec + (atsc3_sl_tlv_payload->l1d_time_msec * 1000) + (atsc3_sl_tlv_payload->l1d_time_usec * 1000000) + (atsc3_sl_tlv_payload->l1d_time_nsec * 1000000000) ;
+
+                //jjustman-2021-10-24 - hack-ish to push our l1d time info
+                if(last_l1dTimeNs_value != l1dTimeNs_value) {
+                    _SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() L1DTimeInfo is: L1time: flag: %d, s: %d, ms: %d, us: %d, ns: %d, current l1dTimeNs: %d, last_l1dTimeNs_value: %d, frame duration: %",
+                                                last_l1bTimeInfoFlag,
+                                                atsc3_sl_tlv_payload->l1d_time_sec, atsc3_sl_tlv_payload->l1d_time_msec, atsc3_sl_tlv_payload->l1d_time_usec, atsc3_sl_tlv_payload->l1d_time_nsec,
+                                                l1dTimeNs_value,
+                                                last_l1dTimeNs_value
+                    );
+
+                    if (atsc3_ndk_phy_bridge_get_instance()) {
+                        atsc3_ndk_phy_bridge_get_instance()->atsc3_update_l1d_time_information(last_l1bTimeInfoFlag, atsc3_sl_tlv_payload->l1d_time_sec, atsc3_sl_tlv_payload->l1d_time_msec, atsc3_sl_tlv_payload->l1d_time_usec, atsc3_sl_tlv_payload->l1d_time_nsec);
+                    }
+                    last_l1dTimeNs_value = l1dTimeNs_value;
+                }
+                    
+
                 if (atsc3_sl_tlv_payload->alp_payload_complete) {
                     atsc3_sl_tlv_payload_complete = true;
 
@@ -2239,7 +2270,6 @@ int SaankhyaPHYAndroid::statusThread()
     double snr_l1d;
     double snr_plp[4];
 
-
     int ber_l1b;
     int ber_l1d;
     int ber_plp0;
@@ -2486,6 +2516,9 @@ SL_SleepMS(100);
                 }
 
                 printAtsc3L1bDiagnostics(l1bDiag, 0);
+
+                //jjustman-2021-10-24 - keep track of our L1bTimeInfoFlag
+                last_l1bTimeInfoFlag = l1bDiag.L1bTimeInfoFlag;
             }
         }
 

@@ -52,7 +52,7 @@ class IAtsc3NdkApplicationBridge {
         virtual int atsc3_slt_alc_select_additional_service(int service_id) = 0;
         virtual int atsc3_slt_alc_clear_additional_service_selections() = 0;
 
-        virtual void atsc3_onSltTablePresent(const char* slt_payload_xml) = 0;
+        virtual void atsc3_onSltTablePresent(uint8_t lls_table_id, uint8_t lls_table_version, uint8_t lls_group_id, const char* slt_payload_xml) = 0;
         virtual void atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload) = 0;
 
         virtual void atsc3_lls_sls_alc_on_package_extract_completed_callback_jni(atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_package_extracted_envelope_metadata_and_payload_t) = 0;
