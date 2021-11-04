@@ -14,4 +14,6 @@ public interface IAtsc3NdkMediaMMTBridgeCallbacks {
     public void pushMpuMetadata_HEVC_NAL_Payload(MpuMetadata_HEVC_NAL_Payload mpuMetadata_hevc_nal_payload);
 
     public void pushAudioDecoderConfigurationRecord(MMTAudioDecoderConfigurationRecord mmtAudioDecoderConfigurationRecord);
+
+    public void notifySlHdr1Present(int service_id, int packet_id);
 }
