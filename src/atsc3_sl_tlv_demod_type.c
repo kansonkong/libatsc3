@@ -12,6 +12,9 @@ int _SL_TLV_DEMOD_TRACE_ENABLED = 0;
 int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
 //int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 0;
 
+//jjustman-2021-11-03 - extract l1d_timeinfo based upon HEX F/W version
+int __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 0;
+
 //impl for default metrics collection
 atsc3_sl_tlv_payload_metrics_t __GLOBAL_DEFAULT_SL_TLV_PAYLOAD_METRICS;
 
@@ -228,35 +231,36 @@ restart_parsing:
     __SL_TLV_DEMOD_TRACE("  reserved_b20_b23: 0x%08x", atsc3_sl_tlv_payload->reserved_b20_b23);
     buf+=4;
 
-#ifdef __JJ_MARKONE_SMT_BB
+    if(__ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__) {
 
-    atsc3_sl_tlv_payload->reserved_b24_b27 = ntohl(*((uint32_t*)(buf)));
-    __SL_TLV_DEMOD_TRACE("  reserved_b24_b27: 0x%08x", atsc3_sl_tlv_payload->reserved_b24_b27);
-    buf+=4;
+        atsc3_sl_tlv_payload->reserved_b24_b27 = ntohl(*((uint32_t*)(buf)));
+        __SL_TLV_DEMOD_TRACE("  reserved_b24_b27: 0x%08x", atsc3_sl_tlv_payload->reserved_b24_b27);
+        buf+=4;
 
-    //jjustman-2021-10-24 - adding in support for l1d parsing
-    //todo: FIX ME to use block_t reader instead of manually incrementing buf pos...
-    atsc3_sl_tlv_payload->l1d_time_sec = *(uint32_t*)(buf);
-    __SL_TLV_DEMOD_TRACE("  l1d_time_sec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_sec);
-    buf+=4;
+        //jjustman-2021-10-24 - adding in support for l1d parsing
+        //todo: FIX ME to use block_t reader instead of manually incrementing buf pos...
+        atsc3_sl_tlv_payload->l1d_time_sec = *(uint32_t*)(buf);
+        __SL_TLV_DEMOD_TRACE("  l1d_time_sec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_sec);
+        buf+=4;
 
-    atsc3_sl_tlv_payload->l1d_time_msec = *(uint32_t*)(buf);
-    __SL_TLV_DEMOD_TRACE("  l1d_time_msec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_msec);
-    buf+=4;
+        atsc3_sl_tlv_payload->l1d_time_msec = *(uint32_t*)(buf);
+        __SL_TLV_DEMOD_TRACE("  l1d_time_msec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_msec);
+        buf+=4;
 
-    atsc3_sl_tlv_payload->l1d_time_usec = *(uint32_t*)(buf);
-    __SL_TLV_DEMOD_TRACE("  l1d_time_usec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_usec);
-    buf+=4;
+        atsc3_sl_tlv_payload->l1d_time_usec = *(uint32_t*)(buf);
+        __SL_TLV_DEMOD_TRACE("  l1d_time_usec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_usec);
+        buf+=4;
 
-    atsc3_sl_tlv_payload->l1d_time_nsec = *(uint32_t*)(buf);
-    __SL_TLV_DEMOD_TRACE("  l1d_time_nsec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_nsec);
-    buf+=4;
-    
-    //increment past remaining TLV payload (consumed 43 bytes so far.. bytes)
-    buf += (188 - 43);
-#else
-    buf += (188 - 24);
-#endif
+        atsc3_sl_tlv_payload->l1d_time_nsec = *(uint32_t*)(buf);
+        __SL_TLV_DEMOD_TRACE("  l1d_time_nsec: 0x%08x", atsc3_sl_tlv_payload->l1d_time_nsec);
+        buf+=4;
+
+        //increment past remaining TLV payload (consumed 44 bytes so far.. bytes)
+        buf += (188 - 44);
+    } else {
+        //older HEX F/W (including EVT1 AA build from 2021-10 doesn't have this additional header data)
+        buf += (188 - 24);
+    }
 
     uint32_t remaining_block_t_size = buf_end - buf;
 
