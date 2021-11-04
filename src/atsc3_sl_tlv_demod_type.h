@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 extern int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__;
+extern int __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__;
 /**
  
  Ref: SL SDK API v0.5
@@ -49,6 +50,12 @@ extern int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__;
  B16        1 Byte      Reserved            Reserved for future use
  B17 – B19  3 Bytes     Reserved            Reserved for future use
  B20 – B23  4 Bytes     Reserved            Reserved for future use
+
+ B28 - B31  4 Bytes     Positive value     L1D Time Info with precision Seconds
+ B32 - B35  4 Bytes     Positive value     L1D Time Info with precision milliseconds
+ B36 - B39  4 Bytes     Positive value     L1D Time Info with precision microseconds
+ B40 - B43  4 Bytes     Positive value     L1D Time Info with precision nanoseconds
+
  
 For other broadcast standards (ATSC1, DVB-T2, ISMB-T etc), the data is in standard MPEG2 Transport stream format.
  */
@@ -66,6 +73,13 @@ typedef struct atsc3_sl_tlv_payload {
     uint8_t     reserved_b16;               //reserved b16
     uint32_t    reserved_b17_b19;           //reserved b17-b19
     uint32_t    reserved_b20_b23;           //reserved b20-b23
+    uint32_t    reserved_b24_b27;           //reserved b24-b27
+
+    uint32_t    l1d_time_sec;               //jjustman-2021-10-24 - new time info fields
+    uint32_t    l1d_time_msec;
+    uint32_t    l1d_time_usec;
+    uint32_t    l1d_time_nsec;
+
 	
     bool		alp_payload_complete;		//flag if alp_payload block_t may be incomplete, e.g. BBP under-run
     block_t*    alp_payload;                //extracted ALP payload buffer data

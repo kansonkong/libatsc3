@@ -12,7 +12,7 @@ pool:
   vmImage: 'ubuntu-18.04'
 
 variables:
-  - group: MarkOne
+  - group: MarkOne-2
   - name: ARTIFACT_VERSION
     value: 0.0.0
 
@@ -43,6 +43,15 @@ steps:
       artifactsFeeds: middleware
 
   - task: Gradle@2
+    displayName: generate Proto files
+    inputs:
+      workingDirectory: 'android'
+      gradleWrapperFile: 'android/gradlew'
+      javaHomeOption: 'JDKVersion'
+      tasks: ':atsc3_bridge_media_mmt:generateDebugProto :atsc3_bridge_media_mmt:generateReleaseProto'
+
+  - task: Gradle@2
+    displayName: gradlew build
     inputs:
       workingDirectory: 'android'
       gradleWrapperFile: 'android/gradlew'
@@ -50,8 +59,6 @@ steps:
       publishJUnitResults: true
       testResultsFiles: '**/TEST-*.xml'
       tasks: ':atsc3_core:build :atsc3_bridge:build :atsc3_bridge_media_mmt:build :atsc3_phy_virtual:build :atsc3_phy_lowasis:build :atsc3_phy_saankhya:build :atsc3_core:publish :atsc3_bridge:publish :atsc3_bridge_media_mmt:publish :atsc3_phy_virtual:publish :atsc3_phy_lowasis:publish :atsc3_phy_saankhya:publish -PartifactVersion=$(ARTIFACT_VERSION)'
-
-    displayName: gradlew build
 
   - task: CopyFiles@2
     displayName: 'Copy .aar files to artifact staging directory'

@@ -1,4 +1,7 @@
-apply plugin: 'com.android.library'
+plugins {
+    id 'com.android.library'
+    id "com.google.protobuf" version "0.8.17"
+}
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -12,6 +15,8 @@ android {
         ndk {
             if (project.hasProperty('org.gradle.project.debugging_hwasan_enabled') && project.property('org.gradle.project.debugging_hwasan_enabled').toString().toBoolean()) {
                 abiFilters 'arm64-v8a'
+            } else if (project.hasProperty('org.gradle.project.abi_x86_enabled') && project.property('org.gradle.project.abi_x86_enabled').toString().toBoolean()){
+                abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
             } else {
                 abiFilters 'arm64-v8a', 'armeabi-v7a' //, 'armeabi-v7a' //, 'arm64-v8a' //'', 'x86_64',
             }
@@ -72,7 +77,32 @@ repositories {
 dependencies {
     implementation 'androidx.annotation:annotation:1.1.0@jar'
 
+    implementation 'com.google.protobuf:protobuf-javalite:3.18.0'
+
     debugApi project(':atsc3_core')
+}
+
+protobuf {
+    generatedFilesBaseDir = "$projectDir/src/generated"
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.18.0'
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                java {
+                    option "lite"
+                }
+                cpp {
+                    option "lite"
+                }
+            }
+        }
+    }
+}
+
+clean {
+    delete protobuf.generatedFilesBaseDir
 }
 
 apply from: '../publish.gradle'

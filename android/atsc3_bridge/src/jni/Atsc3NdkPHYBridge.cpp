@@ -237,9 +237,10 @@ void Atsc3NdkPHYBridge::atsc3_update_l1d_time_information(uint8_t l1B_time_info_
         return;
     }
 
+    //jjustman-2021-10-24 - mask our l1b_time_info_flag to just the 2 bits defined in a/322 -> 0x3
     int r = localUnsafeJniEnv->Get()->CallIntMethod(jni_instance_globalRef,
                                                      atsc3_l1d_time_information_callback_ID,
-                                                     l1B_time_info_flag,
+                                                     (l1B_time_info_flag & 0x3),
                                                      (uint64_t) l1D_time_sec,
                                                      l1D_time_msec,
                                                      l1D_time_usec,

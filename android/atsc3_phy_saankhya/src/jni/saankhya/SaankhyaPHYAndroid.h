@@ -49,6 +49,9 @@ using namespace std;
 #define SL_DEVICE_TYPE_FX3_KAILASH_3  3
 #define SL_DEVICE_TYPE_FX3_YOGA       4
 
+//justman-2021-10-24 - hack!
+#define JJ_DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE 31337
+
 #include "CircularBuffer.h"
 
 #include <sl_sdk_version.h>
@@ -149,6 +152,9 @@ protected:
 
 private:
 
+    //jjustman-2021-10-24 - super-hacky workaround for preboot firmware d/l and proper device type open on re-enumeration call for now..
+    int last_download_bootloader_firmware_device_id = -1;
+
     int slUnit = -1;
     int tUnit = -1;
     int slCmdIfFailureCount = 0;
@@ -169,6 +175,9 @@ private:
     unsigned long long        llsPlpInfo = 0;
     unsigned long long        llsPlpMask = 0x1;
     int                       plpInfoVal = 0, plpllscount = 0;
+
+    int                       last_l1bTimeInfoFlag = -1;
+    uint64_t                  last_l1dTimeNs_value = 0;
 
     SL_DemodConfigInfo_t cfgInfo;
 

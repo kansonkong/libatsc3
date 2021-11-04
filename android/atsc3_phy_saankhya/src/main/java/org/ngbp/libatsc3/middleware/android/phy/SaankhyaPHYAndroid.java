@@ -21,6 +21,7 @@ public class SaankhyaPHYAndroid extends Atsc3NdkPHYSaankhyaStaticJniLoader  {
     public static final int DEVICE_TYPE_FX3_KAILASH_3 = 3;
 
     public static final int DEVICE_TYPE_FX3_YOGA      = 4; //SL4000_BB+SiTune_P+FX3S
+    public static final int DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE = 31337;
 
     static {
         Atsc3NdkPHYClientBase.AllRegisteredPHYImplementations.add(new USBVendorIDProductIDSupportedPHY(CYPRESS_VENDOR_ID, 243, "SL-FX3-Preboot", true, SaankhyaPHYAndroid.class));
