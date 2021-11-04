@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 extern int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__;
+extern int __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__;
 /**
  
  Ref: SL SDK API v0.5

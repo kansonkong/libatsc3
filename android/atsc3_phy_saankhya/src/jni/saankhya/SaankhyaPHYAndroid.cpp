@@ -28,7 +28,7 @@ done
 
  */
 
-//#define __JJ_MARKONE_SMT_BB
+#define __JJ_MARKONE_SMT_BB
 
 //set in android.mk LOCAL_CFLAGS to compute I Q offset values
 #ifdef __JJ_CALIBRATION_ENABLED
@@ -314,6 +314,7 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
         //configure as aa_MarkONE
 #ifdef __JJ_MARKONE_SMT_BB
         res = configPlatformParams_bb_markone();
+        __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
 #else
         res = configPlatformParams_aa_markone();
 #endif
