@@ -69,7 +69,7 @@ public:
 
     void atsc3_lls_sls_alc_on_route_mpd_patched_jni(uint16_t service_id) override;
 
-    void atsc3_onSltTablePresent(const char *slt_payload_xml) override;
+    void atsc3_onSltTablePresent(uint8_t lls_table_id, uint8_t lls_table_version, uint8_t lls_group_id, const char *slt_payload_xml) override;
     void atsc3_onAeatTablePresent(const char* aeat_payload_xml) override;
     void atsc3_onSlsHeldEmissionPresent(uint16_t service_id, const char *held_payload) override;
 
