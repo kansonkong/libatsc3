@@ -15,7 +15,7 @@ import java.nio.ByteBuffer;
 Atsc3NdkMediaMMTBridge: for ExoPlayer plugin support
  */
 
-public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoader
+public class Atsc3NdkMediaMMTBridge extends org.ngbp.libatsc3.middleware.Atsc3NdkMediaMMTBridgeStaticJniLoader
 {
     final static String TAG ="intf";
 
@@ -67,9 +67,8 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
-    public int atsc3_notify_sl_hdr_1_present(int packet_id) {
-        //jjustman-2021-10-21 - @TODO:
-
+    public int atsc3_notify_sl_hdr_1_present(int service_id, int packet_id) {
+        mActivity.notifySlHdr1Present(service_id, packet_id);
         return 0;
     }
 
