@@ -380,7 +380,12 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(atsc3_mmt_mfu
 void mmt_mpu_mfu_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_detected_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number) {
     //jjustman-2021-10-21 - hack
 
-    Atsc3NdkMediaMMTBridge_ptr->atsc3_notify_sl_hdr_1_present(packet_id, mmtp_timestamp, mpu_sequence_number, sample_number);
+    uint16_t service_id = 0;
+    if (atsc3_mmt_mfu_context && atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
+        service_id = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->service_id;
+    }
+
+    Atsc3NdkMediaMMTBridge_ptr->atsc3_notify_sl_hdr_1_present(service_id, packet_id, mmtp_timestamp, mpu_sequence_number, sample_number);
 }
 
 void atsc3_mmt_signalling_information_on_userservicedescription_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_signalling_information_usbd_component_t* mmt_atsc3_usbd_message) {
