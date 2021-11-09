@@ -2,6 +2,8 @@ package org.ngbp.libatsc3.middleware;
 
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import org.ngbp.libatsc3.middleware.android.ATSC3PlayerFlags;
@@ -16,14 +18,12 @@ import org.ngbp.libatsc3.middleware.mmt.pb.MmtMpTable;
 import org.ngbp.libatsc3.middleware.mmt.pb.MmtVideoProperties;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 /*
 Atsc3NdkMediaMMTBridge: for ExoPlayer plugin support
  */
 
-public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoader
+public class Atsc3NdkMediaMMTBridge extends org.ngbp.libatsc3.middleware.Atsc3NdkMediaMMTBridgeStaticJniLoader
 {
     final static String TAG ="intf";
 
@@ -42,7 +42,15 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
 
     public native void rewindBuffer();
 
-    public Atsc3NdkMediaMMTBridge(IAtsc3NdkMediaMMTBridgeCallbacks iAtsc3NdkMediaMMTBridgeCallbacks, ByteBuffer fragmentBuffer, int maxFragmentCount) {
+    /**
+     * Creates a Atsc3NdkMediaMMTBridge that uses fragmentBuffer to transfer media fragments or appropriate
+     * iAtsc3NdkMediaMMTBridgeCallbacks methods if fragmentBuffer is null or maxFragmentCount is zero or less.
+     * @param iAtsc3NdkMediaMMTBridgeCallbacks - bridge events callback
+     * @param fragmentBuffer - ring buffer to receive media fragments
+     * @param maxFragmentCount - count of fragments in buffer. Single buffer Page size will be calculated as
+     *                         size of fragmentBuffer devided by maxFragmentCount.
+     */
+    public Atsc3NdkMediaMMTBridge(IAtsc3NdkMediaMMTBridgeCallbacks iAtsc3NdkMediaMMTBridgeCallbacks, @Nullable ByteBuffer fragmentBuffer, int maxFragmentCount) {
         Log.w("Atsc3NdkMediaMMTBridge", "Atsc3NdkMediaMMTBridge::cctor");
         mActivity = iAtsc3NdkMediaMMTBridgeCallbacks;
         init(fragmentBuffer, maxFragmentCount);
@@ -75,9 +83,8 @@ public class Atsc3NdkMediaMMTBridge extends Atsc3NdkMediaMMTBridgeStaticJniLoade
         return 0;
     }
 
-    public int atsc3_notify_sl_hdr_1_present(int packet_id) {
-        //jjustman-2021-10-21 - @TODO:
-
+    public int atsc3_notify_sl_hdr_1_present(int service_id, int packet_id) {
+        mActivity.notifySlHdr1Present(service_id, packet_id);
         return 0;
     }
 

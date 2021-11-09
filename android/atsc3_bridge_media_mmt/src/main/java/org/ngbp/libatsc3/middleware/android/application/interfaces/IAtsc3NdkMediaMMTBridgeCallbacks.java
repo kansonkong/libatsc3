@@ -24,4 +24,6 @@ public interface IAtsc3NdkMediaMMTBridgeCallbacks {
     public void onAudioStreamProperties(MmtAudioProperties.MmtAudioPropertiesDescriptor descriptor);
 
     public void onMpTableComplete(MmtMpTable.MmtAssetTable table);
+
+    public void notifySlHdr1Present(int service_id, int packet_id);
 }
