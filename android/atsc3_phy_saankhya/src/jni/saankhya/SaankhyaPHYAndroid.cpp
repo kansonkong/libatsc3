@@ -28,7 +28,6 @@ done
 
  */
 
-#define __JJ_MARKONE_SMT_BB
 
 //set in android.mk LOCAL_CFLAGS to compute I Q offset values
 #ifdef __JJ_CALIBRATION_ENABLED
@@ -304,20 +303,27 @@ string SaankhyaPHYAndroid::get_firmware_version() {
     return demodVersion;
 };
 
-
 SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device_type, string device_path) {
 
     SL_ConfigResult_t res = SL_CONFIG_OK;
     _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect:: open with core type: %d, device_path: %s", device_type, device_path.c_str());
 
     if(device_type == SL_DEVICE_TYPE_MARKONE && device_path.c_str() && !strcasecmp(SL_HOSTINTERFACE_TYPE_MARKONE_PATH, device_path.c_str())) {
-        //configure as aa_MarkONE
-#ifdef __JJ_MARKONE_SMT_BB
-        res = configPlatformParams_bb_markone();
-        __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
-#else
-        res = configPlatformParams_aa_markone();
-#endif
+        //check device configuration type
+        SL_ConfigureGpio_markone();
+        SL_GpioInit();
+
+        char platform = 0;
+        SL_GetHwRev(&platform);
+        markone_evt_version = (platform) & 0xFF;
+        markone_evt_version++; //jjustman-2021-11-09: TODO - fixme in kernel, fallback will assume we are running on AA kernel
+
+        if(markone_evt_version == 1) {
+            res = configPlatformParams_aa_markone();
+        } else if(markone_evt_version == 2) {
+            res = configPlatformParams_bb_markone();
+            __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
+        }
 
 
     } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH) {

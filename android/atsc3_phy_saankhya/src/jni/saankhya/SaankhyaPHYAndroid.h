@@ -159,6 +159,8 @@ private:
     int tUnit = -1;
     int slCmdIfFailureCount = 0;
 
+    int markone_evt_version = -1;
+
     SL_PlatFormConfigParams_t getPlfConfig = SL_PLATFORM_CONFIG_PARAMS_NULL_INITIALIZER;
     SL_PlatFormConfigParams_t sPlfConfig   = SL_PLATFORM_CONFIG_PARAMS_NULL_INITIALIZER;
 
