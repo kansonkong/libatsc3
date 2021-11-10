@@ -156,8 +156,10 @@ private:
     int last_download_bootloader_firmware_device_id = -1;
 
     int slUnit = -1;
-    int tUnit = -1;
+    int tUnit = SL_TUNER_NIL_INSTANCE;
     int slCmdIfFailureCount = 0;
+
+    int markone_evt_version = -1;
 
     SL_PlatFormConfigParams_t getPlfConfig = SL_PLATFORM_CONFIG_PARAMS_NULL_INITIALIZER;
     SL_PlatFormConfigParams_t sPlfConfig   = SL_PLATFORM_CONFIG_PARAMS_NULL_INITIALIZER;
@@ -183,7 +185,9 @@ private:
 
     SL_TunerConfig_t tunerCfg;
     SL_TunerConfig_t tunerGetCfg;
-    SL_TunerDcOffSet_t tunerIQDcOffSet;
+
+    //jjustman-2021-11-09 - set "default" tunerIQDcOffset values here, overwritten as needed in hw/device specific configurations
+    SL_TunerDcOffSet_t tunerIQDcOffSet = { 15, 14 };
 
     //uses      pinProducerThreadAsNeeded
     int         captureThread();
