@@ -94,7 +94,7 @@ private:
     block_t*    preAllocInFlightUdpPacket;
 
     uint16_t    last_service_id = 0;
-    void writeToRingBuffer(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sample_number, uint64_t presentationUs, uint8_t* buffer, uint32_t bufferLen);
+    void writeToRingBuffer(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sequence_number, uint32_t sample_number, uint64_t presentationUs, uint8_t* buffer, uint32_t bufferLen);
 
 public:
     //jjustman-2020-12-17 - testing
