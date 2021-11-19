@@ -46,9 +46,8 @@ void Atsc3RingBuffer::write(int8_t type, const pb::MmtFragmentHeader& fragmentHe
 
         uint8_t *fragmentBuffer = buffer_ptr + buffer_position;
 
-        // lock package
         RingBufferPageHeader *header = ((RingBufferPageHeader *) fragmentBuffer);
-        header->page_lock = 1;
+        header->page_lock = 1; // lock package
         header->page_num = page_num;
         header->segment_num = page_segment_number++;
         header->payload_length = bufferLen;
@@ -56,7 +55,9 @@ void Atsc3RingBuffer::write(int8_t type, const pb::MmtFragmentHeader& fragmentHe
         header->header_length = fragmentHeaderSize;
 
         uint8_t *fragmentHeaderBuffer = fragmentBuffer + sizeof(RingBufferPageHeader);
-        fragmentHeader.SerializeToArray(fragmentHeaderBuffer, fragmentHeaderSize);
+        if (fragmentHeaderSize > 0) {
+            fragmentHeader.SerializeToArray(fragmentHeaderBuffer, fragmentHeaderSize);
+        }
 
         uint8_t *fragmentBufferData = fragmentHeaderBuffer + fragmentHeaderSize;
         uint32_t bytes_to_read = min(remaining, (uint32_t) (buffer_page_size - sizeof(RingBufferPageHeader) - fragmentHeaderSize));
@@ -66,7 +67,10 @@ void Atsc3RingBuffer::write(int8_t type, const pb::MmtFragmentHeader& fragmentHe
         remaining -= bytes_to_read;
         buffer_position += buffer_page_size;
 
-        header->page_lock = 0;
+        header->page_lock = 0; // unlock package
+
+        // skip fragment header for subsequent pages
+        fragmentHeaderSize = 0;
     }
 }
 
