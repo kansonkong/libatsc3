@@ -28,7 +28,6 @@ done
 
  */
 
-#define __JJ_MARKONE_SMT_BB
 
 //set in android.mk LOCAL_CFLAGS to compute I Q offset values
 #ifdef __JJ_CALIBRATION_ENABLED
@@ -39,9 +38,6 @@ done
 int                       calibrationStatus;
 #endif
 
-#ifndef SL_YOGA_DONGLE
-#define SL_YOGA_DONGLE 31337
-#endif
 
 //jjustman-2021-06-07 - uncomment to enable 100ms sleep between tuner status thread i2c polling commands
 //#define _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
@@ -267,7 +263,8 @@ int SaankhyaPHYAndroid::stop()
 
     sl_tuner_result = SL_TunerUnInit(tUnit);
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerUnInit, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
-    sl_tuner_result = SL_TunerDeleteInstance(tUnit);
+
+    sl_tuner_result = SL_TunerDeleteInstance(&tUnit);
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerDeleteInstance, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
 
     if(atsc3_ndk_application_bridge_get_instance()) {
@@ -307,27 +304,38 @@ string SaankhyaPHYAndroid::get_firmware_version() {
     return demodVersion;
 };
 
-
 SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device_type, string device_path) {
 
     SL_ConfigResult_t res = SL_CONFIG_OK;
     _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect:: open with core type: %d, device_path: %s", device_type, device_path.c_str());
 
     if(device_type == SL_DEVICE_TYPE_MARKONE && device_path.c_str() && !strcasecmp(SL_HOSTINTERFACE_TYPE_MARKONE_PATH, device_path.c_str())) {
-        //configure as aa_MarkONE
-#ifdef __JJ_MARKONE_SMT_BB
-        res = configPlatformParams_bb_markone();
-#else
-        res = configPlatformParams_aa_markone();
-#endif
+        //check device configuration type
+        SL_ConfigureGpio_markone();
+        SL_GpioInit();
+
+        char platform = 0;
+        SL_GetHwRev(&platform);
+        markone_evt_version = (platform) & 0xFF;
+        markone_evt_version++; //jjustman-2021-11-09: TODO - fixme in kernel, fallback will assume we are running on AA kernel
+
+        if(markone_evt_version == 1) {
+            res = configPlatformParams_aa_markone();
+        } else if(markone_evt_version == 2) {
+            res = configPlatformParams_bb_markone();
+            __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
+        }
 
 
     } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH) {
         //configure as aa FX3
         res = configPlatformParams_aa_fx3();
+    } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH_3) {
+        //configure as bb FX3
+        res = configPlatformParams_kailash_3_bb_fx3();
     } else if (device_type == SL_DEVICE_TYPE_FX3_YOGA) {
         //configure as bb FX3
-        res = configPlatformParams_bb_fx3();
+        res = configPlatformParams_yoga_bb_fx3();
     }
 
     _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect::return res: %d", res);
@@ -336,16 +344,35 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
 }
 int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 {
-    _SAANKHYA_PHY_ANDROID_DEBUG("open: with fd: %d, device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
+    //jjustman-2021-11-09 - TODO: add in null initializers
+    SL_I2cResult_t                  i2cres;
+    SL_Result_t                     slres;
+    SL_ConfigResult_t               cres;
+    SL_TunerResult_t                tres;
+    SL_UtilsResult_t                utilsres;
 
-    SL_I2cResult_t i2cres;
+    SL_AfeIfConfigParams_t          afeInfo;
+    SL_OutIfConfigParams_t          outPutInfo;
+    SL_IQOffsetCorrectionParams_t   iqOffSetCorrection = { 1.0, 1.0, 0.0, 0.0} ;
 
-    SL_Result_t slres;
-    SL_ConfigResult_t cres;
-    SL_TunerResult_t tres;
-    SL_UtilsResult_t utilsres;
+    SL_ExtLnaConfigParams_t         lnaMode = SL_EXT_LNA_CFG_MODE_NOT_PRESENT;
+    unsigned int                    lnaGpioNum = 0x00000000;
 
-    SL_ConfigResult_t sl_configResult = SL_CONFIG_OK;
+    SL_ConfigResult_t               sl_configResult = SL_CONFIG_ERR_NOT_CONFIGURED;
+
+    SL_DemodBootStatus_t            bootStatus = SL_DEMOD_BOOT_STATUS_UNKNOWN;
+
+    int swMajorNo, swMinorNo;
+    unsigned int cFrequency = 0;
+
+    if(device_type == JJ_DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE) {
+        //jjustman-2021-10-24 - hack!
+        device_type = last_download_bootloader_firmware_device_id;
+        _SAANKHYA_PHY_ANDROID_INFO("open: JJ_DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE, with fd: %d, updated to device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
+    } else {
+        _SAANKHYA_PHY_ANDROID_DEBUG("open: with fd: %d, device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
+    }
+
     sl_configResult = configPlatformParams_autodetect(device_type, device_path);
 
     if(sl_configResult != SL_CONFIG_OK) {
@@ -353,22 +380,16 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         return -1;
     }
 
-    SL_SetUsbFd(fd);
-
-    //jjustman-2021-08-18 - set any platform/demod/tuner system bandwidth parameter(s) here if needed when configuring LIF
+    //jjustman-2021-11-09 - don't set libusb fd handle if we are using sdio i/f
+    if(fd >= SL_HOSTINTERFACE_TYPE_MARKONE_FD) {
+        SL_SetUsbFd(fd);
+    }
 
     /* Tuner Config */
     tunerCfg.bandwidth = SL_TUNER_BW_6MHZ;
     //jjustman-2021-08-18 - testing for 8mhz rasters
     //tunerCfg.bandwidth = SL_TUNER_BW_8MHZ;
     tunerCfg.std = SL_TUNERSTD_ATSC3_0;
-
-    int swMajorNo, swMinorNo;
-    unsigned int cFrequency = 0;
-    SL_AfeIfConfigParams_t afeInfo;
-    SL_OutIfConfigParams_t outPutInfo;
-    SL_IQOffsetCorrectionParams_t iqOffSetCorrection;
-    SL_DemodBootStatus_t bootStatus;
 
     cres = SL_ConfigGetPlatform(&getPlfConfig);
     if (cres == SL_CONFIG_OK)
@@ -646,6 +667,16 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.qCoeff1 = 1;
             iqOffSetCorrection.iCoeff2 = 0;
             iqOffSetCorrection.qCoeff2 = 0;
+            lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
+            if (lnaMode != SL_EXT_LNA_CFG_MODE_NOT_PRESENT)
+            {
+                /*
+                 * GPIO12 is used for LNA Bypass/Enable in Yoga Dongle.
+                 * It may be different for other boards. Use bits 8 to 15 to specify the same
+                 */
+                lnaGpioNum = 0x00000C00;
+                lnaMode = static_cast<SL_ExtLnaConfigParams_t>(lnaMode | lnaGpioNum);
+            }
             break;
 
         default:
@@ -757,7 +788,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
                                 afeInfo.agcRefValue);
 
 
-    slres = SL_DemodConfigure(slUnit, SL_CONFIG_TYPE_IQ_OFFSET_CORRECTION, &iqOffSetCorrection);
+    slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_IQ_OFFSET_CORRECTION, &iqOffSetCorrection);
     if (slres != 0)
     {
         printToConsoleDemodError("SL_DemodConfigure:SL_CONFIG_TYPE_IQ_OFFSET_CORRECTION", slres);
@@ -770,6 +801,21 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         printToConsoleDemodError("SL_DemodConfigure:SL_CONFIGTYPE_OUTPUTIF", slres);
         goto ERROR;
     }
+
+    slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_EXT_LNA, (unsigned int *)&lnaMode);
+    if (slres != 0)
+    {
+        printToConsoleDemodError("SL_DemodConfigure:SL_CONFIGTYPE_EXT_LNA", slres);
+        goto ERROR;
+    }
+//
+//    slres = SL_DemodConfigureEx(slUnit, SL_DEMODSTD_ATSC3_0, &atsc3ConfigInfo);
+//    if (slres != 0)
+//    {
+//        printToConsoleDemodError("SL_DemodConfigure:SL_DEMODSTD_ATSC3_0", slres);
+//
+//        goto ERROR;
+//    }
 
     slres = SL_DemodConfigPlps(slUnit, &plpInfo);
     if (slres != 0)
@@ -817,33 +863,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 
     if (getPlfConfig.boardType == SL_EVB_4000 || getPlfConfig.boardType == SL_YOGA_DONGLE || getPlfConfig.tunerType == TUNER_SI_P)
     {
-        /*
-         * Apply tuner IQ offset. Relevant to SITUNE Tuner
-         *
-            tunerIQDcOffSet.iOffSet = 15;
-            tunerIQDcOffSet.qOffSet = 14;
-
-             */
-
-    /* jjustman-2021-09-01 - working values
-            tunerIQDcOffSet.iOffSet = 14;
-            tunerIQDcOffSet.qOffSet = 12;
-    */
-
-    //jjustman-2021-09-01 - from calib run iO->13|14
-
-    //markone evt1
-            tunerIQDcOffSet.iOffSet = 14;
-            tunerIQDcOffSet.qOffSet = 14;
-
-            //jjustman-2021-09-26 - markone evt2:
-            /*
-             * 034:INFO :1632373953.3050:Completing calibration with status: 2
-2021-09-23 00:12:33.305 13265-13471/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1035:INFO :1632373953.3051:I Off Set Value        : 11
-2021-09-23 00:12:33.305 13265-13471/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1036:INFO :1632373953.3051:Q Off Set Value        : 10
-             */
-        tunerIQDcOffSet.iOffSet = 11;
-        tunerIQDcOffSet.qOffSet = 10;
+        _SAANKHYA_PHY_ANDROID_INFO("Calling SL_TunerExSetDcOffset with i: %d, q: %d", tunerIQDcOffSet.iOffSet, tunerIQDcOffSet.qOffSet);
 
         tres = SL_TunerExSetDcOffSet(tUnit, &tunerIQDcOffSet);
         if (tres != 0)
@@ -897,7 +917,6 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
         atsc3_sl_tlv_payload_free(&atsc3_sl_tlv_payload);
     }
 
-
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
     unique_lock<mutex> SL_PlpConfigParams_mutex_update_plps(SL_PlpConfigParams_mutex, std::defer_lock);
@@ -923,10 +942,10 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
           2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 815:DEBUG:1620170258.7400:Error:SL_TunerSetFrequency :
           2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1412:DEBUG:1620170258.7401: Sl Tuner Operation Failed
     */
+
     if (getPlfConfig.boardType == SL_KAILASH_DONGLE_3) {
         _SAANKHYA_PHY_ANDROID_DEBUG("::tune - before SL_DemodStart - sleeping for 500ms to avoid double SL_DemodConfigPlps call(s)");
         usleep(500000);
-
     }
 
     printf("SaankhyaPHYAndroid::tune: Frequency: %d, PLP: %d", freqKHz, plpid);
@@ -1067,7 +1086,6 @@ TEST_ERROR:
         //just in case any last pending SDIO transactions arent completed yet...
         SL_SleepMS(100);
     }
-
 
     atsc3_sl_tlv_block_mutex.unlock();
     CircularBufferMutex_local.unlock();
@@ -1401,6 +1419,9 @@ UNLOCK:
 int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, int device_type, string device_path) {
     _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware, path: %s, device_type: %d, fd: %d", device_path.c_str(), device_type, fd);
 
+    //jjustman-2021-10-24 - super-hacky workaround for preboot firmware d/l and proper device type open on re-enumeration call for now..
+    this->last_download_bootloader_firmware_device_id = device_type;
+
     SL_ConfigResult_t sl_configResult = SL_CONFIG_OK;
     sl_configResult = configPlatformParams_autodetect(device_type, device_path);
 
@@ -1504,12 +1525,16 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_markone() {
     SL_ConfigureI2c_markone();
     SL_ConfigureTs_markone();
 
+    //jjustman-2021-11-09 - calibrated values on AA @ 533mhz
+    tunerIQDcOffSet.iOffSet = 14;
+    tunerIQDcOffSet.qOffSet = 14;
+
     return res;
 }
 
 
-//jjustman-2020-09-09 YOGA dongle specific configuration
-SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_fx3() {
+//jjustman-2020-09-09 KAILASH_3 dongle specific configuration
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_kailash_3_bb_fx3() {
 
     SL_ConfigResult_t res = SL_CONFIG_OK;
 
@@ -1517,6 +1542,47 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_fx3() {
     sPlfConfig.chipRev = SL_CHIP_REV_BB;
     sPlfConfig.boardType = SL_KAILASH_DONGLE_3;
     sPlfConfig.tunerType = TUNER_SILABS;
+    sPlfConfig.hostInterfaceType = SL_HostInterfaceType_FX3;
+
+    sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
+    sPlfConfig.demodOutputIf = SL_DEMOD_OUTPUTIF_SDIO;
+    sPlfConfig.demodI2cAddr = 0x30; /* SLDemod 7-bit Physical I2C Address */
+
+    sPlfConfig.demodResetGpioPin = 47;      /* FX3S GPIO 47 connected to Demod Reset Pin - S1_SD1/UART_CTS*/
+    sPlfConfig.cpldResetGpioPin = 43;       /* FX3S GPIO 43 connected to CPLD Reset Pin and used only for serial TS Interface  */
+    sPlfConfig.tunerResetGpioPin = 23;    /* FX3S GPIO 23 connected to Tuner Reset Pin */
+    sPlfConfig.demodI2cAddr3GpioPin = 37; /* FX3S GPIO 37 connected to SL3000_I2CADDR3 */
+
+    sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
+
+    /* Set Configuration Parameters */
+    res = SL_ConfigSetPlatform(sPlfConfig);
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_bb_fx3: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
+                                sPlfConfig.chipType,
+                                sPlfConfig.chipRev,
+                                sPlfConfig.boardType,
+                                sPlfConfig.tunerType,
+                                sPlfConfig.hostInterfaceType);
+
+
+    //reconfigure method callbacks for yoga dongle (bb)
+    SL_ConfigureGpio_slref();
+    SL_ConfigureI2c_slref();
+    SL_ConfigureTs_slref();
+
+    return res;
+}
+
+//jjustman-2020-09-09 KAILASH_3 dongle specific configuration
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_yoga_bb_fx3() {
+
+    SL_ConfigResult_t res = SL_CONFIG_OK;
+
+    sPlfConfig.chipType = SL_CHIP_4000;
+    sPlfConfig.chipRev = SL_CHIP_REV_BB;
+    sPlfConfig.boardType = SL_YOGA_DONGLE;
+    sPlfConfig.tunerType = TUNER_SI_P;
     sPlfConfig.hostInterfaceType = SL_HostInterfaceType_FX3;
 
     sPlfConfig.demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
@@ -1586,11 +1652,12 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_markone() {
     SL_ConfigureI2c_markone();
     SL_ConfigureTs_markone();
 
+    //jjustman-2021-11-09 - calibrated values on evt2 - pre AGND fix
+    tunerIQDcOffSet.iOffSet = 11;
+    tunerIQDcOffSet.qOffSet = 12;
+
     return res;
 }
-
-
-
 
 void SaankhyaPHYAndroid::handleCmdIfFailure(void)
 {
@@ -1676,7 +1743,7 @@ void SaankhyaPHYAndroid::printToConsolePlfConfiguration(SL_PlatFormConfigParams_
             break;
 
         case SL_KAILASH_DONGLE_3:
-            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE_3 (Yoga)");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE_3");
             break;
 
         case SL_YOGA_DONGLE:
@@ -1830,6 +1897,25 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
 
             if (atsc3_sl_tlv_payload) {
                 atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
+
+                uint64_t l1dTimeNs_value = atsc3_sl_tlv_payload->l1d_time_sec + (atsc3_sl_tlv_payload->l1d_time_msec * 1000) + (atsc3_sl_tlv_payload->l1d_time_usec * 1000000) + (atsc3_sl_tlv_payload->l1d_time_nsec * 1000000000) ;
+
+                //jjustman-2021-10-24 - hack-ish to push our l1d time info
+                if(last_l1dTimeNs_value != l1dTimeNs_value) {
+                    _SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() L1DTimeInfo is: L1time: flag: %d, s: %d, ms: %d, us: %d, ns: %d, current l1dTimeNs: %d, last_l1dTimeNs_value: %d, frame duration: %",
+                                                last_l1bTimeInfoFlag,
+                                                atsc3_sl_tlv_payload->l1d_time_sec, atsc3_sl_tlv_payload->l1d_time_msec, atsc3_sl_tlv_payload->l1d_time_usec, atsc3_sl_tlv_payload->l1d_time_nsec,
+                                                l1dTimeNs_value,
+                                                last_l1dTimeNs_value
+                    );
+
+                    if (atsc3_ndk_phy_bridge_get_instance()) {
+                        atsc3_ndk_phy_bridge_get_instance()->atsc3_update_l1d_time_information(last_l1bTimeInfoFlag, atsc3_sl_tlv_payload->l1d_time_sec, atsc3_sl_tlv_payload->l1d_time_msec, atsc3_sl_tlv_payload->l1d_time_usec, atsc3_sl_tlv_payload->l1d_time_nsec);
+                    }
+                    last_l1dTimeNs_value = l1dTimeNs_value;
+                }
+                    
+
                 if (atsc3_sl_tlv_payload->alp_payload_complete) {
                     atsc3_sl_tlv_payload_complete = true;
 
@@ -2164,7 +2250,6 @@ int SaankhyaPHYAndroid::statusThread()
     double snr_l1d;
     double snr_plp[4];
 
-
     int ber_l1b;
     int ber_l1d;
     int ber_plp0;
@@ -2411,6 +2496,9 @@ SL_SleepMS(100);
                 }
 
                 printAtsc3L1bDiagnostics(l1bDiag, 0);
+
+                //jjustman-2021-10-24 - keep track of our L1bTimeInfoFlag
+                last_l1bTimeInfoFlag = l1bDiag.L1bTimeInfoFlag;
             }
         }
 

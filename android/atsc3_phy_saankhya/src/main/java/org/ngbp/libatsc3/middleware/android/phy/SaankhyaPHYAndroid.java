@@ -14,10 +14,14 @@ public class SaankhyaPHYAndroid extends Atsc3NdkPHYSaankhyaStaticJniLoader  {
     public static final int KAILASH_OR_YOGA_PRODUCT_ID = 240;
     public static final String KAILASH_FIRMWARE_MFG_NAME_JJ = "JJ5ress";
 
-    // The same values as in SaankhyaPHYAndroid.h
-    public static final int DEVICE_TYPE_MARKONE     = 0;
-    public static final int DEVICE_TYPE_FX3_KAILASH = 1;
-    public static final int DEVICE_TYPE_FX3_YOGA    = 3;
+    // The same names and type refs as in SaankhyaPHYAndroid.h
+    public static final int DEVICE_TYPE_MARKONE      = 0;
+    public static final int DEVICE_TYPE_FX3_KAILASH  = 1;
+    public static final int DEVICE_TYPE_FX3_KAILASH_2 = 2; //not used?
+    public static final int DEVICE_TYPE_FX3_KAILASH_3 = 3;
+
+    public static final int DEVICE_TYPE_FX3_YOGA      = 4; //SL4000_BB+SiTune_P+FX3S
+    public static final int DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE = 31337;
 
     static {
         Atsc3NdkPHYClientBase.AllRegisteredPHYImplementations.add(new USBVendorIDProductIDSupportedPHY(CYPRESS_VENDOR_ID, 243, "SL-FX3-Preboot", true, SaankhyaPHYAndroid.class));

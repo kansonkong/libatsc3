@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package org.ngbp.libatsc3.middleware.mmt.pb;
+
+message MmtAudioPropertiesDescriptor {
+  repeated MmtAudioPropertiesAsset asset = 1;
+}
+
+message MmtAudioPropertiesAsset {
+  string id = 1;
+  string codec = 2;
+  repeated MmtAudioPropertiesPresentation presentation = 3;
+}
+
+message MmtAudioPropertiesPresentation {
+  repeated string language = 1;
+  string label = 2;
+}
