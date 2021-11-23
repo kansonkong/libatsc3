@@ -30,6 +30,11 @@ extern "C" {
  */
 typedef struct atsc3_mmt_mfu_context atsc3_mmt_mfu_context_t;
 
+//jjustman-2021-10-21 - internal_sei: return sei message payload as needed...
+typedef bool (*mmt_mpu_mfu_on_sample_complete_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_internal_f) (block_t* mmt_mfu_sample);
+//external_sei:
+typedef void (*mmt_mpu_mfu_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_detected_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number);
+
 typedef void (*atsc3_mmt_mpu_mfu_on_sample_complete_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_rebuilt);
 typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_f)  (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
 typedef void (*atsc3_mmt_mpu_mfu_on_sample_corrupt_mmthsample_header_f) (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number, block_t* mmt_mfu_sample,  uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt);
@@ -113,6 +118,15 @@ typedef struct atsc3_mmt_mfu_context {
 
 	//INTERNAL event callbacks
     atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal_f		        		atsc3_mmt_signalling_information_on_packet_id_with_mpu_timestamp_descriptor_internal;
+
+
+    struct atsc3_mmt_mfu_context_callbacks_internal_sei {
+        mmt_mpu_mfu_on_sample_complete_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_internal_f   mmt_mpu_mfu_on_sample_complete_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_internal;
+    } internal_sei;
+
+    struct atsc3_mmt_mfu_context_callbacks_external_sei {
+        mmt_mpu_mfu_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_detected_f                      mmt_mpu_mfu_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_detected;
+    } external_sei;
 
 	//EXTERNAL helper methods
 	atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_f												get_mpu_timestamp_from_packet_id_mpu_sequence_number;

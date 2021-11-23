@@ -45,7 +45,12 @@ using namespace std;
 
 #define SL_DEVICE_TYPE_MARKONE        0
 #define SL_DEVICE_TYPE_FX3_KAILASH    1
-#define SL_DEVICE_TYPE_FX3_YOGA       3
+#define SL_DEVICE_TYPE_FX3_KAILASH_2  2
+#define SL_DEVICE_TYPE_FX3_KAILASH_3  3
+#define SL_DEVICE_TYPE_FX3_YOGA       4
+
+//justman-2021-10-24 - hack!
+#define JJ_DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE 31337
 
 #include "CircularBuffer.h"
 
@@ -147,9 +152,14 @@ protected:
 
 private:
 
+    //jjustman-2021-10-24 - super-hacky workaround for preboot firmware d/l and proper device type open on re-enumeration call for now..
+    int last_download_bootloader_firmware_device_id = -1;
+
     int slUnit = -1;
-    int tUnit = -1;
+    int tUnit = SL_TUNER_NIL_INSTANCE;
     int slCmdIfFailureCount = 0;
+
+    int markone_evt_version = -1;
 
     SL_PlatFormConfigParams_t getPlfConfig = SL_PLATFORM_CONFIG_PARAMS_NULL_INITIALIZER;
     SL_PlatFormConfigParams_t sPlfConfig   = SL_PLATFORM_CONFIG_PARAMS_NULL_INITIALIZER;
@@ -168,11 +178,16 @@ private:
     unsigned long long        llsPlpMask = 0x1;
     int                       plpInfoVal = 0, plpllscount = 0;
 
+    int                       last_l1bTimeInfoFlag = -1;
+    uint64_t                  last_l1dTimeNs_value = 0;
+
     SL_DemodConfigInfo_t cfgInfo;
 
     SL_TunerConfig_t tunerCfg;
     SL_TunerConfig_t tunerGetCfg;
-    SL_TunerDcOffSet_t tunerIQDcOffSet;
+
+    //jjustman-2021-11-09 - set "default" tunerIQDcOffset values here, overwritten as needed in hw/device specific configurations
+    SL_TunerDcOffSet_t tunerIQDcOffSet = { 15, 14 };
 
     //uses      pinProducerThreadAsNeeded
     int         captureThread();
@@ -226,7 +241,8 @@ private:
 
     SL_ConfigResult_t configPlatformParams_aa_fx3();
     SL_ConfigResult_t configPlatformParams_aa_markone();
-    SL_ConfigResult_t configPlatformParams_bb_fx3();
+    SL_ConfigResult_t configPlatformParams_kailash_3_bb_fx3();
+    SL_ConfigResult_t configPlatformParams_yoga_bb_fx3();
     SL_ConfigResult_t configPlatformParams_bb_markone();
 
 

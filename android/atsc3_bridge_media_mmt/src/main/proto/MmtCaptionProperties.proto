@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package org.ngbp.libatsc3.middleware.mmt.pb;
+
+message MmtCaptionPropertiesDescriptor {
+  repeated MmtCaptionPropertiesAsset asset = 1;
+}
+
+message MmtCaptionPropertiesAsset {
+  string id = 1;
+  string language = 2;
+}

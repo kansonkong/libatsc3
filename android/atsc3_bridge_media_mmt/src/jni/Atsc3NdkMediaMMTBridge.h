@@ -56,11 +56,19 @@ public:
     //MMT Initialization callbacks for Video and Audio format(s)
     void atsc3_onInitHEVC_NAL_Extracted(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint8_t* buffer, uint32_t bufferLen);
     void atsc3_onInitAudioDecoderConfigurationRecord(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, atsc3_audio_decoder_configuration_record_t* atsc3_audio_decoder_configuration_record);
+    void atsc3_notify_sl_hdr_1_present(uint16_t service_id, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number);
+
 
     //Signalling callbacks
     void atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor(uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
     void atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microsecond);
     void atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor(uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds);
+
+    void atsc3_onVideoStreamProperties(mmt_atsc3_message_content_type_video_stream_properties_descriptor_t* mmt_atsc3_video_stream_properties_descriptor_message);
+    void atsc3_onCaptionAssetProperties(mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_caption_asset_descriptor_message);
+    void atsc3_onAudioStreamProperties(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_audio_stream_properties_descriptor_message);
+
+    void atsc3_onMpTableComplete(mp_table_t* mp_table);
 
     //Fragment Metadata callbacks
     void atsc3_onExtractedSampleDuration(uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t extracted_sample_duration_us);
@@ -137,9 +145,17 @@ public:
     jclass    mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_jclass_global_ref = nullptr;
     jclass    mmtAudioDecoderConfigurationRecord_AudioAC4SampleEntryBox_AC4SpecificBox_jclass_global_ref = nullptr;
 
+    jmethodID atsc3_notify_sl_hdr_1_present_ID = nullptr;
+
     jmethodID atsc3_signallingContext_notify_video_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
     jmethodID atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
     jmethodID atsc3_signallingContext_notify_stpp_packet_id_and_mpu_timestamp_descriptor_ID = nullptr;  // java class method id
+
+    jmethodID atsc3_onVideoStreamProperties_ID = nullptr;  // java class method id
+    jmethodID atsc3_onCaptionAssetProperties_ID = nullptr;  // java class method id
+    jmethodID atsc3_onAudioStreamProperties_ID = nullptr;  // java class method id
+
+    jmethodID atsc3_onMpTableComplete_ID = nullptr;  // java class method id
 
     jmethodID atsc3_onExtractedSampleDurationID = nullptr;
     jmethodID atsc3_setVideoWidthHeightFromTrakID = nullptr;

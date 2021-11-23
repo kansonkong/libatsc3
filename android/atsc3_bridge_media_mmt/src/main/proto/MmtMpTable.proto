@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package org.ngbp.libatsc3.middleware.mmt.pb;
+
+message MmtAssetTable {
+  repeated MmtAssetRow asset = 1;
+}
+
+message MmtAssetRow {
+  string id = 1;
+  string type = 2;
+  int32 packet_id = 3;
+}

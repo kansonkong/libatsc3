@@ -377,11 +377,101 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk(atsc3_mmt_mfu
     Atsc3NdkMediaMMTBridge_ptr->atsc3_onExtractedSampleDuration(packet_id, mpu_sequence_number, extracted_sample_duration_us);
 }
 
+void mmt_mpu_mfu_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_detected_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t packet_id, uint32_t mmtp_timestamp, uint32_t mpu_sequence_number, uint32_t sample_number) {
+    //jjustman-2021-10-21 - hack
 
+    uint16_t service_id = 0;
+    if (atsc3_mmt_mfu_context && atsc3_mmt_mfu_context->matching_lls_sls_mmt_session) {
+        service_id = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->service_id;
+    }
+
+    Atsc3NdkMediaMMTBridge_ptr->atsc3_notify_sl_hdr_1_present(service_id, packet_id, mmtp_timestamp, mpu_sequence_number, sample_number);
+}
+
+void atsc3_mmt_signalling_information_on_userservicedescription_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_signalling_information_usbd_component_t* mmt_atsc3_usbd_message) {
+    //vmatiash-2021-28-09 - TODO - impl JNI callback
+}
+
+void mmt_atsc3_message_content_type_video_stream_properties_descriptor_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_video_stream_properties_descriptor_t* mmt_atsc3_video_stream_properties_descriptor_message){
+    for(int i=0; i < mmt_atsc3_video_stream_properties_descriptor_message->descriptor_header.number_of_assets; i++) {
+        mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset = mmt_atsc3_video_stream_properties_descriptor_message->mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_v.data[i];
+
+        _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG(" asset: %d: asset_id_length: %d, asset_id: %s, vCodec: %s",
+                                i,
+                                mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id_length,
+                                mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id,
+                                mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->codec_code);
+
+    }
+
+    Atsc3NdkMediaMMTBridge_ptr->atsc3_onVideoStreamProperties(mmt_atsc3_video_stream_properties_descriptor_message);
+}
+
+void atsc3_mmt_signalling_information_on_caption_asset_descriptor_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_caption_asset_descriptor_message){
+    for(int i=0; i < mmt_atsc3_caption_asset_descriptor_message->descriptor_header.number_of_assets; i++) {
+        mmt_atsc3_message_content_type_caption_asset_descriptor_asset_t* mmt_atsc3_message_content_type_caption_asset_descriptor_asset = mmt_atsc3_caption_asset_descriptor_message->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.data[i];
+
+        _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG(" asset: %d: asset_id_length: %d, asset_id: %s, language_length: %d, language: %s",
+                                i,
+                                mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id_length,
+                                mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id,
+                                mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length,
+                                mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language);
+    }
+
+    Atsc3NdkMediaMMTBridge_ptr->atsc3_onCaptionAssetProperties(mmt_atsc3_caption_asset_descriptor_message);
+}
+
+void atsc3_mmt_signalling_information_on_audio_stream_properties_descriptor_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_audio_stream_properties_descriptor_message){
+    for(int i=0; i < mmt_atsc3_audio_stream_properties_descriptor_message->descriptor_header.number_of_assets; i++) {
+        mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset = mmt_atsc3_audio_stream_properties_descriptor_message->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.data[i];
+
+        _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG(" asset: %d: asset_id_length: %d, asset_id: %s",
+                                i,
+                                mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id_length,
+                                mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id);
+
+        for(int j=0; j < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->num_presentations; j++) {
+            mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation = mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_v.data[j];
+
+            if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->language_present) {
+                //remember, we are _minus1
+                _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("\tlanguage present, num_languages: %d", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->num_languages_minus1 + 1);
+
+                for(int k=0; k < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->num_languages_minus1 + 1; k++) {
+                    mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language = mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_v.data[k];
+
+                    _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("\t\tlanguage length: %d, language: %s",
+                                            mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language_length, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language);
+                }
+            }
+
+            if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_present) {
+                _ATSC3_MMT_MFU_CONTEXT_CALLBACKS_DEFAULT_JNI_DEBUG("\tlabel present, length: %d, value: %s",
+                                        mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_length, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_data_byte);
+
+            }
+        }
+    }
+
+    Atsc3NdkMediaMMTBridge_ptr->atsc3_onAudioStreamProperties(mmt_atsc3_audio_stream_properties_descriptor_message);
+}
+
+void atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_security_properties_descriptor_LAURL_message){
+    //vmatiash-2021-28-09 - TODO - impl JNI callback
+}
+
+void atsc3_mmt_signalling_information_on_mp_table_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mp_table_t* mp_table) {
+    if(mp_table->number_of_assets) {
+        Atsc3NdkMediaMMTBridge_ptr->atsc3_onMpTableComplete(mp_table);
+    }
+}
 
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_default_jni_new() {
     atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_internal_flows_new();
 
+    //jjustman-2021-10-21 - sl_hdr_1 ndk callback
+    atsc3_mmt_mfu_context->external_sei.mmt_mpu_mfu_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_detected = &mmt_mpu_mfu_sei_scan_for_sl_hdr_sei_itu_t_35_and_terminal_provider_code_detected_ndk;
     //wire up atsc3_mmt_mpu_on_sequence_mpu_metadata_present to parse out our NALs as needed for android MediaCodec init
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present = &atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk;
 
@@ -403,7 +493,16 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_default_jni_new() {
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present = &atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_ndk;
 
     //jjustman-2020-12-08 - external users will also need to wire up atsc3_mmt_signalling_information_on_routecomponent_message_present and atsc3_mmt_signalling_information_on_held_message_present
+    //vmatiash-2021-28-09 - TODO - impl atsc3_mmt_signalling_information_on_userservicedescription_present and atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present_ndk
 
+    //atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_userservicedescription_present = &atsc3_mmt_signalling_information_on_userservicedescription_present_ndk;
+    atsc3_mmt_mfu_context->mmt_atsc3_message_content_type_video_stream_properties_descriptor_present = &mmt_atsc3_message_content_type_video_stream_properties_descriptor_present_ndk;
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_caption_asset_descriptor_present = &atsc3_mmt_signalling_information_on_caption_asset_descriptor_present_ndk;
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_stream_properties_descriptor_present = &atsc3_mmt_signalling_information_on_audio_stream_properties_descriptor_present_ndk;
+    //atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present = &atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present_ndk;
+
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_complete = &atsc3_mmt_signalling_information_on_mp_table_complete_ndk;
 
     return atsc3_mmt_mfu_context;
 }
+
