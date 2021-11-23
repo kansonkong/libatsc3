@@ -11,6 +11,14 @@ build for linux:
 
 > cd src; ./build_linux.sh 
 
+## Nov, 2021 Release: New ATSC3 Sample and TV App repos, local android sample app removed
+
+Please see the new Android ATSC3 Sample and TV App open-source repos here:
+
+https://github.com/jjustman/libatsc3-middleware-sample-app
+
+https://github.com/jjustman/libatsc3-android-tv-app
+
 
 ## March, 2021 Update: Join the libatsc3 slack workspace for development support and updates
 
