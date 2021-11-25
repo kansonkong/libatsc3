@@ -575,6 +575,18 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.iCoeff2 = 0;
             iqOffSetCorrection.qCoeff2 = 0;
 
+
+            lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
+            if (lnaMode != SL_EXT_LNA_CFG_MODE_NOT_PRESENT)
+            {
+                /*
+                 * GPIO12 is used for LNA Bypass/Enable in Yoga Dongle.
+                 * It may be different for other boards. Use bits 8 to 15 to specify the same
+                 */
+                lnaGpioNum = 0x00000A00;
+                lnaMode = static_cast<SL_ExtLnaConfigParams_t>(lnaMode | lnaGpioNum);
+            }
+
             break;
 
         case SL_KAILASH_DONGLE:
@@ -667,7 +679,8 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.qCoeff1 = 1;
             iqOffSetCorrection.iCoeff2 = 0;
             iqOffSetCorrection.qCoeff2 = 0;
-            lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
+
+            lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
             if (lnaMode != SL_EXT_LNA_CFG_MODE_NOT_PRESENT)
             {
                 /*
@@ -787,7 +800,6 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
                                 afeInfo.ifreq,
                                 afeInfo.agcRefValue);
 
-
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_IQ_OFFSET_CORRECTION, &iqOffSetCorrection);
     if (slres != 0)
     {
@@ -802,6 +814,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         goto ERROR;
     }
 
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodConfigure: SL_CONFIGTYPE_EXT_LNA, value: 0x%02x", lnaMode)
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_EXT_LNA, (unsigned int *)&lnaMode);
     if (slres != 0)
     {
