@@ -321,6 +321,8 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
 
         if(markone_evt_version == 1) {
             res = configPlatformParams_aa_markone();
+            __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
+
         } else if(markone_evt_version == 2) {
             res = configPlatformParams_bb_markone();
             __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
@@ -333,9 +335,13 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
     } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH_3) {
         //configure as bb FX3
         res = configPlatformParams_kailash_3_bb_fx3();
+        __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
+
     } else if (device_type == SL_DEVICE_TYPE_FX3_YOGA) {
         //configure as bb FX3
         res = configPlatformParams_yoga_bb_fx3();
+        __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
+
     }
 
     _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect::return res: %d", res);
