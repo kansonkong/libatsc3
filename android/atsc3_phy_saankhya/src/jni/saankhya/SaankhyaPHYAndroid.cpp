@@ -264,8 +264,9 @@ int SaankhyaPHYAndroid::stop()
     sl_tuner_result = SL_TunerUnInit(tUnit);
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerUnInit, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
 
-    sl_tuner_result = SL_TunerDeleteInstance(&tUnit);
+    sl_tuner_result = SL_TunerDeleteInstance(tUnit);
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerDeleteInstance, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
+    tUnit = -1;
 
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
