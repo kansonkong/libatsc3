@@ -436,16 +436,9 @@ void Atsc3NdkMediaMMTBridge::atsc3_onVideoStreamProperties(mmt_atsc3_message_con
         asset->set_codec(string(reinterpret_cast<const char *>(&mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->codec_code), 4));
     }
 
-    size_t bufferSize = descriptor.ByteSizeLong();
-    char *p = (char *) malloc(bufferSize);
-    descriptor.SerializeToArray(p, bufferSize);
-
-    jbyteArray jArray = env->NewByteArray(bufferSize);
-    env->SetByteArrayRegion(jArray, 0, bufferSize, (jbyte*) p);
+    jbyteArray jArray = protoNewByteArrayFromObject(env, descriptor);
     env->CallVoidMethod(jni_instance_globalRef, atsc3_onVideoStreamProperties_ID, jArray);
     jniEnv->Get()->DeleteLocalRef(jArray);
-
-    free(p);
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_onCaptionAssetProperties(mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_caption_asset_descriptor_message) {
@@ -472,16 +465,9 @@ void Atsc3NdkMediaMMTBridge::atsc3_onCaptionAssetProperties(mmt_atsc3_message_co
                                    mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length));
     }
 
-    size_t bufferSize = descriptor.ByteSizeLong();
-    char *p = (char *) malloc(bufferSize);
-    descriptor.SerializeToArray(p, bufferSize);
-
-    jbyteArray jArray = env->NewByteArray(bufferSize);
-    env->SetByteArrayRegion(jArray, 0, bufferSize, (jbyte*) p);
+    jbyteArray jArray = protoNewByteArrayFromObject(env, descriptor);
     env->CallVoidMethod(jni_instance_globalRef, atsc3_onCaptionAssetProperties_ID, jArray);
     jniEnv->Get()->DeleteLocalRef(jArray);
-
-    free(p);
 }
 
 void Atsc3NdkMediaMMTBridge::atsc3_onAudioStreamProperties(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_audio_stream_properties_descriptor_message) {
@@ -529,16 +515,37 @@ void Atsc3NdkMediaMMTBridge::atsc3_onAudioStreamProperties(mmt_atsc3_message_con
         }
     }
 
-    size_t bufferSize = descriptor.ByteSizeLong();
-    char *p = (char *) malloc(bufferSize);
-    descriptor.SerializeToArray(p, bufferSize);
-
-    jbyteArray jArray = env->NewByteArray(bufferSize);
-    env->SetByteArrayRegion(jArray, 0, bufferSize, (jbyte*) p);
-    free(p);
-
+    jbyteArray jArray = protoNewByteArrayFromObject(env, descriptor);
     env->CallVoidMethod(jni_instance_globalRef, atsc3_onAudioStreamProperties_ID, jArray);
+    jniEnv->Get()->DeleteLocalRef(jArray);
+}
 
+void Atsc3NdkMediaMMTBridge::atsc3_onMpTableSubset(mp_table_t* mp_table) {
+    this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack
+
+    Atsc3JniEnv* jniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
+
+    if (!jniEnv) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMpTableSubset: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
+        return;
+    }
+
+    JNIEnv *env = jniEnv->Get();
+
+    pb::MmtAssetTable mpTable;
+    for (int i = 0; i < mp_table->number_of_assets; i++) {
+        mp_table_asset_row_t *mp_table_asset_row = &mp_table->mp_table_asset_row[i];
+
+        pb::MmtAssetRow* row = mpTable.add_asset();
+
+        row->set_id(string(reinterpret_cast<const char *>(mp_table_asset_row->identifier_mapping.asset_id.asset_id),
+                           mp_table_asset_row->identifier_mapping.asset_id.asset_id_length));
+        row->set_type(mp_table_asset_row->asset_type);
+        row->set_packet_id(mp_table_asset_row->mmt_general_location_info.packet_id);
+    }
+
+    jbyteArray jArray = protoNewByteArrayFromObject(env, mpTable);
+    env->CallVoidMethod(jni_instance_globalRef, atsc3_onMpTableSubset_ID, jArray);
     jniEnv->Get()->DeleteLocalRef(jArray);
 }
 
@@ -548,7 +555,7 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMpTableComplete(mp_table_t* mp_table) {
     Atsc3JniEnv* jniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
 
     if (!jniEnv) {
-        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onAudioStreamProperties: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge::atsc3_onMpTableComplete: Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv() is NULL!");
         return;
     }
 
@@ -566,16 +573,8 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMpTableComplete(mp_table_t* mp_table) {
         row->set_packet_id(mp_table_asset_row->mmt_general_location_info.packet_id);
     }
 
-    size_t bufferSize = mpTable.ByteSizeLong();
-    char *p = (char *) malloc(bufferSize);
-    mpTable.SerializeToArray(p, bufferSize);
-
-    jbyteArray jArray = env->NewByteArray(bufferSize);
-    env->SetByteArrayRegion(jArray, 0, bufferSize, (jbyte*) p);
-    free(p);
-
+    jbyteArray jArray = protoNewByteArrayFromObject(env, mpTable);
     env->CallVoidMethod(jni_instance_globalRef, atsc3_onMpTableComplete_ID, jArray);
-
     jniEnv->Get()->DeleteLocalRef(jArray);
 }
 
@@ -875,6 +874,12 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkMediaMMTBridge_init(JNIEnv *env, jobje
     mediaMMTBridge->atsc3_onAudioStreamProperties_ID = env->GetMethodID(jniClassReference, "atsc3_onAudioStreamProperties", "([B)V");
     if (mediaMMTBridge->atsc3_onAudioStreamProperties_ID == NULL) {
         _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onAudioStreamProperties_ID' method id");
+        return -1;
+    }
+
+    mediaMMTBridge->atsc3_onMpTableSubset_ID = env->GetMethodID(jniClassReference, "atsc3_onMpTableSubset", "([B)V");
+    if (mediaMMTBridge->atsc3_onMpTableSubset_ID == NULL) {
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("Atsc3NdkMediaMMTBridge_init: cannot find 'atsc3_onMpTableSubset_ID' method id");
         return -1;
     }
 

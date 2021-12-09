@@ -264,8 +264,9 @@ int SaankhyaPHYAndroid::stop()
     sl_tuner_result = SL_TunerUnInit(tUnit);
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerUnInit, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
 
-    sl_tuner_result = SL_TunerDeleteInstance(&tUnit);
+    sl_tuner_result = SL_TunerDeleteInstance(tUnit);
     _SAANKHYA_PHY_ANDROID_DEBUG("SaankhyaPHYAndroid::stop: after SL_TunerDeleteInstance, tUnit now: %d, sl_tuner_result: %d", tUnit, sl_tuner_result);
+    tUnit = -1;
 
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
@@ -322,7 +323,6 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
         if(markone_evt_version == 1) {
             res = configPlatformParams_aa_markone();
             __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
-
         } else if(markone_evt_version == 2) {
             res = configPlatformParams_bb_markone();
             __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
@@ -332,6 +332,8 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
     } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH) {
         //configure as aa FX3
         res = configPlatformParams_aa_fx3();
+        __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
+
     } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH_3) {
         //configure as bb FX3
         res = configPlatformParams_kailash_3_bb_fx3();
@@ -581,6 +583,18 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.iCoeff2 = 0;
             iqOffSetCorrection.qCoeff2 = 0;
 
+
+            lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
+            if (lnaMode != SL_EXT_LNA_CFG_MODE_NOT_PRESENT)
+            {
+                /*
+                 * GPIO12 is used for LNA Bypass/Enable in Yoga Dongle.
+                 * It may be different for other boards. Use bits 8 to 15 to specify the same
+                 */
+                lnaGpioNum = 0x00000A00;
+                lnaMode = static_cast<SL_ExtLnaConfigParams_t>(lnaMode | lnaGpioNum);
+            }
+
             break;
 
         case SL_KAILASH_DONGLE:
@@ -673,7 +687,8 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.qCoeff1 = 1;
             iqOffSetCorrection.iCoeff2 = 0;
             iqOffSetCorrection.qCoeff2 = 0;
-            lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
+
+            lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
             if (lnaMode != SL_EXT_LNA_CFG_MODE_NOT_PRESENT)
             {
                 /*
@@ -793,7 +808,6 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
                                 afeInfo.ifreq,
                                 afeInfo.agcRefValue);
 
-
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_IQ_OFFSET_CORRECTION, &iqOffSetCorrection);
     if (slres != 0)
     {
@@ -808,6 +822,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         goto ERROR;
     }
 
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodConfigure: SL_CONFIGTYPE_EXT_LNA, value: 0x%02x", lnaMode)
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_EXT_LNA, (unsigned int *)&lnaMode);
     if (slres != 0)
     {
