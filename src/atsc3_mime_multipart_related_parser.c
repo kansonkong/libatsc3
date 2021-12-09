@@ -55,7 +55,8 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 
 	atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance = calloc(1, sizeof(atsc3_mime_multipart_related_instance_t));
 
-	char* line_buffer_start = calloc(ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, sizeof(char));
+	//jjustman-2021-12-09 - calloc with a null byte terminator for line_buffer read
+	char* line_buffer_start = calloc(ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER + 1, sizeof(char));
     char* line_buffer = line_buffer_start;
 	char* line_buffer_to_free = line_buffer_start;
 
