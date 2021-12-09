@@ -42,6 +42,7 @@ class IAtsc3NdkMediaMMTBridge {
         virtual void atsc3_onCaptionAssetProperties(mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_caption_asset_descriptor_message) = 0;
         virtual void atsc3_onAudioStreamProperties(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_audio_stream_properties_descriptor_message) = 0;
 
+        virtual void atsc3_onMpTableSubset(mp_table_t* mp_table) = 0;
         virtual void atsc3_onMpTableComplete(mp_table_t* mp_table) = 0;
 
         //Fragment Metadata callbacks
