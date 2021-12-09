@@ -233,7 +233,7 @@ int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
             condition_lock.unlock();
         }
 
-        _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun: to_dispatch_queue size is: %d", to_dispatch_queue.size());
+        _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun: atsc3_stltp_depacketizer_from_blockt: to_dispatch_queue size is: %d", to_dispatch_queue.size());
         while(to_dispatch_queue.size()) {
             block_t* phy_payload_to_process = to_dispatch_queue.front();
 
@@ -280,6 +280,8 @@ void SRTRxSTLTPVirtualPHY::atsc3_srt_live_rx_udp_packet_received(block_t* block)
 	lock_guard<mutex> srt_replay_buffer_queue_guard(srt_rx_live_receiver_buffer_queue_mutex);
 	srt_rx_live_receiver_buffer_queue.push(block_Duplicate(block));
 	if(srt_rx_live_receiver_buffer_queue.size() > _ATSC3_SRT_STLTP_LIVE_BUFFER_QUEUE_RX_CONDITION_NOTIFY_QUEUE_SIZE_) {
+		_SRTRXSTLTP_VIRTUAL_PHY_DEBUG("SRTRxSTLTPVirtualPHY::srtProducerThreadCallback::atsc3_srt_live_rx_udp_packet_received,  srt_rx_live_receiver_buffer_queue size is: %d", srt_rx_live_receiver_buffer_queue.size());
+
 		srt_rx_condition.notify_one();
 	}
 }
