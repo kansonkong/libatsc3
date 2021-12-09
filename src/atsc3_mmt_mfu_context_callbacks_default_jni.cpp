@@ -461,6 +461,12 @@ void atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_pr
     //vmatiash-2021-28-09 - TODO - impl JNI callback
 }
 
+void atsc3_mmt_signalling_information_on_mp_table_subset_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mp_table_t* mp_table) {
+    if(mp_table->number_of_assets) {
+        Atsc3NdkMediaMMTBridge_ptr->atsc3_onMpTableSubset(mp_table);
+    }
+}
+
 void atsc3_mmt_signalling_information_on_mp_table_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mp_table_t* mp_table) {
     if(mp_table->number_of_assets) {
         Atsc3NdkMediaMMTBridge_ptr->atsc3_onMpTableComplete(mp_table);
@@ -501,6 +507,7 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_default_jni_new() {
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_audio_stream_properties_descriptor_present = &atsc3_mmt_signalling_information_on_audio_stream_properties_descriptor_present_ndk;
     //atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present = &atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present_ndk;
 
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_subset = &atsc3_mmt_signalling_information_on_mp_table_subset_ndk;
     atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_mp_table_complete = &atsc3_mmt_signalling_information_on_mp_table_complete_ndk;
 
     return atsc3_mmt_mfu_context;
