@@ -181,7 +181,9 @@ uint32_t block_Seek(block_t* block, int32_t seek_pos);
 uint32_t block_Seek_Relative(block_t* block, int32_t relative_pos);
 block_t* block_Rewind(block_t* dest);
 block_t* block_Resize(block_t* dest, uint32_t dest_size_required);
-block_t* block_Resize_Soft(block_t* dest, uint32_t dest_size_min_required); //perform a soft allocation to src->a_size * 2  where dest_size_min_required < 2M (__ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__)
+block_t* block_Resize_Soft(block_t* dest, uint32_t dest_size_min_required); //perform a soft allocation to src->p_size * 2  where dest_size_min_required < 2M (__ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__)
+block_t* block_Resize_Prealloc_Soft(block_t* dest, uint32_t soft_alloc_size); //perform a preallocation soft to src->a_size * 2  where dest_size_min_required < 2M (__ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__)
+
 block_t* block_Duplicate(block_t* a);
 block_t* block_Duplicate_from_position(block_t* a);
 block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len);
