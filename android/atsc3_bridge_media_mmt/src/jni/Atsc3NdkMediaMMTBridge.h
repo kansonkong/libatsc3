@@ -23,6 +23,7 @@ using namespace std;
 #include "Atsc3LoggingUtils.h"
 #include "IAtsc3JniEnv.h"
 #include "Atsc3JniEnv.h"
+#include "Atsc3ProtoUtils.h"
 
 // libatsc3 type imports here
 #include <atsc3_utils.h>
@@ -68,6 +69,7 @@ public:
     void atsc3_onCaptionAssetProperties(mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_caption_asset_descriptor_message);
     void atsc3_onAudioStreamProperties(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_audio_stream_properties_descriptor_message);
 
+    void atsc3_onMpTableSubset(mp_table_t* mp_table);
     void atsc3_onMpTableComplete(mp_table_t* mp_table);
 
     //Fragment Metadata callbacks
@@ -155,6 +157,7 @@ public:
     jmethodID atsc3_onCaptionAssetProperties_ID = nullptr;  // java class method id
     jmethodID atsc3_onAudioStreamProperties_ID = nullptr;  // java class method id
 
+    jmethodID atsc3_onMpTableSubset_ID = nullptr;  // java class method id
     jmethodID atsc3_onMpTableComplete_ID = nullptr;  // java class method id
 
     jmethodID atsc3_onExtractedSampleDurationID = nullptr;
