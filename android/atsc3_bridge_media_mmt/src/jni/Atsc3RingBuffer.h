@@ -5,7 +5,10 @@
 #include <list>
 #include <mutex>
 
+#include "MmtRingBufferHeaders.pb.h"
+
 using namespace std;
+using namespace org::ngbp::libatsc3::middleware::mmt;
 
 #ifndef LIBATSC3_RING_BUFFER_H
 #define LIBATSC3_RING_BUFFER_H
@@ -29,7 +32,8 @@ private:
 public:
     Atsc3RingBuffer(uint8_t* buffer_ptr, uint32_t buffer_size, uint32_t page_size);
 
-    void write(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sample_number, uint64_t presentationUs, uint8_t* buffer, uint32_t bufferLen);
+    void write(int8_t type, uint16_t service_id, uint16_t packet_id, uint32_t sequence_number, uint32_t sample_number, uint64_t presentationUs, uint8_t* buffer, uint32_t bufferLen);
+    void write(int8_t type, const pb::MmtFragmentHeader& fragmentHeader, uint8_t* buffer, uint32_t bufferLen);
     void reset();
 };
 
