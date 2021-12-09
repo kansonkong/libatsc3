@@ -161,6 +161,19 @@ public class Atsc3NdkMediaMMTBridge extends org.ngbp.libatsc3.middleware.Atsc3Nd
         }
     }
 
+    public void atsc3_onMpTableSubset(byte[] buffer) {
+        if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
+            try {
+                MmtMpTable.MmtAssetTable table = MmtMpTable.MmtAssetTable.parseFrom(buffer);
+                mActivity.onMpTableSubset(table);
+            } catch (InvalidProtocolBufferException e) {
+                e.printStackTrace();
+            }
+        } else {
+            //discard...
+        }
+    }
+
     public void atsc3_onMpTableComplete(byte[] buffer) {
         if(ATSC3PlayerFlags.ATSC3PlayerStartPlayback) {
             try {
