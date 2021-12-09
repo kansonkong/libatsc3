@@ -72,7 +72,7 @@ char* kvp_collection_get_reference_p(kvp_collection_t *collection, char* key) {
 	for(int i=0; i < collection->size_n; i++) {
 		kvp_t* check = collection->kvp_collection[i];
 		_ATSC3_UTILS_TRACE("kvp_find_key: checking: %s against %s, resolved val is: %s", key, check->key, check->val);
-		if(strcasecmp(key, check->key) == 0) {
+		if(check->key && strcasecmp(key, check->key) == 0) {
 			_ATSC3_UTILS_TRACE("kvp_find_key: MATCH for key: %s, resolved val is: %s", check->key, check->val);
 			return check->val;
 		}
