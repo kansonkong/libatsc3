@@ -621,8 +621,10 @@ block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
 
 #define __ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__ 2048000
 //perform a soft allocation to
-//src->p_size * 2  where p_size < 2M
+//src->a_size * 2  where dest_size_min_required < 2M (__ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__)
 block_t* block_Resize_Soft(block_t* dest, uint32_t dest_size_min_required) {
+	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
+	uint32_t dest_size_original = dest->p_size;
 
 	if(dest->_a_size >= dest_size_min_required && dest->i_pos < dest_size_min_required && dest->p_size < dest_size_min_required) {
 		dest->p_size = dest_size_min_required;
@@ -636,7 +638,7 @@ block_t* block_Resize_Soft(block_t* dest, uint32_t dest_size_min_required) {
 	}
 
 	block_Resize(dest, target_dest_size_min_required);
-	dest->p_size = dest_size_min_required;
+	dest->p_size = dest_size_original;
 
 	return dest;
 }
