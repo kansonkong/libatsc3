@@ -312,6 +312,9 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
 
     if(device_type == SL_DEVICE_TYPE_MARKONE && device_path.c_str() && !strcasecmp(SL_HOSTINTERFACE_TYPE_MARKONE_PATH, device_path.c_str())) {
         //check device configuration type
+        SL_ConfigureLog_markone();
+        SL_ConfigureUtils_markone();
+
         SL_ConfigureGpio_markone();
         SL_GpioInit();
 
@@ -343,7 +346,6 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
         //configure as bb FX3
         res = configPlatformParams_yoga_bb_fx3();
         __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
-
     }
 
     _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect::return res: %d", res);
@@ -359,11 +361,6 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
     SL_TunerResult_t                tres;
     SL_UtilsResult_t                utilsres;
 
-    SL_AfeIfConfigParams_t          afeInfo;
-    SL_OutIfConfigParams_t          outPutInfo;
-    SL_IQOffsetCorrectionParams_t   iqOffSetCorrection = { 1.0, 1.0, 0.0, 0.0} ;
-
-    SL_ExtLnaConfigParams_t         lnaMode = SL_EXT_LNA_CFG_MODE_NOT_PRESENT;
     unsigned int                    lnaGpioNum = 0x00000000;
 
     SL_ConfigResult_t               sl_configResult = SL_CONFIG_ERR_NOT_CONFIGURED;
@@ -584,16 +581,8 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.qCoeff2 = 0;
 
 
-            lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
-            if (lnaMode != SL_EXT_LNA_CFG_MODE_NOT_PRESENT)
-            {
-                /*
-                 * GPIO12 is used for LNA Bypass/Enable in Yoga Dongle.
-                 * It may be different for other boards. Use bits 8 to 15 to specify the same
-                 */
-                lnaGpioNum = 0x00000A00;
-                lnaMode = static_cast<SL_ExtLnaConfigParams_t>(lnaMode | lnaGpioNum);
-            }
+            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
+            lnaInfo.lnaGpioNum = (0x00000A00 >> 8); //should be 0xA after shift, d10
 
             break;
 
@@ -688,21 +677,23 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.iCoeff2 = 0;
             iqOffSetCorrection.qCoeff2 = 0;
 
-            lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
-            if (lnaMode != SL_EXT_LNA_CFG_MODE_NOT_PRESENT)
-            {
-                /*
-                 * GPIO12 is used for LNA Bypass/Enable in Yoga Dongle.
-                 * It may be different for other boards. Use bits 8 to 15 to specify the same
-                 */
-                lnaGpioNum = 0x00000C00;
-                lnaMode = static_cast<SL_ExtLnaConfigParams_t>(lnaMode | lnaGpioNum);
-            }
+
+            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
+            lnaInfo.lnaGpioNum = 12;
             break;
 
         default:
             _SAANKHYA_PHY_ANDROID_DEBUG("Invalid Board Type Selected ");
             break;
+    }
+
+    if (lnaInfo.lnaMode != SL_EXT_LNA_CFG_MODE_NOT_PRESENT)
+    {
+        /*
+         * GPIO12 is used for LNA Bypass/Enable in Yoga Dongle.
+         * It may be different for other boards. Use bits 8 to 15 to specify the same
+         */
+        lnaInfo.lnaMode = static_cast<SL_ExtLnaModeConfig_t>(lnaInfo.lnaMode | (lnaInfo.lnaGpioNum << 8));
     }
 
     afeInfo.iqswap = SL_IQSWAP_DISABLE;
@@ -722,17 +713,17 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 
     if (getbbValue)
     {
-        plpInfo.plp0 = 0x00;
+        atsc3ConfigParams.plpConfig.plp0 = 0x00;
     }
     else
     {
-        plpInfo.plp0 = 0x00;
+        atsc3ConfigParams.plpConfig.plp0 = 0x00;
     }
-    plpInfo.plp1 = 0xFF;
-    plpInfo.plp2 = 0xFF;
-    plpInfo.plp3 = 0xFF;
+    atsc3ConfigParams.plpConfig.plp1 = 0xFF;
+    atsc3ConfigParams.plpConfig.plp2 = 0xFF;
+    atsc3ConfigParams.plpConfig.plp3 = 0xFF;
 
-    regionInfo = SL_ATSC3P0_REGION_US;
+    atsc3ConfigParams.region = SL_ATSC3P0_REGION_US;
 
     _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodCreateInstance: before invocation, slUnit: %d",slUnit);
     slres = SL_DemodCreateInstance(&slUnit);
@@ -822,34 +813,20 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         goto ERROR;
     }
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodConfigure: SL_CONFIGTYPE_EXT_LNA, value: 0x%02x", lnaMode)
-    slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_EXT_LNA, (unsigned int *)&lnaMode);
+    _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodConfigure: SL_CONFIGTYPE_EXT_LNA, value: 0x%02x", lnaInfo.lnaMode)
+    slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_EXT_LNA, (unsigned int *)&lnaInfo.lnaMode);
     if (slres != 0)
     {
         printToConsoleDemodError("SL_DemodConfigure:SL_CONFIGTYPE_EXT_LNA", slres);
         goto ERROR;
     }
-//
-//    slres = SL_DemodConfigureEx(slUnit, SL_DEMODSTD_ATSC3_0, &atsc3ConfigInfo);
-//    if (slres != 0)
-//    {
-//        printToConsoleDemodError("SL_DemodConfigure:SL_DEMODSTD_ATSC3_0", slres);
-//
-//        goto ERROR;
-//    }
-
-    slres = SL_DemodConfigPlps(slUnit, &plpInfo);
-    if (slres != 0)
-    {
-        printToConsoleDemodError("SL_DemodConfigPlps", slres);
-        goto ERROR;
-    }
 
 #ifndef __JJ_CALIBRATION_ENABLED
-    slres = SL_DemodSetAtsc3p0Region(slUnit, regionInfo);
+    slres = SL_DemodConfigureEx(slUnit, demodStandard, &atsc3ConfigParams);
+
     if (slres != 0)
     {
-        printToConsoleDemodError("SL_DemodSetAtsc3p0Region", slres);
+        _SAANKHYA_PHY_ANDROID_ERROR("SL_DemodConfigureEx(%d, SL_DEMODSTD_ATSC3_0, %p) returned: %d", slUnit, &atsc3ConfigParams, slres);
         goto ERROR;
     }
 #endif
@@ -1250,12 +1227,12 @@ TEST_ERROR:
 
     SL_PlpConfigParams_mutex_update_plps.lock();
 
-    plpInfo.plp0 = plpid;
-    plpInfo.plp1 = 0xFF;
-    plpInfo.plp2 = 0xFF;
-    plpInfo.plp3 = 0xFF;
+    atsc3ConfigParams.plpConfig.plp0 = plpid;
+    atsc3ConfigParams.plpConfig.plp1 = 0xFF;
+    atsc3ConfigParams.plpConfig.plp2 = 0xFF;
+    atsc3ConfigParams.plpConfig.plp3 = 0xFF;
 
-    slres = SL_DemodConfigPlps(slUnit, &plpInfo);
+    slres = SL_DemodConfigureEx(slUnit, demodStandard, &atsc3ConfigParams);
 
     SL_PlpConfigParams_mutex_update_plps.unlock();
 
@@ -1328,41 +1305,42 @@ int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
 
     if(plps.size() == 0) {
         //we always need to listen to plp0...kinda
-        plpInfo.plp0 = 0;
-        plpInfo.plp1 = 0xFF;
-        plpInfo.plp2 = 0xFF;
-        plpInfo.plp3 = 0xFF;
+        atsc3ConfigParams.plpConfig.plp0 = 0;
+        atsc3ConfigParams.plpConfig.plp1 = 0xFF;
+        atsc3ConfigParams.plpConfig.plp2 = 0xFF;
+        atsc3ConfigParams.plpConfig.plp3 = 0xFF;
     } else if(plps.size() == 1) {
-        plpInfo.plp0 = 0;
-        plpInfo.plp1 = plps.at(0);
-        plpInfo.plp2 = 0xFF;
-        plpInfo.plp3 = 0xFF;
+        atsc3ConfigParams.plpConfig.plp0 = 0;
+        atsc3ConfigParams.plpConfig.plp1 = plps.at(0);
+        atsc3ConfigParams.plpConfig.plp2 = 0xFF;
+        atsc3ConfigParams.plpConfig.plp3 = 0xFF;
     } else if(plps.size() == 2) {
-        plpInfo.plp0 = 0;
-        plpInfo.plp1 = plps.at(0);
-        plpInfo.plp2 = plps.at(1);
-        plpInfo.plp3 = 0xFF;
+        atsc3ConfigParams.plpConfig.plp0 = 0;
+        atsc3ConfigParams.plpConfig.plp1 = plps.at(0);
+        atsc3ConfigParams.plpConfig.plp2 = plps.at(1);
+        atsc3ConfigParams.plpConfig.plp3 = 0xFF;
     } else if(plps.size() == 3) {
-        plpInfo.plp0 = 0;
-        plpInfo.plp1 = plps.at(0);
-        plpInfo.plp2 = plps.at(1);
-        plpInfo.plp3 = plps.at(2);
+        atsc3ConfigParams.plpConfig.plp0 = 0;
+        atsc3ConfigParams.plpConfig.plp1 = plps.at(0);
+        atsc3ConfigParams.plpConfig.plp2 = plps.at(1);
+        atsc3ConfigParams.plpConfig.plp3 = plps.at(2);
     } else if(plps.size() == 4) {
-        plpInfo.plp0 = plps.at(0);
-        plpInfo.plp1 = plps.at(1);
-        plpInfo.plp2 = plps.at(2);
-        plpInfo.plp3 = plps.at(3);
+        atsc3ConfigParams.plpConfig.plp0 = plps.at(0);
+        atsc3ConfigParams.plpConfig.plp1 = plps.at(1);
+        atsc3ConfigParams.plpConfig.plp2 = plps.at(2);
+        atsc3ConfigParams.plpConfig.plp3 = plps.at(3);
     }
 
     _SAANKHYA_PHY_ANDROID_DEBUG("calling SL_DemodConfigPLPS with 0: %02x, 1: %02x, 2: %02x, 3: %02x",
-            plpInfo.plp0,
-            plpInfo.plp1,
-            plpInfo.plp2,
-            plpInfo.plp3);
+            atsc3ConfigParams.plpConfig.plp0,
+            atsc3ConfigParams.plpConfig.plp1,
+            atsc3ConfigParams.plpConfig.plp2,
+            atsc3ConfigParams.plpConfig.plp3);
 
     unique_lock<mutex> SL_I2C_command_mutex_demod_configure_plps(SL_I2C_command_mutex);
 
-    slres = SL_DemodConfigPlps(slUnit, &plpInfo);
+    slres = SL_DemodConfigureEx(slUnit, demodStandard, &atsc3ConfigParams);
+
     SL_I2C_command_mutex_demod_configure_plps.unlock();
     SL_PlpConfigParams_mutex_update_plps.unlock();
 
@@ -1380,7 +1358,8 @@ void SaankhyaPHYAndroid::dump_plp_list() {
     unique_lock<mutex> SL_PlpConfigParams_mutex_update_plps(SL_PlpConfigParams_mutex);
     unique_lock<mutex> SL_I2C_command_mutex_demod_configure_plps(SL_I2C_command_mutex);
 
-    slres = SL_DemodGetLlsPlpList(slUnit, &llsPlpInfo);
+
+    slres = SL_DemodGetDiagnostics(slUnit, SL_DEMOD_DIAG_TYPE_ATSC3P0_PLP_LLS_INFO, &llsPlpInfo);
     if (slres != SL_OK)
     {
         printToConsoleDemodError("SL_DemodGetLlsPlpList", slres);
@@ -1396,26 +1375,26 @@ void SaankhyaPHYAndroid::dump_plp_list() {
     {
         plpInfoVal = ((llsPlpInfo & (llsPlpMask << plpIndx)) == pow(2, plpIndx)) ? 0x01 : 0xFF;
 
-        _SAANKHYA_PHY_ANDROID_DEBUG("PLP: %d, plpInfoVal: %d", plpIndx, plpInfoVal);
+        _SAANKHYA_PHY_ANDROID_DEBUG("PLP: %d, atsc3ConfigParams.plpConfigVal: %d", plpIndx, plpInfoVal);
 
         if (plpInfoVal == 0x01)
         {
             plpllscount++;
             if (plpllscount == 1)
             {
-                plpInfo.plp0 = plpIndx;
+                atsc3ConfigParams.plpConfig.plp0 = plpIndx;
             }
             else if (plpllscount == 2)
             {
-                plpInfo.plp1 = plpIndx;
+                atsc3ConfigParams.plpConfig.plp1 = plpIndx;
             }
             else if (plpllscount == 3)
             {
-                plpInfo.plp2 = plpIndx;
+                atsc3ConfigParams.plpConfig.plp2 = plpIndx;
             }
             else if (plpllscount == 4)
             {
-                plpInfo.plp3 = plpIndx;
+                atsc3ConfigParams.plpConfig.plp3 = plpIndx;
             }
             else
             {
@@ -1424,9 +1403,9 @@ void SaankhyaPHYAndroid::dump_plp_list() {
         }
     }
 
-    if (plpInfo.plp0 == -1)
+    if (atsc3ConfigParams.plpConfig.plp0 == -1)
     {
-        plpInfo.plp0 = 0x00;
+        atsc3ConfigParams.plpConfig.plp0 = 0x00;
     }
 
 ERROR:
@@ -1490,6 +1469,10 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_fx3() {
 
     sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
 
+    //jjustman-2021-12-11 - todo: fixme
+    //reconfigure method callbacks for AA FX3
+    sPlfConfig.dispConf = SL_DispatcherConfig_slref;
+
     /* Set Configuration Parameters */
     res = SL_ConfigSetPlatform(sPlfConfig);
 
@@ -1500,11 +1483,6 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_fx3() {
                                 sPlfConfig.tunerType,
                                 sPlfConfig.hostInterfaceType);
 
-
-    //reconfigure method callbacks for cust_markone
-    SL_ConfigureGpio_slref();
-    SL_ConfigureI2c_slref();
-    SL_ConfigureTs_slref();
 
     return res;
 }
@@ -1531,20 +1509,19 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_markone() {
     //from: sdm660-qrd-kf.dtsi
     sPlfConfig.tunerResetGpioPin = 13;
 
+    //jjustman-2021-12-11 - todo: fixme
+    sPlfConfig.dispConf = SL_DispatcherConfig_markone;
+
     /* Set Configuration Parameters */
     res = SL_ConfigSetPlatform(sPlfConfig);
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_aa_markone: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, ",
+    _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_aa_markone: with chipType: %d, chipRev: %d, boardType: %d, tunerType: %d, hostInterfaceType: %d, res: %d",
             sPlfConfig.chipType,
             sPlfConfig.chipRev,
             sPlfConfig.boardType,
             sPlfConfig.tunerType,
-            sPlfConfig.hostInterfaceType);
-
-    //reconfigure method callbacks for cust_markone
-    SL_ConfigureGpio_markone();
-    SL_ConfigureI2c_markone();
-    SL_ConfigureTs_markone();
+            sPlfConfig.hostInterfaceType,
+            res);
 
     //jjustman-2021-11-09 - calibrated values on AA @ 533mhz
     tunerIQDcOffSet.iOffSet = 14;
@@ -1587,10 +1564,8 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_kailash_3_bb_fx3() {
                                 sPlfConfig.hostInterfaceType);
 
 
-    //reconfigure method callbacks for yoga dongle (bb)
-    SL_ConfigureGpio_slref();
-    SL_ConfigureI2c_slref();
-    SL_ConfigureTs_slref();
+    //reconfigure method callbacks for kailash BB FX3
+    SL_DispatcherConfig_slref();
 
     return res;
 }
@@ -1629,9 +1604,7 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_yoga_bb_fx3() {
 
 
     //reconfigure method callbacks for yoga dongle (bb)
-    SL_ConfigureGpio_slref();
-    SL_ConfigureI2c_slref();
-    SL_ConfigureTs_slref();
+    SL_DispatcherConfig_slref();
 
     return res;
 }
@@ -1658,6 +1631,9 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_markone() {
     //from: sdm660-qrd-kf.dtsi
     sPlfConfig.tunerResetGpioPin = 13;
 
+    //jjustman-2021-12-11 - todo: fixme
+    sPlfConfig.dispConf = SL_DispatcherConfig_markone;
+
     /* Set Configuration Parameters */
     res = SL_ConfigSetPlatform(sPlfConfig);
 
@@ -1667,11 +1643,6 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_markone() {
                                 sPlfConfig.boardType,
                                 sPlfConfig.tunerType,
                                 sPlfConfig.hostInterfaceType);
-
-    //reconfigure method callbacks for cust_markone
-    SL_ConfigureGpio_markone();
-    SL_ConfigureI2c_markone();
-    SL_ConfigureTs_markone();
 
     //jjustman-2021-11-09 - calibrated values on evt2 - pre AGND fix
     tunerIQDcOffSet.iOffSet = 11;
@@ -2040,11 +2011,11 @@ void SaankhyaPHYAndroid::printToConsoleDemodConfiguration(SL_DemodConfigInfo_t c
             _SAANKHYA_PHY_ANDROID_DEBUG("Demod Standard  : NA");
     }
 
-    _SAANKHYA_PHY_ANDROID_DEBUG("PLP Configuration");
-    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP0: %d", (signed char)cfgInfo.plpInfo.plp0);
-    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP1: %d", (signed char)cfgInfo.plpInfo.plp1);
-    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP2: %d", (signed char)cfgInfo.plpInfo.plp2);
-    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP3: %d", (signed char)cfgInfo.plpInfo.plp3);
+//    _SAANKHYA_PHY_ANDROID_DEBUG("PLP Configuration");
+//    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP0: %d", (signed char)cfgInfo.atsc3ConfigParams.plpConfig.plp0);
+//    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP1: %d", (signed char)cfgInfo.atsc3ConfigParams.plpConfig.plp1);
+//    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP2: %d", (signed char)cfgInfo.atsc3ConfigParams.plpConfig.plp2);
+//    _SAANKHYA_PHY_ANDROID_DEBUG("  PLP3: %d", (signed char)cfgInfo.atsc3ConfigParams.plpConfig.plp3);
 
     _SAANKHYA_PHY_ANDROID_DEBUG("Input Configuration");
     switch (cfgInfo.afeIfInfo.iftype)
@@ -2254,8 +2225,8 @@ int SaankhyaPHYAndroid::statusThread()
 
     uint lastCpuStatus = 0;
 
-    SL_PlpConfigParams_t  loop_plpInfo = { 0 };
-    unsigned long long    llsPlpInfo;
+    SL_Atsc3p0PlpConfigParams_t     loop_atsc3ConfigParams = { 0 };
+    unsigned long long              llsPlpInfo;
 
     /* jjustman-2021-06-07 - #11798
      *  int L1bSnrLinearScale;
@@ -2373,10 +2344,10 @@ int SaankhyaPHYAndroid::statusThread()
 
         //PLP info we will use for this stats iteration
         SL_PlpConfigParams_mutex_get_plps.lock();
-        loop_plpInfo.plp0 = plpInfo.plp0;
-        loop_plpInfo.plp1 = plpInfo.plp1;
-        loop_plpInfo.plp2 = plpInfo.plp2;
-        loop_plpInfo.plp3 = plpInfo.plp3;
+        loop_atsc3ConfigParams.plp0 = atsc3ConfigParams.plpConfig.plp0;
+        loop_atsc3ConfigParams.plp1 = atsc3ConfigParams.plpConfig.plp1;
+        loop_atsc3ConfigParams.plp2 = atsc3ConfigParams.plpConfig.plp2;
+        loop_atsc3ConfigParams.plp3 = atsc3ConfigParams.plpConfig.plp3;
         SL_PlpConfigParams_mutex_get_plps.unlock();
 
         //if this is our first loop after a Tune() command has completed, dump SL_DemodGetConfiguration
@@ -2478,45 +2449,45 @@ SL_SleepMS(100);
 
         atsc3_ndk_phy_client_rf_metrics.demod_lock = demodLockStatus;
 
-        atsc3_ndk_phy_client_rf_metrics.plp_lock_any = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP0_LOCK) ||
-                                                        (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP1_LOCK) ||
-                                                        (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP2_LOCK) ||
-                                                        (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP3_LOCK);
+        atsc3_ndk_phy_client_rf_metrics.plp_lock_any =  (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP0_LOCK) ||
+                                                        (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP1_LOCK) ||
+                                                        (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP2_LOCK) ||
+                                                        (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP3_LOCK);
 
 
-        atsc3_ndk_phy_client_rf_metrics.plp_lock_all = (loop_plpInfo.plp0 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP0_LOCK)) &&
-                                                        (loop_plpInfo.plp1 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP1_LOCK)) &&
-                                                        (loop_plpInfo.plp2 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP2_LOCK)) &&
-                                                        (loop_plpInfo.plp3 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP3_LOCK));
+        atsc3_ndk_phy_client_rf_metrics.plp_lock_all =  (loop_atsc3ConfigParams.plp0 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP0_LOCK)) &&
+                                                        (loop_atsc3ConfigParams.plp1 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP1_LOCK)) &&
+                                                        (loop_atsc3ConfigParams.plp2 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP2_LOCK)) &&
+                                                        (loop_atsc3ConfigParams.plp3 != 0xFF && (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP3_LOCK));
 
         //we have RF / Bootstrap lock
-        if(demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_RF_LOCK) {
+        if(demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_RF_LOCK) {
             if(!statusThreadFirstLoopAfterTuneComplete_HasBootstrapLock_for_BSR_Diag) {
                 statusThreadFirstLoopAfterTuneComplete_HasBootstrapLock_for_BSR_Diag = true;
 
-                dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_BSR, (SL_Atsc3p0Bsr_Diag_t*)&bsrDiag);
+                dres = SL_DemodGetDiagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_ATSC3P0_BSR, (SL_Atsc3p0Bsr_Diag_t*)&bsrDiag);
                 if (dres != SL_OK) {
-                    _SAANKHYA_PHY_ANDROID_ERROR("Error: SL_DemodGetAtsc3p0Diagnostics with SL_DEMOD_DIAG_TYPE_BSR failed, res: %d", dres);
+                    _SAANKHYA_PHY_ANDROID_ERROR("Error: SL_DemodGetDiagnostics with SL_DEMOD_DIAG_TYPE_BSR failed, res: %d", dres);
                     goto sl_i2c_tuner_mutex_unlock;
                 }
 
-                printAtsc3BsrDiagnostics(bsrDiag, 0);
+                //printAtsc3BsrDiagnostics(bsrDiag, 0);
             }
         }
 
         //we have L1B_Lock
-        if(demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_L1B_LOCK) {
+        if(demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_L1B_LOCK) {
 
             if(!statusThreadFirstLoopAfterTuneComplete_HasL1B_DemodLock_for_L1B_Diag) {
                 statusThreadFirstLoopAfterTuneComplete_HasL1B_DemodLock_for_L1B_Diag = true;
 
-                dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1B, (SL_Atsc3p0L1B_Diag_t*)&l1bDiag);
+                dres = SL_DemodGetDiagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_ATSC3P0_L1B, (SL_Atsc3p0L1B_Diag_t*)&l1bDiag);
                 if (dres != SL_OK) {
-                    _SAANKHYA_PHY_ANDROID_ERROR("Error: SL_DemodGetAtsc3p0Diagnostics with SL_DEMOD_DIAG_TYPE_L1B failed, res: %d", dres);
+                    _SAANKHYA_PHY_ANDROID_ERROR("Error: SL_DemodGetDiagnostics with SL_DEMOD_DIAG_TYPE_L1B failed, res: %d", dres);
                     goto sl_i2c_tuner_mutex_unlock;
                 }
 
-                printAtsc3L1bDiagnostics(l1bDiag, 0);
+                //printAtsc3L1bDiagnostics(l1bDiag, 0);
 
                 //jjustman-2021-10-24 - keep track of our L1bTimeInfoFlag
                 last_l1bTimeInfoFlag = l1bDiag.L1bTimeInfoFlag;
@@ -2524,23 +2495,23 @@ SL_SleepMS(100);
         }
 
         //we have L1D_Lock
-        if(demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_L1D_LOCK) {
+        if(demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_L1D_LOCK) {
             if(!statusThreadFirstLoopAfterTuneComplete_HasL1D_DemodLock_for_L1D_Diag) {
                 statusThreadFirstLoopAfterTuneComplete_HasL1D_DemodLock_for_L1D_Diag = true;
 
-                dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_L1D, (SL_Atsc3p0L1D_Diag_t*)&l1dDiag);
+                dres = SL_DemodGetDiagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_ATSC3P0_L1D, (SL_Atsc3p0L1D_Diag_t*)&l1dDiag);
                 if (dres != SL_OK) {
                     _SAANKHYA_PHY_ANDROID_ERROR("Error: SL_DemodGetAtsc3p0Diagnostics with SL_DEMOD_DIAG_TYPE_L1D failed, res: %d", dres);
                     goto sl_i2c_tuner_mutex_unlock;
                 }
 
-                printAtsc3L1dDiagnostics(l1bDiag.L1bNoOfSubframes, l1dDiag, 0);
-                printAtsc3SignalDetails(l1bDiag.L1bNoOfSubframes, l1dDiag, 0);
+                //printAtsc3L1dDiagnostics(l1bDiag.L1bNoOfSubframes, l1dDiag, 0);
+                //printAtsc3SignalDetails(l1bDiag.L1bNoOfSubframes, l1dDiag, 0);
             }
         }
 
         //we need this for SNR
-        dres = SL_DemodGetAtsc3p0Diagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_PERF, (SL_Atsc3p0Perf_Diag_t*)&perfDiag);
+        dres = SL_DemodGetDiagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_ATSC3P0_PERF, (SL_Atsc3p0Perf_Diag_t*)&perfDiag);
         if (dres != SL_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 Performance Diagnostics : dres: %d", dres);
             goto sl_i2c_tuner_mutex_unlock;
@@ -2604,21 +2575,21 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
         for(int subframeIdx = 0; subframeIdx <= l1bDiag.L1bNoOfSubframes; subframeIdx++) {
             for(int plpIdx = 0; plpIdx < (0xFF & l1dDiag.sfParams[subframeIdx].L1dSfNumPlp2Decode); plpIdx++) {
 
-                if(loop_plpInfo.plp0 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
+                if(loop_atsc3ConfigParams.plp0 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
                     myPlps[0] = l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx];
-                } else if(loop_plpInfo.plp1 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
+                } else if(loop_atsc3ConfigParams.plp1 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
                     myPlps[1] = l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx];
-                } else if(loop_plpInfo.plp2 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
+                } else if(loop_atsc3ConfigParams.plp2 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
                     myPlps[2] = l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx];
-                } else if(loop_plpInfo.plp3 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
+                } else if(loop_atsc3ConfigParams.plp3 == l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx].L1dSfPlpId) {
                     myPlps[3] = l1dDiag.sfParams[subframeIdx].PlpParams[plpIdx];
                 }
             }
         }
 
         //plp[0]
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_id          = loop_plpInfo.plp0;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP0_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_id          = loop_atsc3ConfigParams.plp0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP0_LOCK) != 0;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_fec_type    = myPlps[0].L1dSfPlpFecType;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_mod         = myPlps[0].L1dSfPlpModType;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].plp_cod         = myPlps[0].L1dSfPlpCoderate;
@@ -2630,8 +2601,8 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].total_error_fec = perfDiag.NumFrameErrPlp0;
 
         //plp[1]
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_id          = loop_plpInfo.plp1;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP1_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_id          = loop_atsc3ConfigParams.plp1;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP1_LOCK) != 0;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_fec_type    = myPlps[1].L1dSfPlpFecType;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_mod         = myPlps[1].L1dSfPlpModType;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].plp_cod         = myPlps[1].L1dSfPlpCoderate;
@@ -2642,8 +2613,8 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].total_fec       = perfDiag.NumFecFramePlp1;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].total_error_fec = perfDiag.NumFrameErrPlp1;
         //plp[2]
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_id          = loop_plpInfo.plp2;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP2_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_id          = loop_atsc3ConfigParams.plp2;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP2_LOCK) != 0;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_fec_type    = myPlps[2].L1dSfPlpFecType;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_mod         = myPlps[2].L1dSfPlpModType;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].plp_cod         = myPlps[2].L1dSfPlpCoderate;
@@ -2655,8 +2626,8 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].total_error_fec = perfDiag.NumFrameErrPlp2;
 
         //plp[3]
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_id          = loop_plpInfo.plp3;
-        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLP3_LOCK) != 0;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_id          = loop_atsc3ConfigParams.plp3;
+        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].modcod_valid    = (demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_BB_PLP3_LOCK) != 0;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_fec_type    = myPlps[3].L1dSfPlpFecType;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_mod         = myPlps[3].L1dSfPlpModType;
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].plp_cod         = myPlps[3].L1dSfPlpCoderate;
@@ -2677,29 +2648,29 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
                tunerInfo.signalStrength / 1000,
                (cpuStatus == 0xFFFFFFFF) ? "RUNNING" : "HALTED",
                demodLockStatus,
-                demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_RF_LOCK,
-                demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_L1B_LOCK,
-                demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_L1B_LOCK,
+                demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_RF_LOCK,
+                demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_L1B_LOCK,
+                demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_L1D_LOCK,
 
                 ber_l1b,
                ber_l1d,
                ber_plp0,
-               loop_plpInfo.plp0,
+               loop_atsc3ConfigParams.plp0,
                 myPlps[0].L1dSfPlpFecType,
                 myPlps[0].L1dSfPlpModType,
                 myPlps[0].L1dSfPlpCoderate,
                 atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[0].snr1000 / 1000.0,
-                loop_plpInfo.plp1,
+                loop_atsc3ConfigParams.plp1,
                 myPlps[1].L1dSfPlpFecType,
                 myPlps[1].L1dSfPlpModType,
                 myPlps[1].L1dSfPlpCoderate,
                 atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[1].snr1000 / 1000.0,
-               loop_plpInfo.plp2,
+               loop_atsc3ConfigParams.plp2,
                 myPlps[2].L1dSfPlpFecType,
                 myPlps[2].L1dSfPlpModType,
                 myPlps[2].L1dSfPlpCoderate,
                 atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[2].snr1000 / 1000.0,
-                loop_plpInfo.plp3,
+                loop_atsc3ConfigParams.plp3,
                 myPlps[3].L1dSfPlpFecType,
                 myPlps[3].L1dSfPlpModType,
                 myPlps[3].L1dSfPlpCoderate,
