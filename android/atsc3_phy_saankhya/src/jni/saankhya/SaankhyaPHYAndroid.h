@@ -66,7 +66,10 @@ using namespace std;
 #include <sl_gpio.h>
 #include <sl_demod.h>
 #include <sl_utils.h>
-#include <sl_atsc3_diag.h>
+#include <sl_demod_atsc3.h>
+
+//jjustman-2021-12-11 - slref/fx3s
+#include <sl_ref_fx3s.h>
 
 //jjustman-2021-03-02 - dispatch reconfigure for markone methods
 #include <sl_cust_markone_dispatcher.h>
@@ -113,10 +116,16 @@ public:
     //jjustman-2021-06-07 - from demod_start
     string                  demodVersion;
 
-    //jjustman-2021-03-03   this is expected to be always accurate, when using, be sure to acquire SL_plpConfigParams_mutex, and SL_I2c_command_mutex, if necessary
-    SL_PlpConfigParams_t    plpInfo;
+    SL_AfeIfConfigParams_t          afeInfo;
+    SL_OutIfConfigParams_t          outPutInfo;
+    SL_IQOffsetCorrectionParams_t   iqOffSetCorrection = { 1.0, 1.0, 0.0, 0.0} ;
 
-    SL_Atsc3p0Region_t      regionInfo;
+    SL_ExtLnaConfigParams_t         lnaInfo = {.lnaMode = SL_EXT_LNA_CFG_MODE_NOT_PRESENT, .lnaGpioNum=0 };
+
+    SL_DemodStd_t                   demodStandard = { SL_DEMODSTD_ATSC3_0 };
+
+    //jjustman-2021-03-03   this is expected to be always accurate, when using, be sure to acquire SL_plpConfigParams_mutex, and SL_I2c_command_mutex, if necessary
+    SL_Atsc3p0ConfigParams_t        atsc3ConfigParams;
 
     //status thread details - use statusMetricsResetFromContextChange to initalize or to reset when tune() is completed or when PLP selection has changed
     SL_TunerSignalInfo_t    tunerInfo;
