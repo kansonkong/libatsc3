@@ -960,7 +960,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 
     }
 
-	if(matching_lls_sls_mmt_session && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id) {
+	if(matching_lls_sls_mmt_session && matching_lls_sls_mmt_session->atsc3_lls_slt_service && lls_slt_monitor && lls_slt_monitor->lls_sls_mmt_monitor && lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service && matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id == lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id) {
 
         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_core_service_bridge_process_packet_phy: USING candidate matching_lls_sls_mmt_session: %p, matching_lls_sls_mmt_session->atsc3_lls_slt_service->service_id: %d, lls_sls_mmt_monitor service_id: %d, checking flow: %u.%u.%u.%u:%u,",
                                                  matching_lls_sls_mmt_session,

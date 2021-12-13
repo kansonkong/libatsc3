@@ -55,7 +55,8 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 
 	atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_instance = calloc(1, sizeof(atsc3_mime_multipart_related_instance_t));
 
-	char* line_buffer_start = calloc(ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, sizeof(char));
+	//jjustman-2021-12-09 - calloc with a null byte terminator for line_buffer read
+	char* line_buffer_start = calloc(ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER + 1, sizeof(char));
     char* line_buffer = line_buffer_start;
 	char* line_buffer_to_free = line_buffer_start;
 
@@ -247,7 +248,8 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		//jjustman-2020-08-04 - xcode leak detector is complanining about ->payload leaking somewhere..todo -
 		atsc3_mime_multipart_related_payload = atsc3_mime_multipart_related_payload_new();
 		atsc3_mime_multipart_related_payload->payload = block_Alloc(0);  //jjustman-2020-08-04 - TODO - better payload guestimate size for this item?
-
+		block_Resize_Prealloc_Soft(atsc3_mime_multipart_related_payload->payload, 1024000); //jjustman-2021-12-09 - hack for first block resize re-allocation
+		
 		/**
 		 * try and parse out header attributes first, e.g.:
 			Content-Type: application/atsc-held+xml
@@ -257,6 +259,7 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		*/
 
 		while(!feof(fp) && !payload_header_complete) {
+			line_buffer = line_buffer_start; //jjustman-2021-12-10 - reset our line_buffer pointer back to our start for our fgets after moving thru line_buffer
 			fgets(line_buffer, ATSC3_MIME_MULTIPART_RELATED_LINE_BUFFER, fp);
 			line_count++;
 
