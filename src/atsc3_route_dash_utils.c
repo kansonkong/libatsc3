@@ -98,7 +98,8 @@ atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector
 #define ATSC3_ROUTE_DASH_PATCH_UINT32_LENGTH 11
 block_t* atsc3_route_dash_patch_mpd_manifest_from_matching_matching_s_tsid_representation_media_info_alc_flow_match_vector(atsc3_route_dash_matching_s_tsid_representation_media_info_alc_flow_match_vector_t* match_vector, block_t* original_mpd) {
 	block_t* patched_mpd = NULL;
-	char temp_buffer[ATSC3_ROUTE_DASH_PATCH_UINT32_LENGTH] = { 0 };
+	//jjustman-2021-12-10 - allocate 11 + 1 for null padding for block_write with strlen(temp_buffer)
+	char temp_buffer[ATSC3_ROUTE_DASH_PATCH_UINT32_LENGTH + 1] = { 0 };
 
 	if(!original_mpd || !original_mpd->p_size) {
 		__ROUTE_DASH_UTILS_ERROR("original MPD is empty!");

@@ -72,7 +72,7 @@ char* kvp_collection_get_reference_p(kvp_collection_t *collection, char* key) {
 	for(int i=0; i < collection->size_n; i++) {
 		kvp_t* check = collection->kvp_collection[i];
 		_ATSC3_UTILS_TRACE("kvp_find_key: checking: %s against %s, resolved val is: %s", key, check->key, check->val);
-		if(strcasecmp(key, check->key) == 0) {
+		if(check->key && strcasecmp(key, check->key) == 0) {
 			_ATSC3_UTILS_TRACE("kvp_find_key: MATCH for key: %s, resolved val is: %s", check->key, check->val);
 			return check->val;
 		}
@@ -621,8 +621,9 @@ block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size) {
 
 #define __ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__ 2048000
 //perform a soft allocation to
-//src->p_size * 2  where p_size < 2M
+//src->p_size * 2  where dest_size_min_required < 2M (__ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__)
 block_t* block_Resize_Soft(block_t* dest, uint32_t dest_size_min_required) {
+	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
 
 	if(dest->_a_size >= dest_size_min_required && dest->i_pos < dest_size_min_required && dest->p_size < dest_size_min_required) {
 		dest->p_size = dest_size_min_required;
@@ -641,6 +642,31 @@ block_t* block_Resize_Soft(block_t* dest, uint32_t dest_size_min_required) {
 	return dest;
 }
 
+
+#define __ATSC3_UTILS_BLOCK_PREALLOC_RESIZE_DOUBLE_LIMIT__ 8192000
+//perform a pre-allocation soft to
+//src->a_size * 2  where soft_alloc_size < 2M (__ATSC3_UTILS_BLOCK_RESIZE_DOUBLE_LIMIT__)
+//while keeping dest->p_size as original size
+block_t* block_Resize_Prealloc_Soft(block_t* dest, uint32_t soft_alloc_size) {
+	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
+	uint32_t dest_size_original = dest->p_size;
+
+	if(dest->_a_size >= soft_alloc_size && dest->i_pos < soft_alloc_size && dest->p_size < soft_alloc_size) {
+		dest->p_size = soft_alloc_size;
+		return dest;
+	}
+
+	uint32_t target_soft_alloc_size = soft_alloc_size;
+
+	if(soft_alloc_size * 2 < __ATSC3_UTILS_BLOCK_PREALLOC_RESIZE_DOUBLE_LIMIT__) {
+		target_soft_alloc_size = soft_alloc_size * 2;
+	}
+
+	block_Resize(dest, target_soft_alloc_size);
+	dest->p_size = dest_size_original;
+
+	return dest;
+}
 
 //return will be NULL if realloc failed, but src will still be valid
 //grow or shrink a block,

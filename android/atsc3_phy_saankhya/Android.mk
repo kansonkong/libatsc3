@@ -268,21 +268,22 @@ LIB_SL_API := \
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/nxp/*.c)		\
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/silabs/*.c) 	\
     $(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/situne/*.c) 	\
-   	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slconfig/sl_config.c 			\
-	$(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/dispatchers/*.c)
+  	$(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/*.c)				\
+	$(wildcard $(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slconfig/*.c)
 
 LOCAL_C_INCLUDES += \
-	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/inc \
-	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/demod \
-	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/nxp \
-	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/silabs \
-	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/situne 			\
-	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/inc 						\
-	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/dispatchers/include 	\
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/inc 								\
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/inc/diag							\
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/demod 							\
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/nxp 						\
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/silabs 					\
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slapi/src/tuner/situne 					\
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/inc 								\
 	$(LOCAL_PATH)/../../libusb_android/libusb
 
 # jjustman-2020-09-08 - for FX3-USB based I/F
 INCLUDE_SL_API_REF := \
+	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref \
 	$(LOCAL_PATH)/../../saankhyalabs-slsdk/slplf/src/slref/fx3s
 
 LIB_SL_API_REF := \
