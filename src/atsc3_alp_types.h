@@ -44,6 +44,7 @@ typedef struct alp_single_packet_header_header_extension {
  * 									HM		1		1 byte					length_MSB					3 bytes
  * 1			Segmentation or		S/C		0		1 byte					seg_SN, LSI					3 bytes
  * 				 Continuation		S/C		1		1 byte					length_MSB, count			3 + ceil( (count+1) * 1.5)) bytes
+ * 				 
  */
 
 typedef struct alp_single_packet_hdr {
@@ -55,10 +56,23 @@ typedef struct alp_single_packet_hdr {
 	alp_single_packet_header_header_extension_t				alp_single_packet_header_header_extension;
 } alp_single_packet_hdr_t;
 
+/*
+ NOTE: A/330 header_mode==1 indicates that the ALP packet will be >=2048 bytes (2^11), do not use the A/330 length:11 cast, instead:
+ 
+ total length: 5 (MSB) + 11 (LSB) = 16
+ 
+		header_mode (HM) – This 1-bit field, when set to ‘0’, shall indicate there is no Additional Header for the single packet as defined in Section 5.1.2.1,
+		and that the length of the payload of the ALP packet is less than 2048 bytes. A value of ‘1’ shall indicate that an Additional Header for the single packet as
+		defined in Section 5.1.2.1 is present following the length field. In this case, the length of the payload is larger than 2047 bytes and/or optional
+		features can be used (sub- stream identification, header extension, etc.).
+		This field shall be present only when the payload_configuration field of the ALP packet has a value of ‘0’.
+ */
 //alp_packet_header:1
 typedef struct alp_packet_header_mode {
 	uint8_t	 header_mode:1;
-	uint16_t length:11;
+	uint16_t length_LSB:11;
+	uint16_t length:16;
+	
 	alp_single_packet_hdr_t alp_single_packet_header;
 
 } alp_packet_header_mode_t;
