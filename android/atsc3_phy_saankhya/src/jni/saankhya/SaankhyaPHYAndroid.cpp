@@ -647,6 +647,8 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.qCoeff1 = 1.0;
             iqOffSetCorrection.iCoeff2 = 0.0;
             iqOffSetCorrection.qCoeff2 = 0.0;
+            //sanjay
+            kailash_3_rssi = true;
             break;
 
         case SL_YOGA_DONGLE:
@@ -1417,7 +1419,16 @@ UNLOCK:
 }
 
 int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, int device_type, string device_path) {
-    _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware, path: %s, device_type: %d, fd: %d", device_path.c_str(), device_type, fd);
+
+    //sanjay
+    if (device_type == 3) {
+        kailash_3_rssi = true;
+    } else {
+        kailash_3_rssi = false;
+    }
+
+    _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware, path: %s, device_type: %d, fd: %d",
+                                device_path.c_str(), device_type, fd);
 
     //jjustman-2021-10-24 - super-hacky workaround for preboot firmware d/l and proper device type open on re-enumeration call for now..
     this->last_download_bootloader_firmware_device_id = device_type;
@@ -2557,7 +2568,13 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
         snr_plp[3] = compute_snr(perfDiag.Plp3SnrLinearScale);
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].snr1000 = snr_plp[3];
 
-        atsc3_ndk_phy_client_rf_metrics.rssi_1000 = tunerInfo.signalStrength * 1000;
+        //sanjay
+        if (kailash_3_rssi == true) {
+            atsc3_ndk_phy_client_rf_metrics.rssi_1000 = ((tunerInfo.signalStrength * 1000) -
+                                                         (256000));
+        } else {
+            atsc3_ndk_phy_client_rf_metrics.rssi_1000 = tunerInfo.signalStrength * 1000;
+        }
 
         //jjustman-2021-05-11 - fixme to just be perfDiag values
         ber_l1b = perfDiag.NumBitErrL1b; //(float)perfDiag.NumBitErrL1b / perfDiag.NumFecBitsL1b; // //aBerPreLdpcE7,
