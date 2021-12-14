@@ -9,7 +9,7 @@
 
 #include "atsc3_baseband_packet_types.h"
 
-int _ALP_PARSER_INFO_ENABLED = 0;
+int _ALP_PARSER_INFO_ENABLED  = 0;
 int _ALP_PARSER_DEBUG_ENABLED = 0;
 int _ALP_PARSER_TRACE_ENABLED = 0;
 
@@ -433,23 +433,36 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
     
 	if(alp_packet_header->payload_configuration == 0) {
 		alp_packet_header->alp_packet_header_mode.header_mode = (alp_packet_header_byte_1 >> 3) & 0x01;
-		alp_packet_header->alp_packet_header_mode.length = (alp_packet_header_byte_1 & 0x7) << 8 | alp_packet_header_byte_2;
+		alp_packet_header->alp_packet_header_mode.length_LSB = (alp_packet_header_byte_1 & 0x7) << 8 | alp_packet_header_byte_2;
 		__ALP_PARSER_INFO("header mode                : %d", alp_packet_header->alp_packet_header_mode.header_mode);
-		__ALP_PARSER_INFO("length                     : %d", alp_packet_header->alp_packet_header_mode.length);
-		__ALP_PARSER_INFO("-----------------------------");
-        alp_payload_length = alp_packet_header->alp_packet_header_mode.length;
+		__ALP_PARSER_INFO("length LSB                 : %d", alp_packet_header->alp_packet_header_mode.length_LSB);
 
-		if(alp_packet_header->payload_configuration == 0 && alp_packet_header->alp_packet_header_mode.header_mode == 0) {
+		if(alp_packet_header->alp_packet_header_mode.header_mode == 0) {
 				//no additional header size
-			__ALP_PARSER_INFO(" no additional ALP header bytes");
-		} else if (alp_packet_header->payload_configuration == 0 && alp_packet_header->alp_packet_header_mode.header_mode == 1) {
+			__ALP_PARSER_INFO("no additional ALP header bytes");
+			
+			alp_packet_header->alp_packet_header_mode.length = alp_packet_header->alp_packet_header_mode.length_LSB;
+		} else if (alp_packet_header->alp_packet_header_mode.header_mode == 1) {
 			//one byte additional header
+			//jjustman-2021-12-14 - TODO: fix me for impl
             uint8_t alp_additional_header_byte_1 = *binary_payload;
-			__ALP_PARSER_INFO(" one additional ALP header byte: 0x%x (header_mode==1)", alp_additional_header_byte_1);
-		} else if (alp_packet_header->payload_configuration == 1) {
-            uint8_t alp_additional_header_byte_1 = *binary_payload;
-			__ALP_PARSER_INFO(" one additional header byte -  0x%x (header_mode==0)", alp_additional_header_byte_1);
+			__ALP_PARSER_INFO("one additional ALP header byte: 0x%x (header_mode==1)", alp_additional_header_byte_1);
+			
+			alp_packet_header->alp_packet_header_mode.alp_single_packet_header.length_MSB = (alp_additional_header_byte_1 >> 3) & 0x1F; //5 MSB
+			alp_packet_header->alp_packet_header_mode.alp_single_packet_header.reserved = (alp_additional_header_byte_1 >> 2) & 0x01;
+			alp_packet_header->alp_packet_header_mode.alp_single_packet_header.SIF = (alp_additional_header_byte_1 >> 1) & 0x01;
+			alp_packet_header->alp_packet_header_mode.alp_single_packet_header.HEF = (alp_additional_header_byte_1) & 0x01;
+			
+			__ALP_PARSER_INFO("length MSB                 : %d", alp_packet_header->alp_packet_header_mode.alp_single_packet_header.length_MSB);
+			__ALP_PARSER_INFO("SIF                        : %d", alp_packet_header->alp_packet_header_mode.alp_single_packet_header.SIF);
+			__ALP_PARSER_INFO("HEF                        : %d", alp_packet_header->alp_packet_header_mode.alp_single_packet_header.HEF);
+			
+			alp_packet_header->alp_packet_header_mode.length = 	(alp_packet_header->alp_packet_header_mode.alp_single_packet_header.length_MSB << 11) |  alp_packet_header->alp_packet_header_mode.length_LSB;
 		}
+
+		alp_payload_length = alp_packet_header->alp_packet_header_mode.length;
+
+		__ALP_PARSER_INFO("length                     : %d", alp_packet_header->alp_packet_header_mode.length);
 		__ALP_PARSER_INFO("-----------------------------");
 
 	} else if(alp_packet_header->payload_configuration == 1) {
