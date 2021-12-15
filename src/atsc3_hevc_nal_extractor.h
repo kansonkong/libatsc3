@@ -58,6 +58,8 @@ extern "C" {
 atsc3_video_decoder_configuration_record_t* atsc3_avc1_hevc_nal_extractor_parse_from_mpu_metadata_block_t(block_t*);
 
 block_t* atsc3_hevc_extract_extradata_nals_combined_ffmpegImpl(block_t* hvcc_box);
+block_t* atsc3_h264_extract_extradata_nals_combined_ffmpegImpl(block_t* avcc_box);
+
 block_t* atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(block_t* sample, block_t* last_extradata_NAL_parsed);
 
 void atsc3_hevc_decoder_configuration_record_dump(hevc_decoder_configuration_record_t* hevc_decoder_configuration_record);
@@ -66,7 +68,8 @@ void atsc3_hevc_nals_record_dump(const char* label, block_t* block);
 void atsc3_avc1_decoder_configuration_record_dump(avc1_decoder_configuration_record_t* avc1_decoder_configuration_record);
 
 void atsc3_init_parse_tkhd_for_width_height(atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record, uint8_t* tkhd_ptr_start, uint32_t init_buff_remaining);
-void atsc3_init_parse_HEVCConfigurationBox_for_width_height(atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record, uint8_t* configurationBox_ptr_start, uint32_t init_buff_remaining);
+void atsc3_init_parse_HEV1ConfigurationBox_for_width_height(atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record, uint8_t* configurationBox_ptr_start, uint32_t init_buff_remaining);
+void atsc3_init_parse_AVC1ConfigurationBox_for_width_height(atsc3_video_decoder_configuration_record_t* atsc3_video_decoder_configuration_record, uint8_t* configurationBox_ptr_start, uint32_t init_buff_remaining);
 
 
 /**
