@@ -80,12 +80,20 @@ void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(atsc3_mmt_mfu_context_t*
                 Atsc3NdkMediaMMTBridge_ptr->atsc3_setVideoWidthHeightFromTrak(packet_id, atsc3_video_decoder_configuration_record->width, atsc3_video_decoder_configuration_record->height);
             }
 
-            if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record && atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
+            if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record) {
 
-                if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size) {
+                if (atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined && atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size) {
                     Atsc3NdkMediaMMTBridge_ptr->atsc3_onInitHEVC_NAL_Extracted(service_id, packet_id, mpu_sequence_number, block_Get(atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined), atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined->p_size);
                 } else {
                     Atsc3NdkMediaMMTBridge_ptr->LogMsg("atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk - error, no NALs returned!");
+                }
+            } else if (atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record) {
+
+                if (atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->avc_nals_combined && atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->avc_nals_combined->p_size) {
+                    //jjustman-2021-12-14 - todo.. FIXME?
+                    Atsc3NdkMediaMMTBridge_ptr->atsc3_onInitHEVC_NAL_Extracted(service_id, packet_id, mpu_sequence_number, block_Get(atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->avc_nals_combined), atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->avc_nals_combined->p_size);
+                } else {
+                    Atsc3NdkMediaMMTBridge_ptr->LogMsg("atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk - error, no AVC NALs returned!");
                 }
             }
         }
@@ -139,6 +147,7 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
         service_id = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->service_id;
     }
 
+    //hevc NAL append...
     if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record &&
         atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record &&
         atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record->hevc_nals_combined) {
@@ -152,6 +161,30 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
 
         if ((global_mfu_proccessed_count++ % 600) == 0) {
             Atsc3NdkMediaMMTBridge_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: hevc_nals: global mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, rbsp len: %d, mpu_timestamp_descriptor: %lu",
+                                                global_mfu_proccessed_count,
+                                                packet_id, mpu_sequence_number, sample_number,
+                                                block_Len(mmt_mfu_sample), block_len,
+                                                mpu_timestamp_descriptor);
+
+        }
+
+        Atsc3NdkMediaMMTBridge_ptr->atsc3_onMfuPacket(service_id, packet_id, mpu_sequence_number, sample_number, block_ptr, block_len, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
+
+        block_Destroy(&mmt_mfu_sample_rbsp);
+
+    } else if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record &&
+              atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record &&
+              atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->avc_nals_combined) {
+
+        //get our raw byte sequence payload, android medicacodec decoder for HEVC needs this...
+        block_t* mmt_mfu_sample_rbsp = atsc3_hevc_extract_mp4toannexb_filter_ffmpegImpl(mmt_mfu_sample, atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->avc1_decoder_configuration_record->avc_nals_combined);
+
+        block_Rewind(mmt_mfu_sample_rbsp);
+        uint8_t* block_ptr = block_Get(mmt_mfu_sample_rbsp);
+        uint32_t block_len = block_Len(mmt_mfu_sample_rbsp);
+
+        if ((global_mfu_proccessed_count++ % 600) == 0) {
+            Atsc3NdkMediaMMTBridge_ptr->LogMsgF("atsc3_mmt_mpu_mfu_on_sample_complete_ndk: avc1_nals: global mfu count: %d, packet_id: %d, mpu: %d, sample: %d, orig len: %d, rbsp len: %d, mpu_timestamp_descriptor: %lu",
                                                 global_mfu_proccessed_count,
                                                 packet_id, mpu_sequence_number, sample_number,
                                                 block_Len(mmt_mfu_sample), block_len,
