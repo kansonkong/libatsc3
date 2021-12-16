@@ -1564,6 +1564,9 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_kailash_3_bb_fx3() {
 
     sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
 
+    //jjustman-2021-12-11 - todo: fixme
+    sPlfConfig.dispConf = SL_DispatcherConfig_slref;
+
     /* Set Configuration Parameters */
     res = SL_ConfigSetPlatform(sPlfConfig);
 
@@ -1602,6 +1605,9 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_yoga_bb_fx3() {
     sPlfConfig.demodI2cAddr3GpioPin = 37; /* FX3S GPIO 37 connected to SL3000_I2CADDR3 */
 
     sPlfConfig.slsdkPath = "."; //jjustman-2020-09-09 use extern object linkages for fx3/hex firmware
+
+    //jjustman-2021-12-11 - todo: fixme
+    sPlfConfig.dispConf = SL_DispatcherConfig_slref;
 
     /* Set Configuration Parameters */
     res = SL_ConfigSetPlatform(sPlfConfig);
