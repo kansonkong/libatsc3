@@ -203,6 +203,9 @@ typedef struct avc1_decoder_configuration_record {
     uint8_t			num_of_picture_parameter_sets;
     ATSC3_VECTOR_BUILDER_STRUCT(atsc3_avc1_nal_unit_pps);
 
+    block_t*        box_data_original;
+    block_t*        avc_nals_combined;
+
 } avc1_decoder_configuration_record_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(avc1_decoder_configuration_record, atsc3_avc1_nal_unit_sps);
