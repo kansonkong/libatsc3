@@ -7,6 +7,8 @@ checkout libatsc3:
 
 > git clone --branch develop --recurse-submodules https://github.com/jjustman/libatsc3.git 
 
+(note, some submodules are not publically distributed, you can safely skip username/password requests via hitting enter a few times)
+
 build for linux:
 
 > cd src; ./build_linux.sh 
