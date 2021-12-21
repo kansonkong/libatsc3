@@ -6,8 +6,11 @@
  
  
  Samples:
-	 -rw-------@ 1 jjustman  staff  5242944 Dec 20 21:40 DVB-gps-and-video.ts
-	 -rw-------@ 1 jjustman  staff   240452 Dec 20 21:40 DVB.ts
+ -rw-------@ 1 jjustman  staff  5242944 Dec 20 21:40 DVB-gps-and-video.ts
+ -rw-------@ 1 jjustman  staff  5242944 Dec 20 21:48 DVB-separate-plps-with-audio-video-gps.ts
+ -rw-------@ 1 jjustman  staff  5242944 Dec 20 21:48 DVB-single-plp-with-audio-video-gps.ts
+ -rw-------@ 1 jjustman  staff   240452 Dec 20 21:40 DVB.ts
+
  */
 
 #include <stdio.h>
@@ -53,8 +56,8 @@ static const int i = 1;
 
 	//0x47402D00 -> 0x47 40 2D 00
 	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_START_FLAG     0x47402D00
-	//0x47402D00 -> 0x47 40 2D 00
-	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_NO_START_FLAG  0x47402D00
+	//0x47002D00 -> 0x47 00 2D 00
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_NO_START_FLAG  0x47002D00
 	//0xFFF7FF00 -> 0xFF F7 FF 00
 	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_MASK           0xFFF7FF00
 
@@ -70,7 +73,7 @@ static const int i = 1;
 
 	//0x47402D00
 	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_START_FLAG     0x002D4047
-	//0x47402D00
+	//0x47002D00 -> 0x002D0047
 	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_NO_START_FLAG  0x002D0047
 	//0xFFF7FF00
 	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_MASK           0x00FF7FFF
@@ -140,8 +143,10 @@ atsc3_sony_ts_alp_replay_context_t* atsc3_sony_ts_alp_replay_context_new() {
 int main(int argc, char* argv[] ) {
 
 //    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB-gps-and-video.ts";
-    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB.ts";
-	
+//    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB.ts";
+//    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB-separate-plps-with-audio-video-gps.ts";
+    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB-single-plp-with-audio-video-gps.ts";
+
 	atsc3_sony_ts_alp_replay_context_t* atsc3_sony_ts_alp_replay_context = atsc3_sony_ts_alp_replay_context_new();
 	//hack-ish for now
 	atsc3_sony_ts_alp_replay_context->ts_file_name = strdup(SONY_TS_ALP_READER_TEST_FILENAME);
@@ -321,6 +326,11 @@ int main(int argc, char* argv[] ) {
 					continue; //go back to our top loop...
 				}
 				block_Write(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet, temp_alp_packet_buffer_starting_header, ts_remaining_bytes);
+				
+				//jjustman-2021-12-21 - TODO: IN processing for "pending_alp_packet", check for internal ALP packet len vs remaining size
+				// e.g. ReadState.PROCESS_ANY_SMALL_PACKETS here by peeking at first 11 LSB of temp_alp_packet_buffer_starting_header to see if value < ts remaining size
+				
+				
 			} else {
 				//start new at 0?
 				_ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_payload_is_sync_start_flag: Starting new alp packet at offset: 0 ?! TODO: scan if we are 0x80 or 0x08 for padding: %d", atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet->p_size);
