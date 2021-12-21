@@ -97,7 +97,8 @@ all: 	intermediate_lls \
 		a324_tests \
 		phy_tests \
 		tools \
-		atsc3_sl_phy
+		atsc3_sl_phy \
+		atsc3_sony_phy
 
 clean:
 	-rm -f *.o
@@ -159,6 +160,7 @@ clean:
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics
+	-rm -f test_sony/atsc3_sony_ts_alp_reader_test
 
 intermediate_lls: 	atsc3_lls.o \
 					atsc3_lls_types.o \
@@ -310,6 +312,9 @@ atsc3_sl_phy: atsc3_sl_tlv_demod_type.o	\
 	test_sl/atsc3_sl_tlv_parser_to_alp_test \
 	test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test \
 	test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics
+
+atsc3_sony_phy: \
+	test_sony/atsc3_sony_ts_alp_reader_test
 
 # intermediate object generation for linking into libatsc3.o
 
@@ -1887,6 +1892,10 @@ tools/atsc3_mmt_listener_to_http_hls_fmp4: tools/atsc3_mmt_listener_to_http_hls_
 		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd \
 		-o tools/atsc3_mmt_listener_to_http_hls_fmp4
 
+
+
+#SL Demod testing/tools:
+
 atsc3_sl_tlv_demod_type.o: atsc3_sl_tlv_demod_type.h atsc3_sl_tlv_demod_type.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_sl_tlv_demod_type.c
 
@@ -1921,3 +1930,13 @@ test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test: 	test_sl/atsc3_sl_tlv_parser_
 			-o test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test
 
 
+# jjustman-2021-12-20 - Sony demod test/tools
+
+test_sony/atsc3_sony_ts_alp_reader_test: 	test_sony/atsc3_sony_ts_alp_reader_test.c \
+											libatsc3.o
+	$(CC) $(CFLAGS) $(DEBUG)  test_sony/atsc3_sony_ts_alp_reader_test.c \
+			libatsc3.o \
+			$(LOCAL_LD_LIBS) \
+			$(LOCAL_LD_LIBS_OPENSSL) \
+	   -o test_sony/atsc3_sony_ts_alp_reader_test
+	   
