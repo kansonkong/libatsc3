@@ -26,16 +26,66 @@
 #define _ATSC3_SONY_TS_ALP_READER_TEST_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_SONY_TS_ALP_READER_TEST_TRACE(...)   printf("%s:%d:TRACE:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 
+static const int i = 1;
+#define is_bigendian()  'ABCD' != 0x41424344
+//is_bigendian() ( (*(char*)&i) == 0 )
 
 #define ATSC3_SONY_TS_ALP_FRAME_LENGTH 				188
-
-//flip when we mask as uint32_t
-//0x47402D00
-#define ATSC3_SONY_TS_ALP_SYNC_HEADER_START_FLAG    0x002D4047
-//0x47402D00
-#define ATSC3_SONY_TS_ALP_SYNC_HEADER_NO_START_FLAG 0x002D0047
-#define ATSC3_SONY_TS_ALP_SYNC_HEADER_MASK          0x00FF7FFF
 #define ATSC3_SONY_TS_ALP_SYNC_HEADER_MAX_LEN		4
+
+
+/*
+ jjustman-2021-12-20 - special TS ALP padding observed on Endeveour dongle:
+ 
+ [8:06 PM, 12/20/2021] Jason: [8:04 PM, 12/20/2021] Jason:  think i got it:
+
+ 47402D 82 -> 130 bytes that belong to the previous packet, then
+
+ a.) it will contain a (varlen?) padding starting with 0x80 10 01 FF with and ending of 0xE7 E6 (usually 32 + 4, but I have seen payloads of 36 + 4),
+
+ or,
+
+ b.) it will contain padding starting with 0x08 00 05 F0 with and ending of 0xE7 0xE6 (usually 9 bytes +4 checksum?)
+ [8:07 PM, 12/20/2021] Jason: if the next 4 bytes of your read don't look like that (e.g. after the +4 checksum), then you have a new ALP header
+ 
+ */
+#if is_bigendian()
+
+	//0x47402D00 -> 0x47 40 2D 00
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_START_FLAG     0x47402D00
+	//0x47402D00 -> 0x47 40 2D 00
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_NO_START_FLAG  0x47402D00
+	//0xFFF7FF00 -> 0xFF F7 FF 00
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_MASK           0xFFF7FF00
+
+	//0x801001ff -> 0x80 0x10 0x01 0xff -> 0xff 0x01 0x10 0x80
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_PAD_START_LONG 0x801001ff
+	//0x080005f0 -> 0x08 0x00 0x05 0xf0 -> 0xf0 0x05 0x00 0x08
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_PAD_START_SHORT 0x080005f0
+
+	//0xE7E6
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_PAD_END 0xe7e6
+#else
+	//flip when we mask as uint32_t
+
+	//0x47402D00
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_START_FLAG     0x002D4047
+	//0x47402D00
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_NO_START_FLAG  0x002D0047
+	//0xFFF7FF00
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_MASK           0x00FF7FFF
+
+	//0x801001ff -> 0x80 0x10 0x01 0xff -> 0xff 0x01 0x10 0x80
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_PAD_START_LONG 0xff011080
+	//0x080005f0 -> 0x08 0x00 0x05 0xf0 -> 0xf0 0x05 0x00 0x08
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_PAD_START_SHORT 0xf0050008
+
+	//0xE7E6 -> 0xE6 0xE7
+	#define ATSC3_SONY_TS_ALP_SYNC_HEADER_PAD_END        0xE6E7
+
+
+#endif
+
 
 
 typedef struct atsc3_sony_ts_alp_packet_instance {
@@ -89,7 +139,8 @@ atsc3_sony_ts_alp_replay_context_t* atsc3_sony_ts_alp_replay_context_new() {
 
 int main(int argc, char* argv[] ) {
 
-    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB-gps-and-video.ts";
+//    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB-gps-and-video.ts";
+    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB.ts";
 	
 	atsc3_sony_ts_alp_replay_context_t* atsc3_sony_ts_alp_replay_context = atsc3_sony_ts_alp_replay_context_new();
 	//hack-ish for now
@@ -112,7 +163,7 @@ int main(int argc, char* argv[] ) {
 		return -1;
 	}
 											
-	_ATSC3_SONY_TS_ALP_READER_TEST_DEBUG("Opening ts: %s, length: %d, context is: %p", atsc3_sony_ts_alp_replay_context->ts_file_name, atsc3_sony_ts_alp_replay_context->ts_file_len, atsc3_sony_ts_alp_replay_context);
+	_ATSC3_SONY_TS_ALP_READER_TEST_DEBUG("Opening ts: %s, length: %d, context is: %p, is_bigendian: %d", atsc3_sony_ts_alp_replay_context->ts_file_name, atsc3_sony_ts_alp_replay_context->ts_file_len, atsc3_sony_ts_alp_replay_context, is_bigendian());
 
 	char temp_alp_packet_buffer[185] = { 0 };
 	int  temp_alp_packet_buffer_read_len = 0;
@@ -176,27 +227,103 @@ int main(int argc, char* argv[] ) {
 			//parse thru our padding data if needed..
 			if(ts_payload_alp_start) {
 				int ts_remaining_bytes = temp_alp_packet_buffer_read_len - ts_payload_alp_start;
+				
+				uint8_t* temp_alp_packet_buffer_starting_header = (temp_alp_packet_buffer + ts_payload_alp_start);
 
 				if(!atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet->p_size) {
 					_ATSC3_SONY_TS_ALP_READER_TEST_WARN("ts_payload_is_sync_start_flag: pending alp packet size is 0! sync frame at pos: %d", atsc3_sony_ts_alp_replay_context->ts_file_pos);
 				} else {
-					_ATSC3_SONY_TS_ALP_READER_TEST_WARN("ts_payload_is_sync_start_flag: pending alp packet size is 0! sync frame at pos: %d", atsc3_sony_ts_alp_replay_context->ts_file_pos);
-
+					_ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_payload_is_sync_start_flag: pending alp packet size is %d, sync frame at pos: %d", atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet->p_size, atsc3_sony_ts_alp_replay_context->ts_file_pos);
 
 					block_Write(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet, temp_alp_packet_buffer, ts_payload_alp_start);
+					block_Rewind(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet);
+					
 					//close this packet out and parse out ALP
-					_ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_payload_is_sync_start_flag: Closing out pending alp packet, length: %d", atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet->p_size);
+					_ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_payload_is_sync_start_flag: Closing out pending alp packet, length: %d, first four bytes of ALP packet are: 0x%02x 0x%02x 0x%02x 0x%02x",
+														atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet->p_size,
+														*(uint8_t*)(block_Get(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet)),
+														*(uint8_t*)(block_Get(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet) + 1),
+														*(uint8_t*)(block_Get(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet) + 2),
+														*(uint8_t*)(block_Get(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet) + 3)
+														);
 				}
 				
 				block_Resize(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet, 0);
-				_ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_payload_is_sync_start_flag: Reading inner TS start packet at pos: %d, remaining TS len: %d",
+				_ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_payload_is_sync_start_flag: Starting new alp packet at TS start packet at pos: %d, remaining TS len: %d, ptr: %p, first 4 bytes: 0x%08x",
 													atsc3_sony_ts_alp_replay_context->ts_file_pos,
-													ts_remaining_bytes);
+													ts_remaining_bytes,
+													temp_alp_packet_buffer_starting_header,
+													*(uint32_t*)temp_alp_packet_buffer_starting_header);
 				
-				block_Write(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet, temp_alp_packet_buffer + ts_payload_alp_start, ts_remaining_bytes);
+				
+				//check if we contain ATSC3_SONY_TS_ALP_SYNC_HEADER_PAD_START_LONG or ATSC3_SONY_TS_ALP_SYNC_HEADER_PAD_START_SHORT
+				bool check_for_pad_start = true;
+				bool pad_end_found = false;
+
+				if(ts_remaining_bytes < 8) {
+					_ATSC3_SONY_TS_ALP_READER_TEST_WARN("ts remaining length is less than 8! len: %d", ts_remaining_bytes);
+					continue; //go back to our top loop...
+				}
+				
+				//we need at least max(pad_end + 4, pad_start + 4) = 8 bytes...
+				while (ts_remaining_bytes >= 8 && check_for_pad_start) {
+					
+					if((*(uint32_t*)temp_alp_packet_buffer_starting_header) == ATSC3_SONY_TS_ALP_SYNC_HEADER_PAD_START_LONG || (*(uint32_t*)temp_alp_packet_buffer_starting_header) == ATSC3_SONY_TS_ALP_SYNC_HEADER_PAD_START_SHORT) {
+						_ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_payload_is_sync_start_flag: new ALP packet starts with HEADER_PAD at ptr: %p, ts_remaining_bytes: %d",
+															temp_alp_packet_buffer_starting_header,
+															ts_remaining_bytes);
+						
+						check_for_pad_start = true;
+						
+						//walk thru till we find our PAD_END...
+						pad_end_found = false;
+						temp_alp_packet_buffer_starting_header += 4;
+						ts_remaining_bytes -= 4;
+						
+						while (ts_remaining_bytes > 6 && !pad_end_found) {
+							_ATSC3_SONY_TS_ALP_READER_TEST_TRACE("ts_payload_is_sync_start_flag: looking for PAD_END ptr: %p, ts_remaining_bytes: %d, bytes: 0x%02x 0x%02x",
+																temp_alp_packet_buffer_starting_header,
+																ts_remaining_bytes,
+																 *(uint8_t*)(temp_alp_packet_buffer_starting_header),
+																 *(uint8_t*)(temp_alp_packet_buffer_starting_header + 1)
+																 );
+							
+							if((*(uint16_t*)temp_alp_packet_buffer_starting_header) == ATSC3_SONY_TS_ALP_SYNC_HEADER_PAD_END) {
+								pad_end_found = true;
+							}
+							
+							temp_alp_packet_buffer_starting_header += 1;
+							ts_remaining_bytes -= 1;
+						}
+						
+						//jjustman-2021-12-21 - read the next 1 + 4 bytes (checksum?)
+						if(pad_end_found) {
+							temp_alp_packet_buffer_starting_header += 5;
+							ts_remaining_bytes -= 5;
+						} else {
+							_ATSC3_SONY_TS_ALP_READER_TEST_WARN("ts remaining length is less than 6 and !pad_end_found, len: %d", ts_remaining_bytes);
+						}
+					} else {
+						check_for_pad_start = false;
+						_ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_payload_is_sync_start_flag: new ALP packet header no longer stats with HEADER_PAD, continuing at ptr: %p, ts_remaining_bytes: %d, bytes: 0x%02x 0x%02x 0x%02x 0x%02x",
+															temp_alp_packet_buffer_starting_header,
+															ts_remaining_bytes,
+															*(uint8_t*)(temp_alp_packet_buffer_starting_header),
+															*(uint8_t*)(temp_alp_packet_buffer_starting_header + 1),
+															*(uint8_t*)(temp_alp_packet_buffer_starting_header + 2),
+															*(uint8_t*)(temp_alp_packet_buffer_starting_header + 3)
+															);
+					}
+				}
+				
+				if(ts_remaining_bytes < 6) {
+					_ATSC3_SONY_TS_ALP_READER_TEST_WARN("ts remaining length is less than 6! len: %d", ts_remaining_bytes);
+					continue; //go back to our top loop...
+				}
+				block_Write(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet, temp_alp_packet_buffer_starting_header, ts_remaining_bytes);
 			} else {
 				//start new at 0?
-				_ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_payload_is_sync_start_flag: Starting new alp packet at offset, TODO: scan if we are 0x80 or 0x08 for padding: %d", atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet->p_size);
+				_ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_payload_is_sync_start_flag: Starting new alp packet at offset: 0 ?! TODO: scan if we are 0x80 or 0x08 for padding: %d", atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet->p_size);
 				block_Resize(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet, 0);
 				block_Write(atsc3_sony_ts_alp_replay_context->atsc3_sony_ts_alp_packet_instance.pending_alp_packet, temp_alp_packet_buffer, temp_alp_packet_buffer_read_len);
 			}
