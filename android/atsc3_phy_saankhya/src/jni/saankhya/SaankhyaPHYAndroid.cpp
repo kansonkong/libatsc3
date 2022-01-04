@@ -619,6 +619,9 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 
 
         case SL_KAILASH_DONGLE_3:
+
+            _SAANKHYA_PHY_ANDROID_DEBUG("Configuring as: SL_KAILASH_DONGLE_3");
+
             if (getPlfConfig.tunerType == TUNER_SILABS)
             {
                 afeInfo.spectrum = SL_SPECTRUM_INVERTED;
@@ -652,6 +655,9 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             break;
 
         case SL_YOGA_DONGLE:
+
+            _SAANKHYA_PHY_ANDROID_DEBUG("Configuring as: SL_YOGA_DONGLE");
+
             if (getPlfConfig.tunerType == TUNER_SI_P)
             {
                 afeInfo.spectrum = SL_SPECTRUM_NORMAL;
@@ -679,9 +685,15 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.iCoeff2 = 0;
             iqOffSetCorrection.qCoeff2 = 0;
 
+            //jjustman-2022-01-04 TODO: FIX ME!!!
 
-            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
-            lnaInfo.lnaGpioNum = 12;
+            //2022-01-04 02:49:43.274 16187-18518/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 837:DEBUG:1641293383.2741:SL_DemodConfigure: SL_CONFIGTYPE_EXT_LNA, value: 0xc01
+            //on yoga f/w 3.35 causes crash?
+
+            //SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE? vs SL_EXT_LNA_CFG_MODE_AUTO
+            //0xc01
+            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_NOT_PRESENT;
+            lnaInfo.lnaGpioNum = 0;
             break;
 
         default:
@@ -695,6 +707,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
          * GPIO12 is used for LNA Bypass/Enable in Yoga Dongle.
          * It may be different for other boards. Use bits 8 to 15 to specify the same
          */
+
         lnaInfo.lnaMode = static_cast<SL_ExtLnaModeConfig_t>(lnaInfo.lnaMode | (lnaInfo.lnaGpioNum << 8));
     }
 
@@ -784,6 +797,13 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         goto ERROR;
     }
 
+    slres = SL_DemodGetSoftwareVersion(slUnit, &swMajorNo, &swMinorNo);
+    if (slres == SL_OK)
+    {
+        _SAANKHYA_PHY_ANDROID_DEBUG("Demod SW Version: %d.%d", swMajorNo, swMinorNo);
+        demodVersion = to_string(swMajorNo) + "." + to_string(swMinorNo);
+    }
+
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_AFEIF, &afeInfo);
     if (slres != 0)
     {
@@ -815,6 +835,18 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         goto ERROR;
     }
 
+#ifndef __JJ_CALIBRATION_ENABLED
+
+
+    slres = SL_DemodConfigureEx(slUnit, demodStandard, &atsc3ConfigParams);
+
+    if (slres != 0)
+    {
+        _SAANKHYA_PHY_ANDROID_ERROR("SL_DemodConfigureEx(%d, demodStandard: %d, %p) returned: %d", slUnit, demodStandard, &atsc3ConfigParams, slres);
+        goto ERROR;
+    }
+#endif
+
     _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodConfigure: SL_CONFIGTYPE_EXT_LNA, value: 0x%02x", lnaInfo.lnaMode)
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_EXT_LNA, (unsigned int *)&lnaInfo.lnaMode);
     if (slres != 0)
@@ -823,22 +855,6 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         goto ERROR;
     }
 
-#ifndef __JJ_CALIBRATION_ENABLED
-    slres = SL_DemodConfigureEx(slUnit, demodStandard, &atsc3ConfigParams);
-
-    if (slres != 0)
-    {
-        _SAANKHYA_PHY_ANDROID_ERROR("SL_DemodConfigureEx(%d, SL_DEMODSTD_ATSC3_0, %p) returned: %d", slUnit, &atsc3ConfigParams, slres);
-        goto ERROR;
-    }
-#endif
-
-    slres = SL_DemodGetSoftwareVersion(slUnit, &swMajorNo, &swMinorNo);
-    if (slres == SL_OK)
-    {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Demod SW Version: %d.%d", swMajorNo, swMinorNo);
-        demodVersion = to_string(swMajorNo) + "." + to_string(swMinorNo);
-    }
 
     tres = SL_TunerCreateInstance(&tUnit);
     if (tres != 0)
@@ -1805,6 +1821,10 @@ void SaankhyaPHYAndroid::printToConsolePlfConfiguration(SL_PlatFormConfigParams_
     else if (cfgInfo.tunerType == TUNER_SI)
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: TUNER_SI");
+    }
+    else if (cfgInfo.tunerType == TUNER_SI_P)
+    {
+        _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: TUNER_SI_P");
     }
     else if(cfgInfo.tunerType == TUNER_SILABS)
     {

@@ -46,11 +46,15 @@ using namespace std;
 #define SL_DEVICE_TYPE_MARKONE        0
 #define SL_DEVICE_TYPE_FX3_KAILASH    1
 #define SL_DEVICE_TYPE_FX3_KAILASH_2  2
+
+//jjustman-2022-01-04 - TODO: this should be FX3_SILISA  -> SL_SILISA_DONGLE
+
 #define SL_DEVICE_TYPE_FX3_KAILASH_3  3
 #define SL_DEVICE_TYPE_FX3_YOGA       4
 
 //justman-2021-10-24 - hack!
 #define JJ_DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE 31337
+
 
 #include "CircularBuffer.h"
 
