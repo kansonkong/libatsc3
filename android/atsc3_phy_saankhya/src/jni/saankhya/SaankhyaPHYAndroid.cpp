@@ -690,15 +690,9 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.iCoeff2 = 0;
             iqOffSetCorrection.qCoeff2 = 0;
 
-            //jjustman-2022-01-04 TODO: FIX ME!!!
+            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
+            lnaInfo.lnaGpioNum = 12;
 
-            //2022-01-04 02:49:43.274 16187-18518/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 837:DEBUG:1641293383.2741:SL_DemodConfigure: SL_CONFIGTYPE_EXT_LNA, value: 0xc01
-            //on yoga f/w 3.35 causes crash?
-
-            //SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE? vs SL_EXT_LNA_CFG_MODE_AUTO
-            //0xc01
-            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_NOT_PRESENT;
-            lnaInfo.lnaGpioNum = 0;
             break;
 
         default:
