@@ -320,6 +320,8 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
 
         char platform = 0;
         SL_GetHwRev(&platform);
+
+        //copy+paste warning from sl_gpio_markone SL_Query_HWREV
         markone_evt_version = (platform) & 0xFF;
         markone_evt_version++; //jjustman-2021-11-09: TODO - fixme in kernel, fallback will assume we are running on AA kernel
 
@@ -581,7 +583,10 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.qCoeff2 = 0;
 
 
-            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
+            //jjustman-2022-01-07 - testcase, change from SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE to AUTO and
+//            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
+            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
+
             lnaInfo.lnaGpioNum = (0x00000A00 >> 8); //should be 0xA after shift, d10
 
             break;
@@ -1678,8 +1683,17 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_markone() {
                                 sPlfConfig.hostInterfaceType);
 
     //jjustman-2021-11-09 - calibrated values on evt2 - pre AGND fix
-    tunerIQDcOffSet.iOffSet = 11;
-    tunerIQDcOffSet.qOffSet = 12;
+//    tunerIQDcOffSet.iOffSet = 11;
+//    tunerIQDcOffSet.qOffSet = 12;
+
+    //jjustman-2022-01-07 - EVT2 SMT1/FA values @575:
+    //
+    //2022-01-07 16:29:43.724 21558-21758/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1078:INFO :1641601783.7241:Completing calibration with status: 2
+    //2022-01-07 16:29:43.724 21558-21758/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1079:INFO :1641601783.7242:I Off Set Value        : 13
+    //2022-01-07 16:29:43.724 21558-21758/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1080:INFO :1641601783.7242:Q Off Set Value        : 9
+
+    tunerIQDcOffSet.iOffSet = 13;
+    tunerIQDcOffSet.qOffSet = 9;
 
     return res;
 }
