@@ -72,6 +72,8 @@ int _SAANKHYA_PHY_ANDROID_TRACE_ENABLED = 0;
 SL_Result_t     SaankhyaPHYAndroid::global_sl_result_error_flag = SL_OK;
 SL_I2cResult_t  SaankhyaPHYAndroid::global_sl_i2c_result_error_flag = SL_I2C_OK;
 
+int SaankhyaPHYAndroid::Last_download_bootloader_firmware_device_id = -1;
+
 SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
     this->jni_instance_globalRef = this->env->NewGlobalRef(jni_instance);
@@ -374,7 +376,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 
     if(device_type == JJ_DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE) {
         //jjustman-2021-10-24 - hack!
-        device_type = last_download_bootloader_firmware_device_id;
+        device_type = SaankhyaPHYAndroid::Last_download_bootloader_firmware_device_id;
         _SAANKHYA_PHY_ANDROID_INFO("open: JJ_DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE, with fd: %d, updated to device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
     } else {
         _SAANKHYA_PHY_ANDROID_DEBUG("open: with fd: %d, device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
@@ -1446,7 +1448,7 @@ int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, int device_type, st
                                 device_path.c_str(), device_type, fd);
 
     //jjustman-2021-10-24 - super-hacky workaround for preboot firmware d/l and proper device type open on re-enumeration call for now..
-    this->last_download_bootloader_firmware_device_id = device_type;
+    SaankhyaPHYAndroid::Last_download_bootloader_firmware_device_id = device_type;
 
     SL_ConfigResult_t sl_configResult = SL_CONFIG_OK;
     sl_configResult = configPlatformParams_autodetect(device_type, device_path);

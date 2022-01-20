@@ -169,7 +169,7 @@ private:
     bool kailash_3_rssi = false;
 
     //jjustman-2021-10-24 - super-hacky workaround for preboot firmware d/l and proper device type open on re-enumeration call for now..
-    int last_download_bootloader_firmware_device_id = -1;
+    static int Last_download_bootloader_firmware_device_id;
 
     int slUnit = -1;
     int tUnit = SL_TUNER_NIL_INSTANCE;
