@@ -257,6 +257,9 @@ lls_table_t* lls_create_xml_table(block_t* lls_packet_block) {
 	return NULL;
 }
 
+/*
+ * jjustman-2022-01-19 - NOTE: this method will call lls_slt_table_perform_update, so no need to call it in LLS ip/port detection flow logic
+ */
 lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block) {
 	uint32_t parsed;
 	uint32_t parsed_update;
