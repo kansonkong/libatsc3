@@ -851,20 +851,16 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 
     //don't auto-select service here, let the lls_slt_monitor->atsc3_lls_on_sls_table_present event callback trigger in a service selection
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
+        //note: lls_slt_table_perform_update will be called via lls_table_create_or_update_from_lls_slt_monitor if the SLT version changes
         lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
         if(lls_table) {
             if(lls_table->lls_table_id == SLT) {
-                //capture our SLT services into alc and mmt session flows
-                int retval = lls_slt_table_perform_update(lls_table, lls_slt_monitor);
-
-                if(!retval) {
-                    lls_dump_instance_table(lls_table);
-                }
+                lls_dump_instance_table(lls_table);
             } else {
-                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_core_service_bridge_process_packet_phy: lls_table_id: %d", lls_table->lls_table_id);
+                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_core_service_bridge_process_packet_phy: lls_table_id: %d, lls_group_id: %d, lls_table_version: %d", lls_table->lls_table_id, lls_table->lls_group_id, lls_table->lls_table_version);
             }
         } else {
-            //LLS_table may not have been updated (e.g. lls_table_version has not changed)
+            //LLS_table may not have been updated (e.g. lls_table_version has not changed), or unable to be parsed
         }
         goto cleanup;
     }
