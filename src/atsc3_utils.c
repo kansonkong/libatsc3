@@ -889,7 +889,10 @@ uint8_t block_Read_uint8_bitlen(block_t* src, int bitlen) {
         int remainder_to_mask_n = bitlen - to_mask_msb_n;
         int remainder_to_mask = ((((1 << (remainder_to_mask_n - 1)) - 1) << 1) | 1);
         int remainder_to_shift = 8 - remainder_to_mask_n;
-        ret = ((src->p_buffer[src->i_pos++] & to_mask_msb) << to_shift_l) | ((src->p_buffer[src->i_pos] >> remainder_to_shift) & remainder_to_mask);
+
+		//jjustman-2022-01-23 - visual studio c compiler needs to do increment as seperate instruction..
+        ret = ((src->p_buffer[src->i_pos] & to_mask_msb) << to_shift_l) | ((src->p_buffer[src->i_pos + 1] >> remainder_to_shift) & remainder_to_mask);
+		src->i_pos++;
 
         src->_bitpos = remainder_to_mask_n;
     }
