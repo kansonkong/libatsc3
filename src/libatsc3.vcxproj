@@ -145,7 +145,6 @@
     <ClCompile Include="atsc3_mbms_envelope_xml.c" />
     <ClCompile Include="atsc3_mime_multipart_related.c" />
     <ClCompile Include="atsc3_mime_multipart_related_parser.c" />
-    <ClCompile Include="atsc3_mmtp_ntp32_to_pts.c" />
     <ClCompile Include="atsc3_mmtp_packet_types.c" />
     <ClCompile Include="atsc3_mmtp_packet_utils.c" />
     <ClCompile Include="atsc3_mmtp_parser.c" />
@@ -155,6 +154,7 @@
     <ClCompile Include="atsc3_mmt_mpu_utils.c" />
     <ClCompile Include="atsc3_mmt_reconstitution_from_media_sample.c" />
     <ClCompile Include="atsc3_mmt_signalling_message.c" />
+    <ClCompile Include="atsc3_ntp_utils.c" />
     <ClCompile Include="atsc3_packet_statistics.c" />
     <ClCompile Include="atsc3_packet_statistics_types.c" />
     <ClCompile Include="atsc3_pcap_type.c" />
@@ -242,7 +242,6 @@
     <ClInclude Include="atsc3_mbms_envelope_xml.h" />
     <ClInclude Include="atsc3_mime_multipart_related.h" />
     <ClInclude Include="atsc3_mime_multipart_related_parser.h" />
-    <ClInclude Include="atsc3_mmtp_ntp32_to_pts.h" />
     <ClInclude Include="atsc3_mmtp_packet_types.h" />
     <ClInclude Include="atsc3_mmtp_packet_utils.h" />
     <ClInclude Include="atsc3_mmtp_parser.h" />
@@ -259,6 +258,7 @@
     <ClInclude Include="atsc3_monitor_events_alc.h" />
     <ClInclude Include="atsc3_monitor_events_lls.h" />
     <ClInclude Include="atsc3_monitor_events_sls.h" />
+    <ClInclude Include="atsc3_ntp_utils.h" />
     <ClInclude Include="atsc3_packet_statistics.h" />
     <ClInclude Include="atsc3_pcap_type.h" />
     <ClInclude Include="atsc3_route_dash_utils.h" />
