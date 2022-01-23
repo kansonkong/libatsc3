@@ -36,7 +36,7 @@
 #include "atsc3_stltp_parser.h"
 
 int _STLTP_PARSER_INFO_ENABLED  = 1;
-int _STLTP_PARSER_DUMP_ENABLED  = 0;
+int _STLTP_PARSER_DUMP_ENABLED  = 1;
 int _STLTP_PARSER_DEBUG_ENABLED = 0;
 int _STLTP_PARSER_TRACE_ENABLED = 0;
 
@@ -1032,20 +1032,15 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
         return NULL;
     }
     
-    //jjustman-2020-11-18 - at a minimum, we must have at least 112 bits (14 bytes) for the TMP packet parsing, otherwise bail
-    if(binary_payload_length < 14) {
-        __STLTP_PARSER_WARN("atsc3_stltp_parse_timing_management_packet: binary_payload: %p, length: %d is less than at least 14 bytes, returning NULL!", binary_payload, binary_payload_length);
-        return NULL;
-    }
+    block_t* block = block_Duplicate_from_ptr(binary_payload, binary_payload_length);
+    block_Rewind(block);
 
     atsc3_timing_management_packet_t* atsc3_timing_management_packet = calloc(1, sizeof(atsc3_timing_management_packet_t));
 
     atsc3_timing_management_packet_set_bootstrap_timing_ref_from_stltp_preamble_packet(atsc3_timing_management_packet, atsc3_stltp_timing_management_packet);
 
-
     //length: 16
-    atsc3_timing_management_packet->length = ntohs(*((uint16_t*)binary_payload));
-    binary_payload += 2;
+    atsc3_timing_management_packet->length = block_Read_uint16_ntohs(block);
     
     __STLTP_PARSER_DEBUG("---------------------------------------");
     __STLTP_PARSER_DEBUG("Timing Management Packet Header: pointer: %p, sequence_number: %d, port: %d, length: %u, TMP.Structure_Data.length: %d",
@@ -1071,84 +1066,67 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     
     
     //version_major: 4
-    atsc3_timing_management_packet->version_major = (*binary_payload >> 4) & 0xF;
+    atsc3_timing_management_packet->version_major = block_Read_uint8_bitlen(block, 4);
     //version_minor: 4
-    atsc3_timing_management_packet->version_minor = (*binary_payload) & 0xF;
-    binary_payload++;
+    atsc3_timing_management_packet->version_minor = block_Read_uint8_bitlen(block, 4);
     
     //maj_log_rep_cnt_pre: 4
-    atsc3_timing_management_packet->maj_log_rep_cnt_pre = (*binary_payload >> 4) & 0xF;
+    atsc3_timing_management_packet->maj_log_rep_cnt_pre = block_Read_uint8_bitlen(block, 4);
     //maj_log_rep_cnt_tim: 4
-    atsc3_timing_management_packet->maj_log_rep_cnt_tim = (*binary_payload) & 0xF;
-    binary_payload++;
+    atsc3_timing_management_packet->maj_log_rep_cnt_tim = block_Read_uint8_bitlen(block, 4);
     
     //bootstrap_major: 4
-    atsc3_timing_management_packet->bootstrap_major = (*binary_payload >> 4) & 0xF;
+    atsc3_timing_management_packet->bootstrap_major = block_Read_uint8_bitlen(block, 4);
     //bootstrap_minor: 4
-    atsc3_timing_management_packet->bootstrap_minor = (*binary_payload) & 0xF;
-    binary_payload++;
+    atsc3_timing_management_packet->bootstrap_minor = block_Read_uint8_bitlen(block, 4);
        
     //5 bytes
-    atsc3_timing_management_packet->min_time_to_next = (*binary_payload >> 3) & 0x1F;
+    atsc3_timing_management_packet->min_time_to_next = block_Read_uint8_bitlen(block, 5);
     //2 bytes
-    atsc3_timing_management_packet->system_bandwidth = (*binary_payload >> 1) & 0x3;
+    atsc3_timing_management_packet->system_bandwidth = block_Read_uint8_bitlen(block, 2);
     
     //bsr_coefficient: 7
-    atsc3_timing_management_packet->bsr_coefficient = (*binary_payload & 0x1) << 6;
-    binary_payload++;
-    atsc3_timing_management_packet->bsr_coefficient |= (*binary_payload >> 2 ) & 0x3F;
+    atsc3_timing_management_packet->bsr_coefficient = block_Read_uint8_bitlen(block, 7);
     
     //preamble_structure: 8
-    atsc3_timing_management_packet->preamble_structure = (*binary_payload & 0x3) << 6;
-    binary_payload++;
-    atsc3_timing_management_packet->preamble_structure |= (*binary_payload >> 6) & 0x3F;
+    atsc3_timing_management_packet->preamble_structure = block_Read_uint8_bitlen(block, 8);
     
     //ea_wakeup: 2
-    atsc3_timing_management_packet->ea_wakeup = (*binary_payload) & 0x3;
-    binary_payload++;
+    atsc3_timing_management_packet->ea_wakeup = block_Read_uint8_bitlen(block, 2);
     
     //num_emission_tim: 6
-    atsc3_timing_management_packet->num_emission_tim = (*binary_payload >> 2) & 0x3F;
+    atsc3_timing_management_packet->num_emission_tim = block_Read_uint8_bitlen(block, 6);
     
     //num_xmtrs_in_group: 6 - 2 bytes
-    atsc3_timing_management_packet->num_xmtrs_in_group = (*binary_payload & 0x3) << 4;
-    binary_payload++;
-    //4 bytes remaining
-    atsc3_timing_management_packet->num_xmtrs_in_group |= (*binary_payload >> 4) & 0xF;
+    atsc3_timing_management_packet->num_xmtrs_in_group = block_Read_uint8_bitlen(block, 6);
     
     //xmtr_group_num:7
-    atsc3_timing_management_packet->xmtr_group_num = ((*binary_payload) & 0xF) << 4;
-    //remaining 3 bytes
-    binary_payload++;
-    atsc3_timing_management_packet->xmtr_group_num |= (*binary_payload >> 5) & 0x7;
+    atsc3_timing_management_packet->xmtr_group_num = block_Read_uint8_bitlen(block, 7);
     
-    //remaining 5 bytes
     //maj_log_override: 3
-    atsc3_timing_management_packet->maj_log_override = (*binary_payload >> 2) & 0x7;
+    atsc3_timing_management_packet->maj_log_override = block_Read_uint8_bitlen(block, 3);
     
     //num_miso_filt_codes: 2
-    atsc3_timing_management_packet->maj_log_override = (*binary_payload) & 0x3;
-    binary_payload++;
+    atsc3_timing_management_packet->num_miso_filt_codes = block_Read_uint8_bitlen(block, 2);
     
     //tx_carrier_offset: 2
-    atsc3_timing_management_packet->tx_carrier_offset = (*binary_payload >> 6) & 0x3;
+    atsc3_timing_management_packet->tx_carrier_offset = block_Read_uint8_bitlen(block, 2);
     
     //reserved: 6 bits, all 1's
-    atsc3_timing_management_packet->_reserved = (*binary_payload) & 0x3F;
-    binary_payload++;
+    atsc3_timing_management_packet->_reserved = block_Read_uint8_bitlen(block, 6);
     
     if(atsc3_timing_management_packet->_reserved != 0x3F) {
         __STLTP_PARSER_WARN("timing management packet reserved is not 0x3F (0011 1111), val is: 0x%02x", atsc3_timing_management_packet->_reserved);
     }
     
+    //we should be at bitoffset 0 here...
+    // 
     //process bootstrap_timing_data
-    __STLTP_PARSER_DEBUG("timing management: processing bootstrap_timing with %d num_emission_tim entries at pos: %ld", atsc3_timing_management_packet->num_emission_tim, binary_payload - binary_payload_start);
+    __STLTP_PARSER_DEBUG("timing management: processing bootstrap_timing with %d num_emission_tim entries at pos: %d", atsc3_timing_management_packet->num_emission_tim, block_Remaining_size(block));
     for(int i=0; i <= atsc3_timing_management_packet->num_emission_tim; i++) {
         atsc3_bootstrap_timing_data_t* atsc3_bootstrap_timing_data = calloc(1, sizeof(atsc3_bootstrap_timing_data_t));
-        atsc3_bootstrap_timing_data->seconds = ntohl(*((uint32_t*)binary_payload));
-        binary_payload += 4;
-        atsc3_bootstrap_timing_data->nanoseconds = ntohl(*((uint32_t*)binary_payload));
-        binary_payload += 4;
+        atsc3_bootstrap_timing_data->seconds = block_Read_uint32_ntohl(block);
+        atsc3_bootstrap_timing_data->nanoseconds = block_Read_uint32_ntohl(block);
 
         //jjustman-2020-08-31 - create our bootstrap_timing_data_timestamp_short_reference here
         //22 least significant bits (LSBs) of the seconds field
@@ -1174,32 +1152,23 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
         //atsc3_per_transmitter_data_t
         atsc3_per_transmitter_data_t* atsc3_per_transmitter_data = calloc(1, sizeof(atsc3_per_transmitter_data_t));
         //xmtr_id: 13 -> 8, 5
-        atsc3_per_transmitter_data->xmtr_id = (*binary_payload << 5);
-        binary_payload++;
-        atsc3_per_transmitter_data->xmtr_id |= (*binary_payload >> 3) & 0x1F;
+        atsc3_per_transmitter_data->xmtr_id = block_Read_uint16_bitlen(block, 13);
         
         //tx_time_offset: 16
-        atsc3_per_transmitter_data->tx_time_offset = ((*binary_payload) & 0x7) << 13; //3 bits
-        binary_payload++;
-        atsc3_per_transmitter_data->tx_time_offset |= (*binary_payload) << 5; //8 bits
-        binary_payload++;
-        atsc3_per_transmitter_data->tx_time_offset |= (*binary_payload >> 3) & 0x1F; //remaining 5 bits
+        atsc3_per_transmitter_data->tx_time_offset = block_Read_uint16_bitlen(block, 16); 
         
         //3 bits remaining
         //txid_injection_lvl: 4
-        atsc3_per_transmitter_data->txid_injection_lvl = ((*binary_payload) & 0x7) << 1;
-        binary_payload++;
-        atsc3_per_transmitter_data->txid_injection_lvl |= ((*binary_payload) >> 7 ) & 0x1;
+        atsc3_per_transmitter_data->txid_injection_lvl = block_Read_uint8_bitlen(block, 4);
         
         //miso_filt_code_index: 2
-        atsc3_per_transmitter_data->miso_filt_code_index = ((*binary_payload) >> 5) & 0x3;
+        atsc3_per_transmitter_data->miso_filt_code_index = block_Read_uint8_bitlen(block, 2);
         
+
         //5 bits remaining
-        //reserved should be all 1's
-        //atsc3_per_transmitter_data->_reserved =
-        //
-        binary_payload+=4;
-    
+        //reserved should be all 1'
+        atsc3_per_transmitter_data->_reserved = block_Read_uint32_bitlen(block, 29);
+        
         __STLTP_PARSER_DEBUG("timing management: adding transmitter num: %d, xmtr_id: 0x%04x, tx_time_offset: 0x%04x (%0.1f uS), txid_injection_lvl: 0x%02x, miso_filt_code: 0x%02x",
                              i,
                              atsc3_per_transmitter_data->xmtr_id,
@@ -1213,7 +1182,7 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
     
     //packet release time
     //pkt_rls_seconds: 4
-    atsc3_timing_management_packet->packet_release_time.pkt_rls_seconds = (*binary_payload >> 4) & 0xF;
+    atsc3_timing_management_packet->packet_release_time.pkt_rls_seconds = block_Read_uint8_bitlen(block, 4);
     
     /* pkt_rls_a-milliseconds shall be the milliseconds portion of the time of release from the Broadcast Gateway of the specific Timing and Management packet in which the value is found.
      Its value shall be expressed as 10 bits representing the 3rd through 12th MSBs of the nanoseconds value of the TAI time when the first bit of the IP header of the Timing and Management
@@ -1228,17 +1197,13 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
      
      */
     
-    //pkt_rls_a_miliseconds: 10, (4 | 6)
-    atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds = (*binary_payload & 0xF) << 6;
-    binary_payload++;
-    atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds |= (*binary_payload >> 2) & 0x3F;
+    atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds = block_Read_uint16_bitlen(block, 10);
+
     uint32_t pkt_rls_a_miliseconds_temp = atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds;
     atsc3_timing_management_packet->packet_release_time.pkt_rls_computed_milliseconds = ((pkt_rls_a_miliseconds_temp << 20) * ATSC3_A324_A_MILLISECOND_PERIOD);
     
-    atsc3_timing_management_packet->packet_release_time._reserved = (*binary_payload) & 0x3;
-    binary_payload++;
-    
-    
+    atsc3_timing_management_packet->packet_release_time._reserved = block_Read_uint8_bitlen(block, 2);
+        
     if(atsc3_timing_management_packet->packet_release_time._reserved != 0x3) {
         __STLTP_PARSER_WARN("timing management packet: packet_release_time reserved is not 0x3 (0011), val is: 0x%02x", atsc3_timing_management_packet->packet_release_time._reserved);
     }
@@ -1249,13 +1214,13 @@ atsc3_timing_management_packet_t* atsc3_stltp_parse_timing_management_packet(ats
                         atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds,
                         atsc3_timing_management_packet->packet_release_time.pkt_rls_a_milliseconds);
     
-    atsc3_timing_management_packet->error_check_data.crc16 = ntohs(*((uint16_t*)binary_payload));
+    atsc3_timing_management_packet->error_check_data.crc16 = block_Read_uint16_ntohs(block);
     //jjustman-2020-08-31 - TODO: calculate crc16 check
-    binary_payload+=2;
     
-    int parsed_length = binary_payload - binary_payload_start;
+    int parsed_length = block->i_pos;
+    int remaining = block->p_size - block->i_pos;
     
-    __STLTP_PARSER_DEBUG("timing management packet: payload len: %d, parsed len: %d: (start: %p, binary_payload: %p)", atsc3_timing_management_packet->length, parsed_length, binary_payload_start, binary_payload);
+    __STLTP_PARSER_DEBUG("timing management packet: payload len: %d, parsed len: %d", atsc3_timing_management_packet->length, parsed_length, remaining);
     
     return atsc3_timing_management_packet;
 
@@ -1349,7 +1314,7 @@ atsc3_preamble_packet_t* atsc3_stltp_parse_preamble_packet(atsc3_stltp_preamble_
         //16
         atsc3_preamble_packet->L1_basic_signaling.L1B_time_offset = block_Read_uint16_bitlen(block, 16);
         //7 bits
-        atsc3_preamble_packet->L1_basic_signaling.L1B_additional_samples = block_Read_uint16_bitlen(block, 7);
+        atsc3_preamble_packet->L1_basic_signaling.L1B_additional_samples = block_Read_uint8_bitlen(block, 7);
     }
     
     //8 bits, 6 avail
