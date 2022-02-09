@@ -72,6 +72,8 @@ void lls_slt_alc_session_and_monitor_mark_all_atsc3_lls_slt_service_as_transient
 
 
 void lls_slt_alc_session_and_monitor_remove_all_atsc3_lls_slt_service_with_matching_transient_stale(lls_slt_monitor_t* lls_slt_monitor) {
+    bool has_removed_monitor_or_session = false;
+
     for(int i=0; i < lls_slt_monitor->lls_sls_alc_session_flows_v.count; i++) {
         lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_slt_monitor->lls_sls_alc_session_flows_v.data[i];
 
@@ -87,6 +89,10 @@ void lls_slt_alc_session_and_monitor_remove_all_atsc3_lls_slt_service_with_match
                     //jjustman-2021-03-10 - hack workaround here
                     lls_sls_alc_monitor->atsc3_lls_slt_service = NULL;
                     lls_sls_alc_monitor->transients.atsc3_lls_slt_service_stale = NULL;
+                    lls_slt_monitor_remove_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
+                    lls_sls_alc_monitor_free(&lls_sls_alc_monitor);
+                    k--; // decrement our iterator, as the remove call will shift elements up by 1
+                    has_removed_monitor_or_session = true;
                 }
             }
 
@@ -97,7 +103,17 @@ void lls_slt_alc_session_and_monitor_remove_all_atsc3_lls_slt_service_with_match
                 //jjustman-2021-03-10 - hack workaround here
                 lls_sls_alc_session->atsc3_lls_slt_service = NULL;
                 lls_sls_alc_session->transients.atsc3_lls_slt_service_stale = NULL;
+                lls_sls_alc_session_flows_remove_lls_sls_alc_session(lls_sls_alc_session_flows, lls_sls_alc_session);
+                lls_sls_alc_session_free(&lls_sls_alc_session);
+                j--; //decrement our iterator...
+                has_removed_monitor_or_session = true;
             }
+        }
+
+        if(has_removed_monitor_or_session) {
+            lls_slt_monitor_remove_lls_sls_alc_session_flows(lls_slt_monitor, lls_sls_alc_session_flows);
+            lls_sls_alc_session_flows_free(&lls_sls_alc_session_flows);
+            i--; //decrement our iterator
         }
     }
 }
@@ -185,7 +201,9 @@ lls_sls_alc_session_t* lls_slt_alc_session_find(lls_slt_monitor_t* lls_slt_monit
 			}
 		}
 	}
-	return NULL;
+
+    lls_slt_monitor->lls_sls_alc_monitor = NULL;
+    return NULL;
 }
 
 /*
@@ -241,6 +259,8 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 			}
 		}
 	}
+
+    lls_slt_monitor->lls_sls_alc_monitor = NULL;
 	return NULL;
 }
 
@@ -325,8 +345,17 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_or_create(lls_slt_monitor_t* lls
             }
         }
 
+//        for(int k=0; k < lls_slt_monitor->lls_sls_alc_session_flows_v.count; k++) {
+//            lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_slt_monitor->lls_sls_alc_session_flows_v.data[k];
+//            if(lls_sls_alc_session_flows) {
+//                lls_sls_alc_session_flows->lls_table_slt
+//            }
+//        }
+
         lls_slt_alc_session->atsc3_lls_slt_service = atsc3_lls_slt_service;
         lls_slt_alc_session->transients.atsc3_lls_slt_service_stale = NULL;
+
+
     }
 
 	return lls_slt_alc_session;
@@ -684,11 +713,11 @@ int lls_sls_alc_add_additional_ip_flows_from_route_s_tsid(lls_slt_monitor_t* lls
         atsc3_route_s_tsid_RS_t*  atsc3_route_s_tsid_RS = atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.data[i];
         _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_add_additional_ip_flows_from_route_s_tsid: checking: %d, S-TSID.RS: RS: dIpAddr: (%u, dPort: %u, sIpAddr: %u, atsc3_route_s_tsid_RS_LS_v.count: %d", i, atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr, atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count);
 
-        lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr);
+        lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, atsc3_route_s_tsid_RS->src_ip_addr, atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port);
 
         if(!lls_sls_alc_session) {
-            _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_add_additional_ip_flows_from_route_s_tsid: lls_sls_alc_session not found: creating with RS: dIpAddr: (%u, dPort: %u, sIpAddr: %u, atsc3_route_s_tsid_RS_LS_v.count: %d", atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr, atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count);
-            lls_sls_alc_session = lls_slt_alc_session_create_from_ip_and_port_values(lls_sls_alc_monitor->atsc3_lls_slt_service, atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr);
+            _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_add_additional_ip_flows_from_route_s_tsid: lls_sls_alc_session not found: creating with RS: sIpAddr: %u, dIpAddr: %u, dPort: %u,  atsc3_route_s_tsid_RS_LS_v.count: %d", atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr, atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count);
+            lls_sls_alc_session = lls_slt_alc_session_create_from_ip_and_port_values(lls_sls_alc_monitor->atsc3_lls_slt_service, atsc3_route_s_tsid_RS->src_ip_addr, atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port);
 
             lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_sls_alc_session_flows_new();
             lls_sls_alc_session_flows_add_lls_sls_alc_session(lls_sls_alc_session_flows, lls_sls_alc_session);
