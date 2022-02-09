@@ -343,7 +343,7 @@ vector<string> Atsc3NdkApplicationBridge::atsc3_slt_alc_get_sls_route_s_tsid_fdt
 
 void Atsc3NdkApplicationBridge::atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni(uint16_t service_id, uint32_t tsi, uint32_t toi, char* s_tsid_content_location, char* s_tsid_content_type, char* cache_file_path) {
     //jjustman-2020-01-07: add in alc flow debugging
-    _NDK_APPLICATION_BRIDGE_INFO("atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni: service_id: %d, tsi: %d, toi: %d, s_tsid_content_location: %s, s_tsid_content_type: %s, cache_file_path: %s",
+    _NDK_APPLICATION_BRIDGE_DEBUG("atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_jni: service_id: %d, tsi: %d, toi: %d, s_tsid_content_location: %s, s_tsid_content_type: %s, cache_file_path: %s",
                                  service_id, tsi, toi, s_tsid_content_location, s_tsid_content_type, cache_file_path);
 
 	atsc3_onAlcObjectClosed(service_id, tsi, toi, s_tsid_content_location, s_tsid_content_type, cache_file_path);
