@@ -173,7 +173,14 @@ restart_parsing:
                               buf,
                               buf_end);
         //jjustman-2020-11-06 - move our pointer forward to discard invalid block so we don't get stuck in a infinite loop and start parsing for magic
-        block_Seek(atsc3_sl_tlv_payload_unparsed_block, to_discard_from_unparsed_block_length);
+
+        //jjustman-2022-01-08 - fixed to be block_Seek_Relative
+        //        2022-01-08 18:08:07.229 6373-6607/com.nextgenbroadcast.mobile.middleware.sample D/NDK: atsc3_sl_tlv_demod_type.c       : 174:ERROR:1641694087.2293:INVALID TLV: alp packet size: -559038737 - (0xdeadbeef), PLP: 0x00, at position: 24692, to_discard_from_unparsed_block: 4, buf_start: 0x7b32cd9bf4, buf: 0x7b32cd9bf8, buf_end: 0x7b32cdbbf8, bailing
+        //        2022-01-08 18:08:07.229 6373-6607/com.nextgenbroadcast.mobile.middleware.sample D/NDK: atsc3_sl_tlv_demod_type.c       :  87:INFO :1641694087.2293:atsc3_sl_tlv_payload_parse_from_block_t: position: 1644, found magic number - parsed as: 0x24681357 (expected: 0x24681357), buf start: 0x7b32cd3b84, buf_found: 0x7b32cd41ec, buf end: 0x7b32cdbbf8, offset: 1640
+        //        2022-01-08 18:08:07.229 6373-6607/com.nextgenbroadcast.mobile.middleware.sample D/NDK: atsc3_sl_tlv_demod_type.c       : 174:ERROR:1641694087.2295:INVALID TLV: alp packet size: -559038737 - (0xdeadbeef), PLP: 0x00, at position: 24692, to_discard_from_unparsed_block: 4, buf_start: 0x7b32cd9bf4, buf: 0x7b32cd9bf8, buf_end: 0x7b32cdbbf8, bailing
+        //        2022-01-08 18:08:07.229 6373-6607/com.nextgenbroadcast.mobile.middleware.sample D/NDK: atsc3_sl_tlv_demod_type.c       :  87:INFO :1641694087.2295:atsc3_sl_tlv_payload_parse_from_block_t: position: 1644, found magic number - parsed as: 0x24681357 (expected: 0x24681357), buf start: 0x7b32cd3b84, buf_found: 0x7b32cd41ec, buf end: 0x7b32cdbbf8, offset: 1640
+
+        block_Seek_Relative(atsc3_sl_tlv_payload_unparsed_block, to_discard_from_unparsed_block_length);
 
 		return NULL;
 	} else {

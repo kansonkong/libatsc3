@@ -114,7 +114,6 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 
 			kvp_collection_t* service_attributes_collecton = kvp_collection_parse(child_row_node_attributes_s);
 
-
 			int scratch_i = 0;
 			char* serviceId = kvp_collection_get(service_attributes_collecton, "serviceId");
 
@@ -125,9 +124,9 @@ int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
 			}
 
 			scratch_i = atoi(serviceId);
-			freesafe(serviceId);
 			atsc3_lls_slt_service->service_id = scratch_i & 0xFFFF;
 			__LLS_SLT_PARSER_TRACE("service id is: %s, int is: %d, uint_16: %u", serviceId, scratch_i, (scratch_i & 0xFFFF));
+			freesafe(serviceId);
 
 			//copy our char* elements
 			atsc3_lls_slt_service->global_service_id  = kvp_collection_get(service_attributes_collecton, "globalServiceID");
@@ -273,7 +272,7 @@ jjustman-2021-03-10 - warning: atsc3_lls_slt_service is a reference to our new l
  */
 int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor) {
 
-    __LLS_SLT_PARSER_INFO("lls_slt_table_perform_update:  lls_table: %p", lls_table);
+    __LLS_SLT_PARSER_INFO("lls_slt_table_perform_update: lls_table: %p, lls_group_id: %d, lls_table_version: %d", lls_table, lls_table->lls_group_id, lls_table->lls_table_version);
 
     //jjustman-2021-03-10 - first, mark any lls_slt_alc_session(s) or lls_sls_alc_monitor(s) with transient.atsc3_lls_slt_service_stale so we can either update them wtih our new atsc3_lls_slt_service (if applicable) or remove
     //j                     similar for lls_slt_mmt_session(s) ... and clear out any lls_slt_mmt sessions (if applicable)

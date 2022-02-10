@@ -28,7 +28,7 @@
 [submodule "srt"]
 	path = srt
 	url = https://github.com/jjustman/srt.git
-        branch = master
+	branch = master
 [submodule "libusb_android"]
 	path = libusb_android
 	url = https://github.com/jjustman/libusb_android.git
