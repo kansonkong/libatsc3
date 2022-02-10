@@ -102,9 +102,6 @@
     <ClCompile Include="atsc3_mime_multipart_related_parser.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="atsc3_mmtp_ntp32_to_pts.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="atsc3_mmtp_packet_types.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -276,6 +273,9 @@
     <ClCompile Include="atsc3_pcre2_regex_utils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="atsc3_ntp_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="atsc3_a332_oma_bcast_types.h">
@@ -384,9 +384,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="atsc3_mime_multipart_related_parser.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="atsc3_mmtp_ntp32_to_pts.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="atsc3_mmtp_packet_types.h">
@@ -636,6 +633,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="win_stdatomic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="atsc3_ntp_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

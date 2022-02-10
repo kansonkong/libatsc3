@@ -697,14 +697,17 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 	char* s_tsid_content_location = NULL;
 	char* s_tsid_content_type = NULL;
 
-	char new_file_name_raw_buffer[1024] = { 0 };
+	char new_file_name_raw_buffer[1025] = { 0 };
 	char* persisted_cache_file_name = (char*)&new_file_name_raw_buffer; //hack
 
 	int bytesWritten = 0;
 
 	block_t* atsc3_fdt_file_gzip_contents = NULL;
 	block_t* atsc3_decompressed_payload = NULL;
-	
+
+    __ALC_UTILS_INFO("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: enter - with udp_flow: %p, atsc3_alc_packet: %p, lls_sls_alc_monitor: %p, atsc3_route_object: %p",
+                     udp_flow, alc_packet, lls_sls_alc_monitor, atsc3_route_object);
+
 	//jjustman-2020-08-05 - deprecate file_dump_enabled option
 	if(!lls_sls_alc_monitor || (lls_sls_alc_monitor && !lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled)) {
 		return ATSC3_ALC_UTILS_LLS_SLS_ALC_MONITOR_OUTPUT_BUFFER_MODE_NOT_ENABLED;
@@ -718,7 +721,10 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 		temporary_recovery_filename = atsc3_route_object_get_temporary_object_recovery_filename_strdup(atsc3_route_object);
 	}
 
-	//prepare our temporary_recovery_filename fp handle with merged atsc3_route_object_lct_packet pending pending_alc_payload_to_persist
+    __ALC_UTILS_INFO("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: with tempory_recovery_filename: %s, udp_flow: %p, atsc3_alc_packet: %p, lls_sls_alc_monitor: %p, atsc3_route_object: %p",
+                     temporary_recovery_filename, udp_flow, alc_packet, lls_sls_alc_monitor, atsc3_route_object);
+
+    //prepare our temporary_recovery_filename fp handle with merged atsc3_route_object_lct_packet pending pending_alc_payload_to_persist
 	//NOTE: mutallly exclusive impl's between recovery_block and atsc3_route_object_persist_recovery_all_pending_lct_packet_vector
 	//atsc3_route_object_persist_recovery_block_from_lct_packet_vector(atsc3_route_object);
 
@@ -726,6 +732,8 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
     //jjustman-2020-08-05 - allow is_toi_init to re-write our object on carousel emission
     if(atsc3_route_object_is_complete(atsc3_route_object) && (atsc3_route_object->is_toi_init || !atsc3_route_object->recovery_complete_timestamp)) {
 
+        __ALC_UTILS_INFO("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: atsc3_route_object_is_complete, with tempory_recovery_filename: %s, udp_flow: %p, atsc3_alc_packet: %p, lls_sls_alc_monitor: %p, lls_sls_alc_monitor->atsc3_lls_slt_service: %p, atsc3_route_object: %p",
+                         temporary_recovery_filename, udp_flow, alc_packet, lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_lls_slt_service, atsc3_route_object);
 
         //update our sls here if we have a service we are listening to
         if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service && alc_packet->def_lct_hdr->tsi == 0) {
@@ -757,6 +765,11 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
         } else {
 
+            if(lls_sls_alc_monitor && !lls_sls_alc_monitor->atsc3_lls_slt_service) {
+                __ALC_UTILS_WARN("lls_sls_alc_monitor->atsc3_lls_slt_service is NULL, tsi: %u, toi: %u lls_sls_alc_monitor: %p",
+                                 alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, lls_sls_alc_monitor);
+                goto cleanup;
+            }
         	//jjustman-2020-08-05 - dirty hack - don't process ROUTE object completion if we don't have our SLS parsed yet,
         	// i.e. lls_sls_alc_monitor->atsc3_sls_metadata_fragments is null
 
@@ -1529,72 +1542,76 @@ atsc3_route_object_t* atsc3_alc_persist_route_object_lct_packet_received_for_lls
     atsc3_sls_alc_flow_t* matching_sls_alc_flow = NULL;
 	atsc3_route_object_t* atsc3_route_object = NULL;
 
-	if(lls_sls_alc_monitor) {
-		//jjustman-2020-08-04 - hack-ish - todo: is this the best place to call this?
-		//jjustman-2020-08-04 - NOTE: clear out our candidate purged route objects first, then search for our S_TSID flow lookup next
-		atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects(lls_sls_alc_monitor);
+    if(!lls_sls_alc_monitor) {
+        __ALC_UTILS_WARN("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: lls_sls_alc_monitor is NULL for alc_packet tsi: %d, toi: %d",
+                         alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+        return NULL;
+    }
 
-		atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_monitor);
+    //jjustman-2020-08-04 - hack-ish - todo: is this the best place to call this?
+    //jjustman-2020-08-04 - NOTE: clear out our candidate purged route objects first, then search for our S_TSID flow lookup next
+    atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects(lls_sls_alc_monitor);
 
-		atsc3_route_object = atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet);
+    atsc3_lls_sls_alc_monitor_increment_lct_packet_received_count(lls_sls_alc_monitor);
 
-		//jjustman-2021-07-07 - check if our route object has a 0 transfer_len, and see if it can be patched with s-tsid
-		if(!atsc3_route_object->object_length) {
-		    bool has_set_route_object_content_length = false;
+    atsc3_route_object = atsc3_sls_alc_flow_route_object_add_unique_lct_packet_received(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet);
 
-		    __ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d has object_length of 0, metadata: atsc3_fdt_instance: %p, atsc3_sls_metadata_fragments->atsc3_route_s_tsid: %p", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, lls_sls_alc_monitor->atsc3_fdt_instance, lls_sls_alc_monitor->atsc3_sls_metadata_fragments ? lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid : 0x0);
+    //jjustman-2021-07-07 - check if our route object has a 0 transfer_len, and see if it can be patched with s-tsid
+    if(!atsc3_route_object->object_length) {
+        bool has_set_route_object_content_length = false;
 
-		    if(lls_sls_alc_monitor->atsc3_fdt_instance) {
-                __ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, atsc3_fdt_instance.atsc3_fdt_file count: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, lls_sls_alc_monitor->atsc3_fdt_instance->atsc3_fdt_file_v.count);
-                for (int i = 0; i < lls_sls_alc_monitor->atsc3_fdt_instance->atsc3_fdt_file_v.count && !has_set_route_object_content_length; i++) {
-                    atsc3_fdt_file_t* atsc3_fdt_file = lls_sls_alc_monitor->atsc3_fdt_instance->atsc3_fdt_file_v.data[i];
+        __ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d has object_length of 0, metadata: atsc3_fdt_instance: %p, atsc3_sls_metadata_fragments->atsc3_route_s_tsid: %p", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, lls_sls_alc_monitor->atsc3_fdt_instance, lls_sls_alc_monitor->atsc3_sls_metadata_fragments ? lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid : 0x0);
 
-                    if (atsc3_fdt_file->toi == atsc3_route_object->toi && atsc3_fdt_file->content_length) {
-                        __ALC_UTILS_INFO("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, setting route_object->object_length to %d from fdt_instance->fdt_file", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, atsc3_fdt_file->content_length);
-                        atsc3_route_object->object_length = atsc3_fdt_file->content_length;
-                        has_set_route_object_content_length = true;
-                    }
+        if(lls_sls_alc_monitor->atsc3_fdt_instance) {
+            __ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, atsc3_fdt_instance.atsc3_fdt_file count: %d", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, lls_sls_alc_monitor->atsc3_fdt_instance->atsc3_fdt_file_v.count);
+            for (int i = 0; i < lls_sls_alc_monitor->atsc3_fdt_instance->atsc3_fdt_file_v.count && !has_set_route_object_content_length; i++) {
+                atsc3_fdt_file_t* atsc3_fdt_file = lls_sls_alc_monitor->atsc3_fdt_instance->atsc3_fdt_file_v.data[i];
+
+                if (atsc3_fdt_file->toi == atsc3_route_object->toi && atsc3_fdt_file->content_length) {
+                    __ALC_UTILS_INFO("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, setting route_object->object_length to %d from fdt_instance->fdt_file", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, atsc3_fdt_file->content_length);
+                    atsc3_route_object->object_length = atsc3_fdt_file->content_length;
+                    has_set_route_object_content_length = true;
                 }
             }
+        }
 
-		    //if we still don't have a object_length, try our s-tsid from monitor? assume ip/port flow is already mapped from lls_sls_alc_monitor session?
+        //if we still don't have a object_length, try our s-tsid from monitor? assume ip/port flow is already mapped from lls_sls_alc_monitor session?
 
-		    if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments && lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid) {
+        if(lls_sls_alc_monitor->atsc3_sls_metadata_fragments && lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid) {
 
-		        for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.count && !has_set_route_object_content_length; i++) {
-                    atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_RS = lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.data[i];
+            for(int i=0; i < lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.count && !has_set_route_object_content_length; i++) {
+                atsc3_route_s_tsid_RS_t* atsc3_route_s_tsid_RS = lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid->atsc3_route_s_tsid_RS_v.data[i];
 
-                    for(int j=0; j < atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count && !has_set_route_object_content_length; j++) {
-                        atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS = atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.data[j];
-                        if(atsc3_route_s_tsid_RS_LS->tsi == atsc3_route_object->tsi && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance) {
+                for(int j=0; j < atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count && !has_set_route_object_content_length; j++) {
+                    atsc3_route_s_tsid_RS_LS_t* atsc3_route_s_tsid_RS_LS = atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.data[j];
+                    if(atsc3_route_s_tsid_RS_LS->tsi == atsc3_route_object->tsi && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance) {
 
-                            for(int k=0; k < atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.count && !has_set_route_object_content_length; k++) {
-                                atsc3_fdt_file_t* atsc3_fdt_file = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
-                                if(atsc3_fdt_file->toi == atsc3_route_object->toi && atsc3_fdt_file->content_length) {
-                                    __ALC_UTILS_INFO("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, setting route_object->object_length to %d from s-tsid: fdt_instance->fdt_file",
-                                                     alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, atsc3_fdt_file->content_length);
-                                    atsc3_route_object->object_length = atsc3_fdt_file->content_length;
-                                    has_set_route_object_content_length = true;
-                                }
+                        for(int k=0; k < atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.count && !has_set_route_object_content_length; k++) {
+                            atsc3_fdt_file_t* atsc3_fdt_file = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.data[k];
+                            if(atsc3_fdt_file->toi == atsc3_route_object->toi && atsc3_fdt_file->content_length) {
+                                __ALC_UTILS_INFO("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, setting route_object->object_length to %d from s-tsid: fdt_instance->fdt_file",
+                                                 alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi, atsc3_fdt_file->content_length);
+                                atsc3_route_object->object_length = atsc3_fdt_file->content_length;
+                                has_set_route_object_content_length = true;
                             }
                         }
                     }
+                }
 
-		        }
-		    }
-
-		    if(!has_set_route_object_content_length) {
-                __ALC_UTILS_INFO("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, no other metadata sources for object length!", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
             }
-		}
-	}
+        }
 
-	__ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: complete, tsi: %d, toi: %d, lls_sls_alc_monitor is: %p, size: %d, atsc3_route_object: %p",
-			alc_packet->def_lct_hdr->tsi,
-			alc_packet->def_lct_hdr->toi,
-			lls_sls_alc_monitor,
-			lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v.count,
-			atsc3_route_object);
+        if(!has_set_route_object_content_length) {
+            __ALC_UTILS_INFO("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: tsi: %d, toi: %d, no other metadata sources for object length!", alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+        }
+    }
+
+    __ALC_UTILS_DEBUG("atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows: complete, tsi: %d, toi: %d, lls_sls_alc_monitor is: %p, size: %d, atsc3_route_object: %p",
+                      alc_packet->def_lct_hdr->tsi,
+                      alc_packet->def_lct_hdr->toi,
+                      lls_sls_alc_monitor,
+                      lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v.count,
+                      atsc3_route_object);
 
 	return atsc3_route_object;
 }

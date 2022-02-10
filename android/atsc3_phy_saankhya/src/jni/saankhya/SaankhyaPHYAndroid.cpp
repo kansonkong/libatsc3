@@ -72,6 +72,8 @@ int _SAANKHYA_PHY_ANDROID_TRACE_ENABLED = 0;
 SL_Result_t     SaankhyaPHYAndroid::global_sl_result_error_flag = SL_OK;
 SL_I2cResult_t  SaankhyaPHYAndroid::global_sl_i2c_result_error_flag = SL_I2C_OK;
 
+int SaankhyaPHYAndroid::Last_download_bootloader_firmware_device_id = -1;
+
 SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
     this->jni_instance_globalRef = this->env->NewGlobalRef(jni_instance);
@@ -320,6 +322,8 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
 
         char platform = 0;
         SL_GetHwRev(&platform);
+
+        //copy+paste warning from sl_gpio_markone SL_Query_HWREV
         markone_evt_version = (platform) & 0xFF;
         markone_evt_version++; //jjustman-2021-11-09: TODO - fixme in kernel, fallback will assume we are running on AA kernel
 
@@ -372,7 +376,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 
     if(device_type == JJ_DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE) {
         //jjustman-2021-10-24 - hack!
-        device_type = last_download_bootloader_firmware_device_id;
+        device_type = SaankhyaPHYAndroid::Last_download_bootloader_firmware_device_id;
         _SAANKHYA_PHY_ANDROID_INFO("open: JJ_DEVICE_TYPE_USE_FROM_LAST_DOWNLOAD_BOOTLOADER_FIRMWARE, with fd: %d, updated to device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
     } else {
         _SAANKHYA_PHY_ANDROID_DEBUG("open: with fd: %d, device_type: %d, device_path: %s", fd, device_type, device_path.c_str());
@@ -581,7 +585,10 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.qCoeff2 = 0;
 
 
-            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
+            //jjustman-2022-01-07 - testcase, change from SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE to AUTO and
+//            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
+            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
+
             lnaInfo.lnaGpioNum = (0x00000A00 >> 8); //should be 0xA after shift, d10
 
             break;
@@ -619,6 +626,9 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 
 
         case SL_KAILASH_DONGLE_3:
+
+            _SAANKHYA_PHY_ANDROID_DEBUG("Configuring as: SL_KAILASH_DONGLE_3");
+
             if (getPlfConfig.tunerType == TUNER_SILABS)
             {
                 afeInfo.spectrum = SL_SPECTRUM_INVERTED;
@@ -652,6 +662,9 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             break;
 
         case SL_YOGA_DONGLE:
+
+            _SAANKHYA_PHY_ANDROID_DEBUG("Configuring as: SL_YOGA_DONGLE");
+
             if (getPlfConfig.tunerType == TUNER_SI_P)
             {
                 afeInfo.spectrum = SL_SPECTRUM_NORMAL;
@@ -679,9 +692,9 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.iCoeff2 = 0;
             iqOffSetCorrection.qCoeff2 = 0;
 
-
             lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
             lnaInfo.lnaGpioNum = 12;
+
             break;
 
         default:
@@ -695,6 +708,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
          * GPIO12 is used for LNA Bypass/Enable in Yoga Dongle.
          * It may be different for other boards. Use bits 8 to 15 to specify the same
          */
+
         lnaInfo.lnaMode = static_cast<SL_ExtLnaModeConfig_t>(lnaInfo.lnaMode | (lnaInfo.lnaGpioNum << 8));
     }
 
@@ -784,6 +798,13 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         goto ERROR;
     }
 
+    slres = SL_DemodGetSoftwareVersion(slUnit, &swMajorNo, &swMinorNo);
+    if (slres == SL_OK)
+    {
+        _SAANKHYA_PHY_ANDROID_DEBUG("Demod SW Version: %d.%d", swMajorNo, swMinorNo);
+        demodVersion = to_string(swMajorNo) + "." + to_string(swMinorNo);
+    }
+
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_AFEIF, &afeInfo);
     if (slres != 0)
     {
@@ -815,6 +836,18 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         goto ERROR;
     }
 
+#ifndef __JJ_CALIBRATION_ENABLED
+
+
+    slres = SL_DemodConfigureEx(slUnit, demodStandard, &atsc3ConfigParams);
+
+    if (slres != 0)
+    {
+        _SAANKHYA_PHY_ANDROID_ERROR("SL_DemodConfigureEx(%d, demodStandard: %d, %p) returned: %d", slUnit, demodStandard, &atsc3ConfigParams, slres);
+        goto ERROR;
+    }
+#endif
+
     _SAANKHYA_PHY_ANDROID_DEBUG("SL_DemodConfigure: SL_CONFIGTYPE_EXT_LNA, value: 0x%02x", lnaInfo.lnaMode)
     slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_EXT_LNA, (unsigned int *)&lnaInfo.lnaMode);
     if (slres != 0)
@@ -823,22 +856,6 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
         goto ERROR;
     }
 
-#ifndef __JJ_CALIBRATION_ENABLED
-    slres = SL_DemodConfigureEx(slUnit, demodStandard, &atsc3ConfigParams);
-
-    if (slres != 0)
-    {
-        _SAANKHYA_PHY_ANDROID_ERROR("SL_DemodConfigureEx(%d, SL_DEMODSTD_ATSC3_0, %p) returned: %d", slUnit, &atsc3ConfigParams, slres);
-        goto ERROR;
-    }
-#endif
-
-    slres = SL_DemodGetSoftwareVersion(slUnit, &swMajorNo, &swMinorNo);
-    if (slres == SL_OK)
-    {
-        _SAANKHYA_PHY_ANDROID_DEBUG("Demod SW Version: %d.%d", swMajorNo, swMinorNo);
-        demodVersion = to_string(swMajorNo) + "." + to_string(swMinorNo);
-    }
 
     tres = SL_TunerCreateInstance(&tUnit);
     if (tres != 0)
@@ -1431,7 +1448,7 @@ int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, int device_type, st
                                 device_path.c_str(), device_type, fd);
 
     //jjustman-2021-10-24 - super-hacky workaround for preboot firmware d/l and proper device type open on re-enumeration call for now..
-    this->last_download_bootloader_firmware_device_id = device_type;
+    SaankhyaPHYAndroid::Last_download_bootloader_firmware_device_id = device_type;
 
     SL_ConfigResult_t sl_configResult = SL_CONFIG_OK;
     sl_configResult = configPlatformParams_autodetect(device_type, device_path);
@@ -1662,8 +1679,17 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_markone() {
                                 sPlfConfig.hostInterfaceType);
 
     //jjustman-2021-11-09 - calibrated values on evt2 - pre AGND fix
-    tunerIQDcOffSet.iOffSet = 11;
-    tunerIQDcOffSet.qOffSet = 12;
+//    tunerIQDcOffSet.iOffSet = 11;
+//    tunerIQDcOffSet.qOffSet = 12;
+
+    //jjustman-2022-01-07 - EVT2 SMT1/FA values @575:
+    //
+    //2022-01-07 16:29:43.724 21558-21758/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1078:INFO :1641601783.7241:Completing calibration with status: 2
+    //2022-01-07 16:29:43.724 21558-21758/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1079:INFO :1641601783.7242:I Off Set Value        : 13
+    //2022-01-07 16:29:43.724 21558-21758/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1080:INFO :1641601783.7242:Q Off Set Value        : 9
+
+    tunerIQDcOffSet.iOffSet = 13;
+    tunerIQDcOffSet.qOffSet = 9;
 
     return res;
 }
@@ -1805,6 +1831,10 @@ void SaankhyaPHYAndroid::printToConsolePlfConfiguration(SL_PlatFormConfigParams_
     else if (cfgInfo.tunerType == TUNER_SI)
     {
         _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: TUNER_SI");
+    }
+    else if (cfgInfo.tunerType == TUNER_SI_P)
+    {
+        _SAANKHYA_PHY_ANDROID_DEBUG("Tuner Type: TUNER_SI_P");
     }
     else if(cfgInfo.tunerType == TUNER_SILABS)
     {

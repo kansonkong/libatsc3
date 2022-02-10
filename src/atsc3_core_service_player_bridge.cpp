@@ -12,10 +12,14 @@
 
 #ifndef __JJ_PHY_MMT_PLAYER_BRIDGE_DISABLED
 
+#define __ADO_25189_WORKAROUND_FOR_TRANSIENT_SLT_SERVICES
+//#define __ADO_25189_WORKAROUND_FOR_TRANSIENT_SLT_SERVICES_DEBUGGING
+
 #include "atsc3_core_service_player_bridge.h"
 
 //jjustman-2020-12-02 - restrict this include to local cpp, as downstream projects otherwise would need to have <pcre2.h> on their include path
 #include "atsc3_alc_utils.h"
+#include "atsc3_aeat_parser.h"
 
 int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO_ENABLED = 1;
 int _ATSC3_CORE_SERVICE_PLAYER_BRIDGE_DEBUG_ENABLED = 0;
@@ -40,23 +44,16 @@ recursive_mutex& atsc3_core_service_player_bridge_get_context_mutex() {
 
 //jjustman-2019-10-03 - context event callbacks...
 lls_slt_monitor_t* lls_slt_monitor = NULL;
+//context for MMT - mmtp/sls flow management
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
+//context for LMT
+atsc3_link_mapping_table*   atsc3_link_mapping_table_last = NULL;
+uint32_t                    atsc3_link_mapping_table_missing_dropped_packets = 0;
 
 //friend accessor for our lls_slt_monitor, until we are refactored to have a proper context
 lls_slt_monitor_t* atsc3_core_service_player_bridge_get_lls_slt_montior() {
     return lls_slt_monitor;
 }
-
-atsc3_link_mapping_table*   atsc3_link_mapping_table_last = NULL;
-uint32_t                    atsc3_link_mapping_table_missing_dropped_packets = 0;
-
-//mmtp/sls flow management
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
-
-lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-
-//route/alc specific parameters
-lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
-atsc3_alc_arguments_t* alc_arguments = NULL;
 
 std::string atsc3_ndk_cache_temp_folder_path = "";
 std::string atsc3_ndk_cache_temp_folder_route_path = "";
@@ -92,6 +89,16 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
     _LLS_ALC_UTILS_DEBUG_ENABLED = 0;
     _ALC_UTILS_DEBUG_ENABLED = 0;
     _ALC_RX_TRACE_ENABLED = 0;
+
+#ifdef __ADO_25189_WORKAROUND_FOR_TRANSIENT_SLT_SERVICES_DEBUGGING
+    _ALC_UTILS_INFO_ENABLED=1;
+    _ALC_UTILS_DEBUG_ENABLED=1;
+    _ALC_UTILS_TRACE_ENABLED=1;
+    _ALC_UTILS_IOTRACE_ENABLED=1;
+
+    _LLS_SLT_PARSER_DEBUG_ENABLED = 1;
+
+#endif
 
     //jjustman-2020-04-23 - TLV parsing metrics enable inline ALP parsing
     __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
@@ -144,8 +151,6 @@ void atsc3_core_service_application_bridge_reset_context() {
             so just clear out our local ref:
                 lls_sls_mmt_monitor and lls_sls_alc_monitor
         */
-        lls_sls_mmt_monitor = NULL;
-        lls_sls_alc_monitor = NULL;
     }
 
     if(atsc3_link_mapping_table_last) {
@@ -464,6 +469,10 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
 atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a331_service_id(int service_id) {
     lock_guard<recursive_mutex> atsc3_core_service_player_bridge_context_mutex_local(atsc3_core_service_player_bridge_context_mutex);
 
+    //no more global refs
+    lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
+    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
+
     //clear out our lls_slt_monitor->lls_slt_service_id
     if(lls_slt_monitor) {
         lls_slt_monitor_clear_lls_slt_service_id(lls_slt_monitor);
@@ -506,7 +515,6 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_set_single_monitor_a33
         //TODO - remove this logic to a unified process...
         lls_slt_monitor_clear_lls_sls_alc_monitor(lls_slt_monitor);
         lls_slt_monitor->lls_sls_alc_monitor = NULL;
-        lls_sls_alc_monitor = NULL; //make sure to clear out our ref
 
         lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
         lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = atsc3_lls_slt_service; //transient HACK!
@@ -629,7 +637,7 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_add_monitor_a331_servi
     //add a supplimentry sls_alc monitor
     // TODO: fix me? NOTE: do not replace the primary lls_slt_monitor->lls_sls_alc_monitor entry if set
     if(!lls_slt_monitor->lls_sls_alc_monitor) {
-        lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+        lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor_to_add;
     }
 
     return atsc3_lls_slt_service;
@@ -851,20 +859,90 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 
     //don't auto-select service here, let the lls_slt_monitor->atsc3_lls_on_sls_table_present event callback trigger in a service selection
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
+        //note: lls_slt_table_perform_update will be called via lls_table_create_or_update_from_lls_slt_monitor if the SLT version changes
         lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
         if(lls_table) {
             if(lls_table->lls_table_id == SLT) {
-                //capture our SLT services into alc and mmt session flows
-                int retval = lls_slt_table_perform_update(lls_table, lls_slt_monitor);
+                lls_dump_instance_table(lls_table);
 
-                if(!retval) {
-                    lls_dump_instance_table(lls_table);
+#ifdef __ADO_25189_WORKAROUND_FOR_TRANSIENT_SLT_SERVICES
+                //jjustman-2022-02-09 - workaround for transient SLT entries that we are still monitoring but may have 'dissapeared' temporarly...
+                //keep track with a vector, as lls_slt_monitor will be cleared on first call to atsc3_core_service_player_bridge_set_single_monitor_a331_service_id,
+                // or contain duplicate entries from atsc3_core_service_player_bridge_add_monitor_a331_service_id
+
+                vector<uint16_t> slt_service_ids_missing;
+                vector<uint16_t>::iterator it;
+
+                if(lls_slt_monitor->lls_slt_service_id_v.count) {
+                    for(int i=0; i < lls_slt_monitor->lls_slt_service_id_v.count; i++) {
+                        bool has_matching_alc_or_mmt_monitor = false;
+
+                        lls_slt_service_id_t* lls_slt_service_id = lls_slt_monitor->lls_slt_service_id_v.data[i];
+
+                        //see if we can find this service_id in our current slt table
+                        atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_slt_monitor_find_lls_slt_service_id_group_id_cache_entry(lls_slt_monitor, lls_slt_service_id->service_id);
+                        if(!atsc3_lls_slt_service) {
+                            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_bridge_process_packet_phy: after SLT update, unable to find service_id: %d", lls_slt_service_id->service_id);
+                            continue;
+                        }
+
+                        for(int j=0; !has_matching_alc_or_mmt_monitor && j < lls_slt_monitor->lls_sls_alc_monitor_v.count; j++) {
+                            lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[j];
+                            if(lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == lls_slt_service_id->service_id) {
+                                has_matching_alc_or_mmt_monitor = true;
+                                break;
+                            }
+                        }
+
+                        for(int j=0; !has_matching_alc_or_mmt_monitor && j < lls_slt_monitor->lls_sls_mmt_monitor_v.count; j++) {
+                            lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = lls_slt_monitor->lls_sls_mmt_monitor_v.data[j];
+                            if(lls_sls_mmt_monitor->transients.atsc3_lls_slt_service && lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id == lls_slt_service_id->service_id) {
+                                has_matching_alc_or_mmt_monitor = true;
+                                break;
+                            }
+                        }
+
+                        if(!has_matching_alc_or_mmt_monitor) {
+                            slt_service_ids_missing.push_back(lls_slt_service_id->service_id);
+                        }
+                    }
                 }
+
+                if(slt_service_ids_missing.size()) {
+                    bool has_called_set_single_monitor = false;
+                    for(it = slt_service_ids_missing.begin(); it != slt_service_ids_missing.end(); it++) {
+                        uint16_t to_add_service_id = *it;
+                        atsc3_lls_slt_service_t* atsc3_lls_slt_service_added_to_monitor = NULL;
+
+                        if(!has_called_set_single_monitor) {
+                            atsc3_lls_slt_service_added_to_monitor = atsc3_core_service_player_bridge_set_single_monitor_a331_service_id(to_add_service_id);
+                            if(atsc3_lls_slt_service_added_to_monitor) {
+                                has_called_set_single_monitor = true;
+                                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_bridge_process_packet_phy: after SLT update, missing monitor for service_id: %d, after atsc3_core_service_player_bridge_set_single_monitor_a331_service_id, atsc3_lls_slt_service_added_to_monitor: %p",
+                                                                        to_add_service_id, atsc3_lls_slt_service_added_to_monitor);
+                            } else {
+                                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_bridge_process_packet_phy: after SLT update, missing monitor for service_id: %d, failed atsc3_core_service_player_bridge_set_single_monitor_a331_service_id, atsc3_lls_slt_service_added_to_monitor is NULL",
+                                                                         to_add_service_id);
+                            }
+                        } else {
+                            atsc3_lls_slt_service_added_to_monitor = atsc3_core_service_player_bridge_add_monitor_a331_service_id(to_add_service_id);
+                            if(atsc3_lls_slt_service_added_to_monitor) {
+                                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_bridge_process_packet_phy: after SLT update, missing monitor for service_id: %d, after atsc3_core_service_player_bridge_add_monitor_a331_service_id, atsc3_lls_slt_service_added_to_monitor: %p",
+                                                                        to_add_service_id, atsc3_lls_slt_service_added_to_monitor);
+                            } else {
+                                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_bridge_process_packet_phy: after SLT update, missing monitor for service_id: %d, failed atsc3_core_service_player_bridge_add_monitor_a331_service_id, atsc3_lls_slt_service_added_to_monitor is NULL",
+                                                                         to_add_service_id);
+                            }
+
+                        }
+                    }
+                }
+#endif
             } else {
-                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_core_service_bridge_process_packet_phy: lls_table_id: %d", lls_table->lls_table_id);
+                __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_core_service_bridge_process_packet_phy: lls_table_id: %d, lls_group_id: %d, lls_table_version: %d", lls_table->lls_table_id, lls_table->lls_group_id, lls_table->lls_table_version);
             }
         } else {
-            //LLS_table may not have been updated (e.g. lls_table_version has not changed)
+            //LLS_table may not have been updated (e.g. lls_table_version has not changed), or unable to be parsed
         }
         goto cleanup;
     }
@@ -882,7 +960,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 //       ((dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL) && (udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter))) {
 //    if((lls_sls_alc_monitor && matching_lls_slt_alc_session && lls_sls_alc_monitor->atsc3_lls_slt_service && has_matching_lls_slt_service_id)  ||
 
-    if(lls_sls_alc_monitor && matching_lls_slt_alc_session) {
+    if(lls_slt_monitor->lls_sls_alc_monitor && matching_lls_slt_alc_session) {
         for (int i = 0; i < lls_slt_monitor->lls_slt_service_id_v.count && !has_matching_lls_slt_service_id; i++) {
             lls_slt_service_id_t *lls_slt_service_id_to_check = lls_slt_monitor->lls_slt_service_id_v.data[i];
             /*
@@ -1344,6 +1422,9 @@ void atsc3_lls_sls_alc_on_package_extract_completed_callback_ndk(atsc3_route_pac
 }
 
 bool atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_route_component_t* mmt_atsc3_route_component) {
+    //no global refs
+    lls_sls_alc_monitor_t* lls_sls_alc_monitor = NULL;
+
     //jjustman-2020-12-08 - TODO - add this route_component into our SLT monitoring
     //borrowed from atsc3_core_service_player_bridge_set_single_monitor_a331_service_id
     if(atsc3_mmt_mfu_context->mmt_atsc3_route_component_monitored) {

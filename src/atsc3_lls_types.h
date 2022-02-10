@@ -791,7 +791,7 @@ typedef struct lls_sls_alc_session {
 typedef struct lls_sls_mmt_monitor {
 
 	struct atsc3_lls_sls_mmt_monitor_transients {
-		atsc3_lls_slt_service_t *atsc3_lls_slt_service;
+		atsc3_lls_slt_service_t* atsc3_lls_slt_service;
         atsc3_lls_slt_service_t* atsc3_lls_slt_service_stale;
 
         lls_sls_mmt_session_t *lls_mmt_session;
@@ -809,7 +809,7 @@ typedef struct lls_sls_mmt_monitor {
  * used to store all alc active sessions for this flow
  */
 typedef struct lls_sls_alc_session_flows {
-	lls_table_t* 			lls_table_slt;
+	//lls_table_t* 			lls_table_slt;
 
 	ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_alc_session);
 
