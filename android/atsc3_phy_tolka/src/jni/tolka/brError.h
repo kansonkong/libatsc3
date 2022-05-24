@@ -96,11 +96,11 @@
 
 /** Error Code of Firmware */
 #define BR_ERR_FIRMWARE_STATUS                 0x01000000ul
-#define BR_ERR_FW_I2CM_UPPER_CHIP_BUS_ERR      0x0100001Aul /** i2c bus number for 2nd, 3rd, and 4th endeavour is not set*/
+#define BR_ERR_FW_I2CM_UPPER_CHIP_BUS_ERR      0x0100001Aul /** i2c bus number for 2nd, 3rd, and 4th Endeavour is not set*/
 #define BR_ERR_FW_NO_NEXT_LEVEL_CHIP           0x0100001Bul /** i2c address for omega is not set*/
 #define BR_ERR_FW_NEXT_LEVEL_CHIP_BUS_ERR      0x0100001Cul /** i2c bus number for omega is not set */
-#define BR_ERR_NEXT_LEVEL_CHIP_WRONG_CHECKSUM  0x0100001Eul /** endeavour gets check-sum error from omega */
-#define BR_ERR_NEXT_LEVEL_CHIP_STATUS          0x0100001Ful /** endeavour gets error code from omega */
+#define BR_ERR_NEXT_LEVEL_CHIP_WRONG_CHECKSUM  0x0100001Eul /** Endeavour gets check-sum error from omega */
+#define BR_ERR_NEXT_LEVEL_CHIP_STATUS          0x0100001Ful /** Endeavour gets error code from omega */
 
 /** Error Code of I2C Module */
 #define BR_ERR_I2C_DATA_HIGH_FAIL              0x02001000ul

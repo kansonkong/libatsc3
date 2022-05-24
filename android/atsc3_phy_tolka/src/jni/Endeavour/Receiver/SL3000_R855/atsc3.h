@@ -86,7 +86,7 @@ extern "C" {
 	SL_CmdControlIf_t         cmdIf;
 	SL_PlatFormConfigParams_t getPlfConfig;
 	SL_TunerDcOffSet_t        tunerIQDcOffSet;
-	Endeavour			endeavour;
+	Endeavour			Endeavour;
 
 	int                       calibrationStatus;
 	*/
