@@ -7,12 +7,8 @@
 // Author: Jason Wang                                  //
 //-----------------------------------------------------//
 
-//#include "stdafx.h"
 #include "R855.h"
 #include "I2C_Sys.h"    // "I2C_Sys" is only for SW porting reference.
-
-
-
 
 #define  R855_FILTER_GAIN_DELAY   2    //3 or 2
 #define  R855_FILTER_CODE_DELAY   2    //2

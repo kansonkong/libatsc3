@@ -31,12 +31,21 @@ using namespace std;
 #include <Atsc3NdkPHYTolkaStaticJniLoader.h>
 #include "brUser.h"
 #include "IT9300.h"
+#include "R855.h"
+
+//sl sdk includes
+#include <sl_demod.h>
+#include <sl_tuner.h>
+#include <sl_config.h>
+#include <sl_i2c.h>
+#include <sl_gpio.h>
+#include <sl_utils.h>
+#include <sl_demod_atsc3.h>
 
 #define TLV_CIRCULAR_BUFFER_SIZE                 4096000            // TLV circular buffer size, calculated for 2 seconds of user-space interruption at ~15Mbit/sec -> 1.875 * 2 -> 4 MB
 #define TLV_CIRCULAR_BUFFER_MIN_PROCESS_SIZE    (16 * 1024 * 2)         //CircularBuffer pending data size threshold for TLV depacketization processing, pinned at 8KB to match SL4000 ALP buffer
 #define TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE  (16 * 1024 * 2)    //CircularBuffer block read size for depacketization callback processing ~ 65KB
-
-
+#define TOLKA_R855_ATSC3_IF_OFFSET              (0.003453)          // User can Update as needed
 
 #include "CircularBuffer.h"
 
@@ -49,6 +58,19 @@ int TOLKA_USB_ENDPOINT_RX = -1;
 int TOLKA_USB_ENDPOINT_TX = -1;
 int TOLKA_USB_ENDPOINT_RX_TS = -1;
 
+int TOLKA_USB_sl3000_i2cBus = 3;
+
+
+//jjustman-2022-05-24 - local scoped types
+
+
+typedef struct
+{
+    SL_TunerConfig_t            tunerCfg;
+    SL_PlatFormConfigParams_t   PlfConfig;
+    R855_Set_Info               R855_Info;
+} SL3000_R855_instance_t;
+
 
 class TolkaPHYAndroid : public IAtsc3NdkPHYClient {
 
@@ -56,8 +78,11 @@ public:
     static mutex CS_global_mutex;
 
     static libusb_device_handle* Libusb_device_handle;
+
     //jjustman-2022-05-24 - TODO: add libusb_device_handle for Endeavour ctx instance
-    Endeavour endeavour;
+    static Endeavour            Endeavour_s; //FIXME: type aliasing against static!
+    SL3000_R855_instance_t      SL3000_R855_driver[4];
+
 
     TolkaPHYAndroid(JNIEnv* env, jobject jni_instance);
 
@@ -85,6 +110,7 @@ public:
     static jlong busTx(Dword bufferLength, Byte* buffer);
     static jlong busRx(Dword bufferLength, Byte* buffer);
 
+
     int RxThread();
 
     static void NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, void* context);
@@ -109,7 +135,7 @@ public:
 //    SL_DemodStd_t                   demodStandard = { SL_DEMODSTD_ATSC3_0 };
 //
 //    //jjustman-2021-03-03   this is expected to be always accurate, when using, be sure to acquire SL_plpConfigParams_mutex, and SL_I2c_command_mutex, if necessary
-//    SL_Atsc3p0ConfigParams_t        atsc3ConfigParams;
+    SL_Atsc3p0ConfigParams_t        atsc3ConfigInfo;
 //
 //    //status thread details - use statusMetricsResetFromContextChange to initalize or to reset when tune() is completed or when PLP selection has changed
 //    SL_TunerSignalInfo_t    tunerInfo;
@@ -149,6 +175,8 @@ private:
     int libusb_fd = -1;
 
 
+    SL_Result_t SL3000_atsc3_init(Endeavour  *endeavour, SL_TunerConfig_t *pTunerCfg, SL_PlatFormConfigParams_t *sPlfConfig, SL_DemodStd_t std);
+
 
     //sanjay
     bool kailash_3_rssi = false;
@@ -165,7 +193,7 @@ private:
 //    SL_PlatFormConfigParams_t getPlfConfig = SL_PLATFORM_CONFIG_PARAMS_NULL_INITIALIZER;
 //    SL_PlatFormConfigParams_t sPlfConfig   = SL_PLATFORM_CONFIG_PARAMS_NULL_INITIALIZER;
 //
-//    SL_CmdControlIf_t         cmdIf;
+    SL_CmdControlIf_t         cmdIf;
 //    SL_BbCapture_t            getbbValue = BB_CAPTURE_DISABLE;
 //
 //    SL_LogResult_t            lres;
@@ -279,6 +307,9 @@ private:
 //    void printToConsoleAtsc3L1dDiagnostics(SL_Atsc3p0L1D_Diag_t diag);
 
 };
+//carry over methods from atsc3.cpp
+static void printToConsolePlfConfiguration(SL_PlatFormConfigParams_t cfgInfo);
+static void SL_DispatcherConfig_tolka();
 
 #define _TOLKA_PHY_ANDROID_ERROR_NOTIFY_BRIDGE_INSTANCE(method, message, cmd_res) \
     if(atsc3_ndk_phy_bridge_get_instance()) { \

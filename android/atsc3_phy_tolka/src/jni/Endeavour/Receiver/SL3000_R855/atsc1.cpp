@@ -498,7 +498,7 @@ void SL3000_ATSC1_BindTune(Endeavour  *pEndeavour, SL_TunerConfig_t *pTunerCfg, 
 /*
  *  ATSC1 Main Test function
  */
-void atsc1_test(Endeavour			*endeavour, SL_TunerConfig_t *pTunerCfg, unsigned int              tunerFrequency)
+void atsc1_test(Endeavour			*Endeavour, SL_TunerConfig_t *pTunerCfg, unsigned int              tunerFrequency)
 {
 	SL_I2cResult_t i2cres;
 	SL_Result_t slres;
@@ -552,7 +552,7 @@ void atsc1_test(Endeavour			*endeavour, SL_TunerConfig_t *pTunerCfg, unsigned in
 	if (getPlfConfig.demodControlIf == SL_DEMOD_CMD_CONTROL_IF_I2C)
 	{
 		uint8_t i2c_bus = 3;
-		i2cres = SL_I2cInit(endeavour, i2c_bus);
+		i2cres = SL_I2cInit(Endeavour, i2c_bus);
 		if (i2cres != SL_I2C_OK)
 		{
 			SL_Printf("\n Error:SL_I2cInit failed :");

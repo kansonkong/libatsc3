@@ -383,7 +383,7 @@ Dword IT9300_getIrCode(
 /**
  * Return to boot code
  *
- * @param Endeavour the handle of endeavour.
+ * @param Endeavour the handle of Endeavour.
  * @return Error_NO_ERROR: successful, non-zero error code otherwise.
  * @example <pre>
  * </pre>

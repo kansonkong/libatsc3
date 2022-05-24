@@ -2,7 +2,7 @@
 #define _I2C_SYS_H_
 
 #include "R855.h"
-#include "../../../tolka/IT9300.h"
+#include "IT9300.h"
 typedef struct _I2C_LEN_TYPE
 {
 	UINT8 RegAddr;
