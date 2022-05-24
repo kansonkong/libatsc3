@@ -558,7 +558,7 @@ Dword IT9300_initialize (
     if (error) goto exit;
     error = IT9300_writeRegister (endeavour, chip, fourth_i2c_address, 0x00);
     if (error) goto exit;
-    //error = IT9300_writeRegister (endeavour, chip, fourth_i2c_address, 0x00);
+    //error = IT9300_writeRegister (Endeavour, chip, fourth_i2c_address, 0x00);
     //if (error) goto exit;
     
 
@@ -577,12 +577,12 @@ Dword IT9300_initialize (
 	}
 
     /** Set I2C master bus 2 clock speed.  Fw will overwrite 0xF103 with value of 0xF6A7 */
-    //error = IT9300_writeRegister (endeavour, chip, p_br_reg_lnk2ofdm_data_63_56, 0x1a);//100k
+    //error = IT9300_writeRegister (Endeavour, chip, p_br_reg_lnk2ofdm_data_63_56, 0x1a);//100k
     error = IT9300_writeRegister (endeavour, chip, p_br_reg_lnk2ofdm_data_63_56, 0x07);//300k
     if (error) goto exit;
     
     /** Set I2C master bus 1,3 clock 300k in order to support tuner I2C. */
-    //error = IT9300_writeRegister (endeavour, chip, p_br_reg_one_cycle_counter_tuner, 0x1a);//100k
+    //error = IT9300_writeRegister (Endeavour, chip, p_br_reg_one_cycle_counter_tuner, 0x1a);//100k
     error = IT9300_writeRegister (endeavour, chip, p_br_reg_one_cycle_counter_tuner, 0x7);//300k
     if (error) goto exit;
 
@@ -603,7 +603,7 @@ Dword IT9300_initialize (
 	    if (error) goto exit;
 	    error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh10_on, 0x01);
 	    if (error) goto exit;
-	    //error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh10_o, 0x1);
+	    //error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh10_o, 0x1);
 	    //if (error) goto exit;
 	    error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh10_o, 0x0);
 	    if (error) goto exit;
@@ -611,12 +611,12 @@ Dword IT9300_initialize (
 	    BrUser_delay((Bridge*)endeavour, 200);
 	    error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh10_o, 0x1);
 	    //if (error) goto exit;
-	    //BrUser_delay((Bridge*)endeavour, 200);
+	    //BrUser_delay((Bridge*)Endeavour, 200);
 
-	    //BrUser_delay((Bridge*)endeavour, 100);        
-	    //error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh10_o, 0x0);
-	    //BrUser_delay((Bridge*)endeavour, 100);        
-	    //error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh10_o, 0x1);
+	    //BrUser_delay((Bridge*)Endeavour, 100);
+	    //error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh10_o, 0x0);
+	    //BrUser_delay((Bridge*)Endeavour, 100);
+	    //error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh10_o, 0x1);
     }
 
     if(endeavour->gator[chip].outDataType == OUT_DATA_601_640x480)
@@ -640,7 +640,7 @@ Dword IT9300_initialize (
 		error = IT9300_writeRegister (endeavour, chip, p_br_reg_ccir601_en, 0x21);
     }
     
-//    error = IT9300_writeRegister (endeavour, chip, p_br_mp2if_ignore_sync_byte, 0);
+//    error = IT9300_writeRegister (Endeavour, chip, p_br_mp2if_ignore_sync_byte, 0);
     error = IT9300_writeRegister (endeavour, chip, p_br_mp2if_ignore_sync_byte, 1);
     if (error) goto exit;
     
@@ -735,43 +735,43 @@ Dword IT9300_initialize (
 
 /*
 	//suspend gpio1 for TS-C
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh1_en, 0x01);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh1_en, 0x01);
 	if (error) goto exit;
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh1_on, 0x01);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh1_on, 0x01);
 	if (error) goto exit;
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh1_o, 0x0);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh1_o, 0x0);
 	if (error) goto exit;
 	
 	//suspend gpio7 for TS-D
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh7_en, 0x01);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh7_en, 0x01);
 	if (error) goto exit;
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh7_on, 0x01);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh7_on, 0x01);
 	if (error) goto exit;
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh7_o, 0x0);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh7_o, 0x0);
 	if (error) goto exit;
 	
 	//suspend gpio13 for TS-B
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh13_en, 0x01);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh13_en, 0x01);
 	if (error) goto exit;
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh13_on, 0x01);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh13_on, 0x01);
 	if (error) goto exit;
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh13_o, 0x0);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh13_o, 0x0);
 	if (error) goto exit;
 	
 	//suspend gpio14 for TS-E
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh14_en, 0x01);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh14_en, 0x01);
 	if (error) goto exit;
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh14_on, 0x01);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh14_on, 0x01);
 	if (error) goto exit;
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh14_o, 0x0);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh14_o, 0x0);
 	if (error) goto exit;
 	
 	//suspend gpio15 for TS-A
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh15_en, 0x01);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh15_en, 0x01);
 	if (error) goto exit;
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh15_on, 0x01);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh15_on, 0x01);
 	if (error) goto exit;
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh15_o, 0x0);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh15_o, 0x0);
 	if (error) goto exit;
 */
 
@@ -790,7 +790,7 @@ Dword IT9300_initialize (
 	if (error) goto exit;
 	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh2_on, 0x01);
 	if (error) goto exit;
-	//error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh2_o, 0x1);
+	//error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh2_o, 0x1);
 	//if (error) goto exit;
 	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh2_o, 0x0);
 	if (error) goto exit;
@@ -800,10 +800,10 @@ Dword IT9300_initialize (
 	if (error) goto exit;
 	BrUser_delay((Bridge*)endeavour, 500);
 /*
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh2_o, 0x0);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh2_o, 0x0);
 	if (error) goto exit;
-	BrUser_delay((Bridge*)endeavour, 500);
-	error = IT9300_writeRegister(endeavour, chip, p_br_reg_top_gpioh2_o, 0x1);
+	BrUser_delay((Bridge*)Endeavour, 500);
+	error = IT9300_writeRegister(Endeavour, chip, p_br_reg_top_gpioh2_o, 0x1);
 	if (error) goto exit;
 */
 
@@ -1733,10 +1733,10 @@ Dword IT9300_SetSuspend (
 	Byte temp;
     Byte Val;
 
-//	error = _IT9300_readRegister(endeavour,chip,0xF491,&Val);
+//	error = _IT9300_readRegister(Endeavour,chip,0xF491,&Val);
 //  temp = Val ;
 //  Val = temp|0x64;
-//	error = _IT9300_writeRegister(endeavour,chip,0xF491,Val);
+//	error = _IT9300_writeRegister(Endeavour,chip,0xF491,Val);
 
 	return error;
 }
@@ -1750,10 +1750,10 @@ Dword IT9300_SetSuspendback (
 	Byte temp;
     Byte Val;
 
-//	error = _IT9300_readRegister(endeavour,chip,0xF491,&Val);
+//	error = _IT9300_readRegister(Endeavour,chip,0xF491,&Val);
 //	temp = Val ;
 //  Val = temp&0x9B;
-//  error = _IT9300_writeRegister(endeavour,chip,0xF491,Val);
+//  error = _IT9300_writeRegister(Endeavour,chip,0xF491,Val);
 
 	return error;
 }
