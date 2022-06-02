@@ -53,6 +53,7 @@ int build_rrt_table(lls_table_t* lls_table, xml_node_t* xml_root);
 int build_system_time_table(lls_table_t* lls_table, xml_node_t* xml_root);
 int build_aeat_table(lls_table_t* lls_table, xml_node_t* xml_root);
 int build_onscreen_message_notification_table(lls_table_t* lls_table, xml_node_t* xml_root);
+int atsc3_lls_build_certificationdata_table(lls_table_t* lls_table, xml_node_t* xml_root);
 
 #define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _LLS_PRINTF(...)  printf(__VA_ARGS__);

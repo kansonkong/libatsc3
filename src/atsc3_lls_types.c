@@ -30,6 +30,18 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_signed_multi_table, atsc3_sign
 //default for now
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_signed_multi_table_lls_payload);
 
+
+//jjustman-2022-06-01 - certificateData a/360 cdt payload
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_certification_data_to_be_signed_data, atsc3_certification_data_to_be_signed_data_certificates);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_certification_data, atsc3_certification_data_oscp_response);
+//TODO: impl - default for now
+
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_certification_data_to_be_signed_data_certificates);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_certification_data_oscp_response);
+
+
+
 //lls_sls_alc_session_vector
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(lls_sls_alc_session_flows, lls_sls_alc_session);
 
@@ -243,6 +255,28 @@ ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_alc_session_flows);
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_lls_slt_service_cache);
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_slt_service_id_group_id_cache);
 
+
+atsc3_lls_table_t* atsc3_lls_table_new() {
+	atsc3_lls_table_t* atsc3_lls_table = calloc(1, sizeof(atsc3_lls_table_t));
+	return atsc3_lls_table;
+}
+
+
+void atsc3_lls_table_free(atsc3_lls_table_t** atsc3_lls_table_p) {
+
+	if(atsc3_lls_table_p) {
+		atsc3_lls_table_t* atsc3_lls_table = *atsc3_lls_table_p;
+		if(atsc3_lls_table) {
+			//jjustman-2022-05-28 - todo:fixme
+
+			//clear atsc3_aeat_table->atsc3_aea_table
+			free(atsc3_lls_table);
+			atsc3_lls_table = NULL;
+		}
+
+		*atsc3_lls_table_p = NULL;
+	}
+}
 
 /*
  *

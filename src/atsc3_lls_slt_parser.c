@@ -9,7 +9,7 @@ The Service List Table (SLT) is one of the instance types of LLS information.
 The function of the SLT is similar to that of the Program Association Table (PAT)
 in MPEG-2 Systems [33], and the Fast Information Channel (FIC) found in ATSC A/153, Part 3 [44].
 
-For a receiver first encountering the broadcast emission, this is the place to start.
+For a receiver first encountering the broadcast emissiFon, this is the place to start.fFF
 It supports a rapid channel scan which allows a receiver to build a list of all the services
 it can receive, with their channel name, channel number, etc., and it provides bootstrap information
 that allows a receiver to discover the SLS for each service.

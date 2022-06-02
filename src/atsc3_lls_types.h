@@ -428,6 +428,8 @@ typedef struct on_screen_message_notification {
 
 
 /*
+ * atsc3_certification_data_t
+ *
  * defined in A/360:2019
  *
  * Table 5.1
@@ -453,12 +455,92 @@ typedef struct on_screen_message_notification {
 
   See payload sample in test_data/2019-phx-nab-interop-signed-lls/lls_table_type_id_6.xml
 
+
+  <?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:cdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/CDT/1.0/" targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/CDT/1.0/" elementFormDefault="qualified">
+	<xs:element name="CertificationData" type="cdt:CDTType"/>
+	<xs:complexType name="CDTType">
+		<xs:sequence>
+			<xs:element name="ToBeSignedData" type="cdt:TBSDType"/>
+			<xs:element name="CMSSignedData" type="cdt:Base64Type"/>
+			<xs:element name="OCSPResponse" type="cdt:Base64Type" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="TBSDType">
+		<xs:sequence>
+			<xs:element name="Certificates" type="cdt:Base64Type" maxOccurs="unbounded"/>
+			<xs:element name="CurrentCert" type="cdt:Base64Type"/>
+			<xs:element name="CertReplacement" type="cdt:CertRepType" minOccurs="0" maxOccurs="1"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="OCSPRefresh" type="cdt:RefreshPeriodType" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="CertRepType">
+		<xs:sequence>
+			<xs:element name="NextCert" type="cdt:Base64Type"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="NextCertFrom" type="xs:dateTime" use="required"/>
+		<xs:attribute name="CurrentCertUntil" type="xs:dateTime" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="Base64Type">
+		<xs:simpleContent>
+			<xs:extension base="xs:base64Binary">
+				<xs:anyAttribute processContents="strict"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:simpleType name="RefreshPeriodType">
+		<xs:restriction base="xs:duration">
+			<xs:pattern value="P[^YM]*(T.*)?"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>
+
+
  */
 
-typedef struct atsc3_certification_data{
-    void* to_implement;
+
+typedef struct atsc3_certification_data_to_be_signed_data_certificates {
+	block_t* 	base64_payload;
+} atsc3_certification_data_to_be_signed_data_certificates_t;
+
+typedef struct atsc3_certification_data_to_be_signed_data_cert_replacement {
+	block_t*	next_cert_from_datetime;
+	block_t*	current_cert_until_datetime;
+	block_t*	next_cert_subject_key_identifier;
+} atsc3_certification_data_to_be_signed_data_cert_replacement_t;
+
+typedef struct atsc3_certification_data_to_be_signed_data {
+	block_t* 														oscp_refresh_daytimeduration;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_certification_data_to_be_signed_data_certificates);
+	block_t*														current_cert_subject_key_identifer; 	//SubjectKeyIdentifier for the certificate currently used to sign signaling messages.
+
+	atsc3_certification_data_to_be_signed_data_cert_replacement_t* 	atsc3_certification_data_to_be_signed_data_cert_replacement;
+
+
+} atsc3_certification_data_to_be_signed_data_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_certification_data_to_be_signed_data, atsc3_certification_data_to_be_signed_data_certificates);
+
+typedef struct atsc3_certification_data_oscp_response {
+	block_t* 	base64_payload;
+} atsc3_certification_data_oscp_response_t;
+
+typedef struct atsc3_certification_data {
+    block_t* 											raw_certification_data_xml_fragment;
+	atsc3_certification_data_to_be_signed_data_t 		atsc3_certification_data_to_be_signed_data;
+
+	block_t*											cms_signed_data;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_certification_data_oscp_response);
 
 } atsc3_certification_data_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_certification_data, atsc3_certification_data_oscp_response);
+
 
 /* defined in A/331:2020
  *
@@ -582,7 +664,7 @@ typedef struct lls_table {
 		on_screen_message_notification_t	on_screen_message_notification;
 
 		//jjustman-2020-03-09 - new in A/331:2020 and A/360:2019
-		atsc3_certification_data_t          certification_data; //0x06 - A/360:2019
+        atsc3_certification_data_t          certification_data; //0x06 - A/360:2019
 		atsc3_signed_multi_table_t          signed_multi_table; //0xFE - A/331:2020
 		//jjustman-2020-03-09 - NOTE: lls_table_id types of 0x00 and 0xFE are not allowed in the signed_multi_table
 
@@ -926,6 +1008,9 @@ typedef struct lls_sls_alc_monitor {
 	
     lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
     lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;
+
+	atsc3_certification_data_t* 			atsc3_certification_data;
+
 } lls_sls_alc_monitor_t;
 
 typedef struct lls_slt_service_id {
@@ -977,7 +1062,11 @@ typedef struct lls_slt_monitor {
     //use this against on_screen_message_notification
     lls_table_t* lls_latest_on_screen_message_notification_table;
 
+    //LATEST: last successfully processed certification data table
+    lls_table_t* lls_latest_certification_data_table;
+
     //jjustman-2019-10-12 - adding lls event callback hooks
+
 
     //defined in atsc3_monitor_events_lls.h
 	atsc3_lls_on_sls_table_present_f								atsc3_lls_on_sls_table_present_callback;
@@ -1000,6 +1089,8 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_monitor);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_session_flows);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_slt_service_id_group_id_cache);
 
+atsc3_lls_table_t* atsc3_lls_table_new();
+void atsc3_lls_table_free(atsc3_lls_table_t** atsc3_lls_table_p);
 
 lls_slt_service_id_t* lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service_t* atsc3_lls_slt_service);
 

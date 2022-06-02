@@ -587,6 +587,31 @@ block_t* block_Duplicate_from_position(block_t* src) {
 	return dest;
 }
 
+block_t* block_Duplicate_from_position_and_size(block_t* src, uint32_t size) {
+    if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
+
+    int32_t max_avail_size = src->p_size - src->i_pos;
+    if(max_avail_size < 0) {
+        _ATSC3_UTILS_WARN("block_Duplicate_from_position_and_size: block: %p, p_size was: %u, but i_pos: %u, max_avail_size: %u, returning NULL", src, src->p_size, src->i_pos, max_avail_size);
+        return NULL;
+    }
+
+    if(size > max_avail_size) {
+        _ATSC3_UTILS_WARN("block_Duplicate_from_position_and_size: block: %p, p_size was: %u, but i_pos: %u, max_avail_size: %u, requested len: %d, returning NULL",
+                          src, src->p_size, src->i_pos, max_avail_size, size);
+        return NULL;
+    }
+
+
+    block_t* dest = __block_Alloc_internal(size);
+    memcpy(dest->p_buffer, &src->p_buffer[src->i_pos], size);
+    dest->i_pos = 0;
+
+    return dest;
+}
+
+
+
 uint8_t* block_Get(block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
     return &src->p_buffer[src->i_pos];
