@@ -121,6 +121,10 @@ void atsc3_route_object_add_atsc3_route_object_lct_packet_len(atsc3_route_object
 
 void atsc3_route_object_set_is_toi_init_object(atsc3_route_object_t* atsc3_route_object, bool is_toi_init) {
 	atsc3_route_object->is_toi_init = is_toi_init;
+	if(is_toi_init) {
+		//jjustman-2022-06-02 - always clear our recovery_complete_timestamp here for init fragments to accumulate to be re-wrtiten
+		atsc3_route_object->recovery_complete_timestamp = 0;
+	}
 }
 
 
@@ -359,7 +363,11 @@ int atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector(ats
             } else {
                 //jjustman-2021-02-03 - add support for (optional sbn)^esi for codepoint==128, otherwise, TBD
                 if(atsc3_route_object_lct_packet_received->codepoint == 128) {
-                    block_Seek(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->esi);
+					if(atsc3_route_object_lct_packet_received->use_sbn_esi) {
+						block_Seek(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->sbn_esi_merged);
+					} else {
+	                    block_Seek(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->esi);
+    				}
                     block_AppendFull(atsc3_route_object->recovery_file_buffer, atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
                     recovery_rebuilt_payload_size += atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist->p_size;
                 } else {
@@ -505,44 +513,48 @@ done:
  * borrowed from atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received
  */
 void atsc3_route_object_set_object_recovery_complete(atsc3_route_object_t* atsc3_route_object) {
- 	atsc3_route_object->recovery_complete_timestamp = gtl();
+	if(atsc3_route_object->is_toi_init) {
+		atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+	} else {
+		atsc3_route_object->recovery_complete_timestamp = gtl();
 
-// 	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_set_object_recovery_complete: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, timestamp: %.2lu",
-// 			atsc3_route_object,
-// 			atsc3_route_object->tsi,
-// 			atsc3_route_object->toi,
-// 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
-// 			atsc3_route_object->recovery_complete_timestamp);
- 	//this will be invoked from atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
- 	//atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+	// 	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_set_object_recovery_complete: atsc3_route_object: %p, tsi: %d, toi: %d, atsc3_route_object_lct_packet_received_v.count: %d, timestamp: %.2lu",
+	// 			atsc3_route_object,
+	// 			atsc3_route_object->tsi,
+	// 			atsc3_route_object->toi,
+	// 			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+	// 			atsc3_route_object->recovery_complete_timestamp);
+		//this will be invoked from atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
+		//atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
 
- 	//borrowed from atsc3_route_object_free
+		//borrowed from atsc3_route_object_free
 
- 	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_set_object_recovery_complete: p: %p, tsi: %d, toi: %d, before closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
- 			atsc3_route_object,
-			atsc3_route_object->tsi,
-			atsc3_route_object->toi,
-			atsc3_route_object->recovery_file_handle,
-			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
-			atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
-	);
-	atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object);
+		_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_set_object_recovery_complete: p: %p, tsi: %d, toi: %d, before closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
+				atsc3_route_object,
+				atsc3_route_object->tsi,
+				atsc3_route_object->toi,
+				atsc3_route_object->recovery_file_handle,
+				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+				atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
+		);
+		atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object);
 
-	//jjustman-2020-08-04 - important, always call these two together..
-	atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
-	atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
+		//jjustman-2020-08-04 - important, always call these two together..
+		atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+		atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received = NULL;
 
-	atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object);
-	//end borrowed from atsc3_route_object_free
+		atsc3_route_object_free_lct_packet_received_tree(atsc3_route_object);
+		//end borrowed from atsc3_route_object_free
 
-	_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_set_object_recovery_complete: p: %p, tsi: %d, toi: %d, after closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
-			atsc3_route_object,
- 			atsc3_route_object->tsi,
-			atsc3_route_object->toi,
-			atsc3_route_object->recovery_file_handle,
-			atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
-			atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
-	);
+		_ATSC3_ROUTE_OBJECT_DEBUG("atsc3_route_object_set_object_recovery_complete: p: %p, tsi: %d, toi: %d, after closing fp: %p, atsc3_route_object_lct_packet_received count: %d (size: %d)",
+				atsc3_route_object,
+				atsc3_route_object->tsi,
+				atsc3_route_object->toi,
+				atsc3_route_object->recovery_file_handle,
+				atsc3_route_object->atsc3_route_object_lct_packet_received_v.count,
+				atsc3_route_object->atsc3_route_object_lct_packet_received_v.size
+		);
+	}
 }
 
 
