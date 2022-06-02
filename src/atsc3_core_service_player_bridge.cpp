@@ -59,6 +59,11 @@ std::string atsc3_ndk_cache_temp_folder_path = "";
 std::string atsc3_ndk_cache_temp_folder_route_path = "";
 
 IAtsc3NdkApplicationBridge* atsc3_ndk_application_bridge_get_instance() {
+
+//jjustman-2022-02-16 - testing
+//    _MMT_CONTEXT_MPU_DEBUG_ENABLED = 1;
+//   _MMT_CONTEXT_MPU_TRACE_ENABLED = 1;
+
     return Atsc3NdkApplicationBridge_ptr;
 }
 
@@ -99,6 +104,7 @@ void atsc3_core_service_application_bridge_init(IAtsc3NdkApplicationBridge* atsc
     _LLS_SLT_PARSER_DEBUG_ENABLED = 1;
 
 #endif
+
 
     //jjustman-2020-04-23 - TLV parsing metrics enable inline ALP parsing
     __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
@@ -1011,6 +1017,12 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                 //persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
                 //the full packet has been recovered (e.g. no missing data units in the forward transmission)
                 if (atsc3_route_object) {
+                    if(lls_slt_monitor->lls_latest_certification_data_table) {
+                        lls_slt_monitor->lls_sls_alc_monitor->atsc3_certification_data = &lls_slt_monitor->lls_latest_certification_data_table->certification_data;
+                    } else {
+                        lls_slt_monitor->lls_sls_alc_monitor->atsc3_certification_data = NULL;
+                    }
+
                     atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
                     goto cleanup;
 

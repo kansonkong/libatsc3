@@ -187,6 +187,7 @@ block_t* block_Resize_Prealloc_Soft(block_t* dest, uint32_t soft_alloc_size); //
 block_t* block_Duplicate(block_t* a);
 block_t* block_Duplicate_from_position(block_t* a);
 block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len);
+block_t* block_Duplicate_from_position_and_size(block_t* a, uint32_t size);
 block_t* block_Duplicate_from_ptr(uint8_t* data, uint32_t size); //src
 uint32_t block_Remaining_size(block_t* src);
 bool block_Valid(block_t* src);

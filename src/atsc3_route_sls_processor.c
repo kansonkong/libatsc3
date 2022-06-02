@@ -140,14 +140,26 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 				//extract and verify our signing, and extract payload to alc_packet_dump_to_object_get_filename_tsi_toi_unsigned
 				atsc3_smime_entity_t* atsc3_smime_entity = atsc3_smime_entity_new_parse_from_file(mbms_toi_filename);
 				atsc3_smime_validation_context_t* atsc3_smime_validation_context = atsc3_smime_validation_context_new(atsc3_smime_entity);
-				
-//jjustman-2021-03-01 - we need to parse our signing certificate from our CDT (chain) cert(s)
-//				atsc3_smime_validation_context_certificate_payload_parse_from_file(atsc3_smime_validation_context, signing_certificate_filename);
-				atsc3_smime_validation_context_set_cms_noverify(atsc3_smime_validation_context, true);
-//jjustman-2021-03-01 - TODO - FIX ME if we have a CDT chain...
-				atsc3_smime_validation_context_set_cms_no_content_verify(atsc3_smime_validation_context, true);
 
-				atsc3_smime_validation_context_certificate_payload_parse_from_file_with_root_fallback(atsc3_smime_validation_context, signing_certificate_filename);
+//jjustman-2021-03-01 - we need to parse our signing certificate from our CDT (chain) cert(s)
+				if(lls_sls_alc_monitor->atsc3_certification_data) {
+					atsc3_smime_validation_context->certificate_payload = block_Alloc(0);
+					for(int i=0; i < lls_sls_alc_monitor->atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count; i++) {
+						atsc3_certification_data_to_be_signed_data_certificates_t* atsc3_certification_data_to_be_signed_data_certificates = lls_sls_alc_monitor->atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i];
+						block_Write(atsc3_smime_validation_context->certificate_payload, ATSC3_SMIME_UTILS_BEGIN_CERTIFICATE, strlen(ATSC3_SMIME_UTILS_BEGIN_CERTIFICATE));
+						block_Append(atsc3_smime_validation_context->certificate_payload, atsc3_certification_data_to_be_signed_data_certificates->base64_payload);
+						block_Write(atsc3_smime_validation_context->certificate_payload, ATSC3_SMIME_UTILS_END_CERTIFICATE, strlen(ATSC3_SMIME_UTILS_END_CERTIFICATE));
+
+					}
+					block_Rewind(atsc3_smime_validation_context->certificate_payload);
+					_ATSC3_ROUTE_SLS_PROCESSOR_INFO("CMS certificate chain payload is: %s", block_Get(atsc3_smime_validation_context->certificate_payload));
+				} else {
+//					atsc3_smime_validation_context_certificate_payload_parse_from_file(atsc3_smime_validation_context, signing_certificate_filename);
+					atsc3_smime_validation_context_certificate_payload_parse_from_file_with_root_fallback(atsc3_smime_validation_context, signing_certificate_filename);
+				}
+
+				atsc3_smime_validation_context_set_cms_noverify(atsc3_smime_validation_context, true);
+				atsc3_smime_validation_context_set_cms_no_content_verify(atsc3_smime_validation_context, true);
 
 				atsc3_smime_validation_context_t* atsc3_smime_validation_context_ret = atsc3_smime_validate_from_context(atsc3_smime_validation_context);
 				

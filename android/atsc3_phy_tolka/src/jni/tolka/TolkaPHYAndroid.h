@@ -39,6 +39,7 @@ using namespace std;
 #include <sl_config.h>
 #include <sl_i2c.h>
 #include <sl_gpio.h>
+#include <sl_ts.h>
 #include <sl_utils.h>
 #include <sl_demod_atsc3.h>
 
@@ -71,6 +72,25 @@ typedef struct
     R855_Set_Info               R855_Info;
 } SL3000_R855_instance_t;
 
+
+
+typedef enum
+{
+    UNLOCKED = 0,
+    LOCKED
+} LockStatus_t;
+
+typedef struct
+{
+    LockStatus_t locked;//1:locked ,0:unlocked
+    int rssi;
+    double snr;
+    double ber;
+    double per;
+    double confidence;
+    LockStatus_t plpVaild[4];
+
+} SignalInfo_t;
 
 class TolkaPHYAndroid : public IAtsc3NdkPHYClient {
 
@@ -132,21 +152,21 @@ public:
 //
 //    SL_ExtLnaConfigParams_t         lnaInfo = {.lnaMode = SL_EXT_LNA_CFG_MODE_NOT_PRESENT, .lnaGpioNum=0 };
 //
-//    SL_DemodStd_t                   demodStandard = { SL_DEMODSTD_ATSC3_0 };
+    SL_DemodStd_t                   demodStandard = { SL_DEMODSTD_ATSC3_0 };
 //
 //    //jjustman-2021-03-03   this is expected to be always accurate, when using, be sure to acquire SL_plpConfigParams_mutex, and SL_I2c_command_mutex, if necessary
     SL_Atsc3p0ConfigParams_t        atsc3ConfigInfo;
 //
 //    //status thread details - use statusMetricsResetFromContextChange to initalize or to reset when tune() is completed or when PLP selection has changed
-//    SL_TunerSignalInfo_t    tunerInfo;
-//    SL_DemodLockStatus_t    demodLockStatus;
-//    uint                    cpuStatus = 0;
+    SL_TunerSignalInfo_t    tunerInfo;
+    SL_DemodLockStatus_t    demodLockStatus;
+    uint                    cpuStatus = 0;
 //
 //    //jjustman-2021-03-03 - NOTE: the following _Diag's are only polled after acqusition of the relevant RF/L1B/L1D lock, and must be 'cleared' when the tuner is re-tuned
-//    SL_Atsc3p0Perf_Diag_t   perfDiag = { 0 };
-//    SL_Atsc3p0Bsr_Diag_t    bsrDiag = { 0 };
-//    SL_Atsc3p0L1B_Diag_t    l1bDiag = { 0 };
-//    SL_Atsc3p0L1D_Diag_t    l1dDiag = { 0 };
+    SL_Atsc3p0Perf_Diag_t   perfDiag = { 0 };
+    SL_Atsc3p0Bsr_Diag_t    bsrDiag = { 0 };
+    SL_Atsc3p0L1B_Diag_t    l1bDiag = { 0 };
+    SL_Atsc3p0L1D_Diag_t    l1dDiag = { 0 };
 
 
     //jjustman-2021-03-02 - don't use this method...
@@ -176,6 +196,7 @@ private:
 
 
     SL_Result_t SL3000_atsc3_init(Endeavour  *endeavour, SL_TunerConfig_t *pTunerCfg, SL_PlatFormConfigParams_t *sPlfConfig, SL_DemodStd_t std);
+    SL_Result_t SL3000_atsc3_tune(SL_TunerConfig_t *pTunerCfg, SL_PlatFormConfigParams_t *sPlfConfig);
 
 
     //sanjay
@@ -197,7 +218,7 @@ private:
 //    SL_BbCapture_t            getbbValue = BB_CAPTURE_DISABLE;
 //
 //    SL_LogResult_t            lres;
-//    SL_Result_t               slres;
+    SL_Result_t               slres;
 //    SL_TunerResult_t          tres;
 //    SL_ConfigResult_t         cres;
 //    SL_UtilsResult_t          utilsres;
@@ -210,7 +231,7 @@ private:
     int                       last_l1bTimeInfoFlag = -1;
     uint64_t                  last_l1dTimeNs_value = 0;
 //
-//    SL_DemodConfigInfo_t cfgInfo;
+    SL_DemodConfigInfo_t cfgInfo;
 //
 //    SL_TunerConfig_t tunerCfg;
 //    SL_TunerConfig_t tunerGetCfg;
@@ -294,11 +315,9 @@ private:
     block_t*                atsc3_sl_tlv_block = NULL;
     atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = NULL;
 
-
-
     //jjustman-2021-02-04 - global error flag if i2c txn fails, usually due to demod crash
-//    static SL_Result_t      global_sl_result_error_flag;
-//    static SL_I2cResult_t   global_sl_i2c_result_error_flag;
+    static SL_Result_t      global_sl_result_error_flag;
+    static SL_I2cResult_t   global_sl_i2c_result_error_flag;
 
     //jjustman-2021-06-07 # 11798: compute global/l1b/l1d/plpN SNR metrics
     double compute_snr(int snr_linear_scale);
