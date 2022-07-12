@@ -1,0 +1,97 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.example.endeavour_SL3000_R855.LockStatus" >
+
+	<RadioGroup
+		android:id="@+id/lockstatus_standard_group"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal">
+
+		<RadioButton
+			android:id="@+id/lockstatus_atsc3"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="ATSC3"></RadioButton>
+
+		<RadioButton
+			android:id="@+id/lockstatus_atsc1"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="ATSC1"></RadioButton>
+
+		<RadioButton
+			android:id="@+id/lockstatus_dvb_t_t2"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:text="DVBT/T2"></RadioButton>
+
+		<RadioButton
+			android:id="@+id/lockstatus_dvb_c"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:text="DVBC"></RadioButton>
+
+		<RadioButton
+			android:id="@+id/lockstatus_isdbt"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:text="ISDBT"></RadioButton>
+
+		<RadioButton
+			android:id="@+id/lockstatus_j83b"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:text="J83B"></RadioButton>
+	</RadioGroup>
+
+	<RadioGroup
+		android:id="@+id/lockstatus_device_group"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:orientation="horizontal">
+
+		<RadioButton
+			android:id="@+id/lockstatus_device_0"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Device 0"></RadioButton>
+
+		<RadioButton
+			android:id="@+id/lockstatus_device_1"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Device 1"></RadioButton>
+
+		<RadioButton
+			android:id="@+id/lockstatus_device_2"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Device 2"></RadioButton>
+
+		<RadioButton
+			android:id="@+id/lockstatus_device_3"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="Device 3"></RadioButton>
+	</RadioGroup>
+
+	<ListView
+	    android:id="@+id/lockstatus_statusinfo"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:clickable="false">
+	</ListView>
+
+</LinearLayout>

@@ -103,6 +103,39 @@ char* kvp_collection_get(kvp_collection_t *collection, char* key) {
 }
 
 
+/*
+ if we have a match, then return a strdup'd version of the value we match on, otherwise return null
+ */
+char* kvp_collection_get_value(kvp_collection_t *collection, char* val) {
+	char* key = NULL;
+
+	for(int i=0; i < collection->size_n && !key; i++) {
+		kvp_t* check = collection->kvp_collection[i];
+		_ATSC3_UTILS_TRACE("kvp_collection_get_value: checking: %s against %s, resolved key is: %s", val, check->val, check->key);
+		if(check->val && strcasecmp(val, check->val) == 0) {
+			_ATSC3_UTILS_TRACE("kvp_find_key: MATCH for val: %s, resolved key is: %s", check->key, check->val);
+			key = check->key;
+		}
+	}
+	if(!key) {
+		return NULL;
+	}
+
+	//don't forget our null terminator
+	int len = strlen(key) + 1;
+	char* newkey = (char*)calloc(len, sizeof(char));
+
+	if(!newkey) {
+		_ATSC3_UTILS_ERROR("kvp_collection_get_value: unable to clone key return!");
+		return NULL;
+	}
+	memcpy(newkey, key, len);
+	_ATSC3_UTILS_TRACE("kvp_collection_get: cloning len: %d, key: %s, neykey: %s", len, key, newkey);
+	return newkey;
+}
+
+
+
 kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 	int input_len = strlen((const char*)input_string);
 	_ATSC3_UTILS_TRACE("kvp_parse_string: input string len: %d, input string:\n\n%s\n\n", input_len, input_string);
@@ -586,6 +619,31 @@ block_t* block_Duplicate_from_position(block_t* src) {
 
 	return dest;
 }
+
+block_t* block_Duplicate_from_position_and_size(block_t* src, uint32_t size) {
+    if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
+
+    int32_t max_avail_size = src->p_size - src->i_pos;
+    if(max_avail_size < 0) {
+        _ATSC3_UTILS_WARN("block_Duplicate_from_position_and_size: block: %p, p_size was: %u, but i_pos: %u, max_avail_size: %u, returning NULL", src, src->p_size, src->i_pos, max_avail_size);
+        return NULL;
+    }
+
+    if(size > max_avail_size) {
+        _ATSC3_UTILS_WARN("block_Duplicate_from_position_and_size: block: %p, p_size was: %u, but i_pos: %u, max_avail_size: %u, requested len: %d, returning NULL",
+                          src, src->p_size, src->i_pos, max_avail_size, size);
+        return NULL;
+    }
+
+
+    block_t* dest = __block_Alloc_internal(size);
+    memcpy(dest->p_buffer, &src->p_buffer[src->i_pos], size);
+    dest->i_pos = 0;
+
+    return dest;
+}
+
+
 
 uint8_t* block_Get(block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;

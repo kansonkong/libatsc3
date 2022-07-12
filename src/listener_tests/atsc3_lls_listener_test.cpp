@@ -67,7 +67,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	}
 
 	if(udp_packet->data) {
-		free(udp_packet->data);
+		block_Destroy(&udp_packet->data);
 		udp_packet->data = NULL;
 	}
 

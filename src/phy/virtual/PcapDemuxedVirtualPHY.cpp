@@ -193,7 +193,12 @@ int PcapDemuxedVirtualPHY::PcapProducerThreadParserRun() {
                 atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_local_context);
                 //push block_t as packet buffer to consumer queue
 
-                block_Seek(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet, ATSC3_PCAP_ETH_HEADER_LENGTH);
+                if(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_buffer[0] == 0x45 && atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_buffer[1] == 0x00) {
+                    //we start at our IP/UDP datagram header here
+                } else {
+                    //skip over our ethernet header frame here (e.g. 14 bytes) to get to the start of the ip/udp datagram
+                    block_Seek(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet, ATSC3_PCAP_ETH_HEADER_LENGTH);
+                }
 
                 block_t* phy_payload = block_Duplicate_from_position(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
                 block_Rewind(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);

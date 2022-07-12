@@ -20,6 +20,8 @@
 #define _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_INFO(...)    printf("%s:%d:INFO:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 
+#define __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__
+
 const char* SL_TLV_REPLAY_TEST_FILENAME = "testdata/2019-11-22-647mhz.tlv.bin";
 
 atsc3_alp_packet_collection_t* atsc3_alp_packet_collection = NULL;

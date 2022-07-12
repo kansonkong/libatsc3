@@ -208,6 +208,8 @@ extern "C" {
 #endif
 
 extern char* ATSC3_SMIME_UTILS_CDT_A3SA_ROOT_2020_CERT;
+extern char* ATSC3_SMIME_UTILS_BEGIN_CERTIFICATE;
+extern char* ATSC3_SMIME_UTILS_END_CERTIFICATE;
 
 typedef struct atsc3_smime_entity {
 	char*	mime_version;

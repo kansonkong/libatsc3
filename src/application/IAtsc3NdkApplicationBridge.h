@@ -75,6 +75,10 @@ class IAtsc3NdkApplicationBridge {
         virtual void atsc3_phy_notify_plp_selection_change_clear_callback() = 0;
         virtual void atsc3_phy_notify_plp_selection_changed(vector<uint8_t> plps_to_listen) = 0;
 
+        //jjustman-2022-07-11
+        virtual bool atsc3_get_demod_pcap_capture() = 0;
+        virtual void atsc3_set_demod_pcap_capture(bool enabled) = 0;
+
 };
 
 

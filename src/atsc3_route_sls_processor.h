@@ -35,6 +35,9 @@ bool atsc3_route_sls_process_from_sls_metadata_fragments_patch_mpd_availability_
 
 bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
 
+atsc3_route_dash_metadata_t* atsc3_route_sls_extract_cenc_pssh_metadata_if_available(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor);
+bool atsc3_route_sls_extract_cenc_pssh_metadata_walk_child(atsc3_route_dash_metadata_t* atsc3_route_dash_metadata, xml_node_t* anchor, block_t* xml_cenc_namespace_tag, block_t* xml_dashif_namesapce_tag);
+
 #define _ATSC3_ROUTE_SLS_PROCESSOR_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _ATSC3_ROUTE_SLS_PROCESSOR_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
 #define _ATSC3_ROUTE_SLS_PROCESSOR_INFO(...)   if(_ROUTE_SLS_PROCESSOR_INFO_ENABLED) { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
