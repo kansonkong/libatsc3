@@ -428,6 +428,8 @@ typedef struct on_screen_message_notification {
 
 
 /*
+ * atsc3_certification_data_t
+ *
  * defined in A/360:2019
  *
  * Table 5.1
@@ -453,12 +455,92 @@ typedef struct on_screen_message_notification {
 
   See payload sample in test_data/2019-phx-nab-interop-signed-lls/lls_table_type_id_6.xml
 
+
+  <?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:cdt="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/CDT/1.0/" targetNamespace="tag:atsc.org,2016:XMLSchemas/ATSC3/Delivery/CDT/1.0/" elementFormDefault="qualified">
+	<xs:element name="CertificationData" type="cdt:CDTType"/>
+	<xs:complexType name="CDTType">
+		<xs:sequence>
+			<xs:element name="ToBeSignedData" type="cdt:TBSDType"/>
+			<xs:element name="CMSSignedData" type="cdt:Base64Type"/>
+			<xs:element name="OCSPResponse" type="cdt:Base64Type" maxOccurs="unbounded"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="TBSDType">
+		<xs:sequence>
+			<xs:element name="Certificates" type="cdt:Base64Type" maxOccurs="unbounded"/>
+			<xs:element name="CurrentCert" type="cdt:Base64Type"/>
+			<xs:element name="CertReplacement" type="cdt:CertRepType" minOccurs="0" maxOccurs="1"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="OCSPRefresh" type="cdt:RefreshPeriodType" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="CertRepType">
+		<xs:sequence>
+			<xs:element name="NextCert" type="cdt:Base64Type"/>
+			<xs:any namespace="##other" processContents="strict" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute name="NextCertFrom" type="xs:dateTime" use="required"/>
+		<xs:attribute name="CurrentCertUntil" type="xs:dateTime" use="required"/>
+		<xs:anyAttribute processContents="strict"/>
+	</xs:complexType>
+	<xs:complexType name="Base64Type">
+		<xs:simpleContent>
+			<xs:extension base="xs:base64Binary">
+				<xs:anyAttribute processContents="strict"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:simpleType name="RefreshPeriodType">
+		<xs:restriction base="xs:duration">
+			<xs:pattern value="P[^YM]*(T.*)?"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>
+
+
  */
 
-typedef struct atsc3_certification_data{
-    void* to_implement;
+
+typedef struct atsc3_certification_data_to_be_signed_data_certificates {
+	block_t* 	base64_payload;
+} atsc3_certification_data_to_be_signed_data_certificates_t;
+
+typedef struct atsc3_certification_data_to_be_signed_data_cert_replacement {
+	block_t*	next_cert_from_datetime;
+	block_t*	current_cert_until_datetime;
+	block_t*	next_cert_subject_key_identifier;
+} atsc3_certification_data_to_be_signed_data_cert_replacement_t;
+
+typedef struct atsc3_certification_data_to_be_signed_data {
+	block_t* 														oscp_refresh_daytimeduration;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_certification_data_to_be_signed_data_certificates);
+	block_t*														current_cert_subject_key_identifer; 	//SubjectKeyIdentifier for the certificate currently used to sign signaling messages.
+
+	atsc3_certification_data_to_be_signed_data_cert_replacement_t* 	atsc3_certification_data_to_be_signed_data_cert_replacement;
+
+
+} atsc3_certification_data_to_be_signed_data_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_certification_data_to_be_signed_data, atsc3_certification_data_to_be_signed_data_certificates);
+
+typedef struct atsc3_certification_data_oscp_response {
+	block_t* 	base64_payload;
+} atsc3_certification_data_oscp_response_t;
+
+typedef struct atsc3_certification_data {
+    block_t* 											raw_certification_data_xml_fragment;
+	atsc3_certification_data_to_be_signed_data_t 		atsc3_certification_data_to_be_signed_data;
+
+	block_t*											cms_signed_data;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_certification_data_oscp_response);
 
 } atsc3_certification_data_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_certification_data, atsc3_certification_data_oscp_response);
+
 
 /* defined in A/331:2020
  *
@@ -582,7 +664,7 @@ typedef struct lls_table {
 		on_screen_message_notification_t	on_screen_message_notification;
 
 		//jjustman-2020-03-09 - new in A/331:2020 and A/360:2019
-		atsc3_certification_data_t          certification_data; //0x06 - A/360:2019
+        atsc3_certification_data_t          certification_data; //0x06 - A/360:2019
 		atsc3_signed_multi_table_t          signed_multi_table; //0xFE - A/331:2020
 		//jjustman-2020-03-09 - NOTE: lls_table_id types of 0x00 and 0xFE are not allowed in the signed_multi_table
 
@@ -822,7 +904,140 @@ typedef struct lls_sls_alc_session_flows {
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_alc_session_flows, lls_sls_alc_session);
 
 
- 
+/***
+ * jjustman-2022-06-04 - example DASH-IF mpd with content protection using widevine cdm,
+ * and 2 different license flow grants, a traditional widevine cdm client license request, and a
+ * new groupLicense-1.0 widevine content protection model for disconnected CE devices.
+ *
+ * We will need to keep track of the Laurl for our traditional IP connected client license acqusition folow to properly configure
+ * the exoplayer instance to the relevant Laurl endpoint.
+ *
+ * Additionally, the <cenc:pssh> is no longer a single pssh atom, there will be 2 isobmff boxes to parse for proper widevine cenc instantiation
+ *
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:dashif="http://dashif.org/guidelines/ContentProtection" xmlns:scte35="http://www.scte.org/schemas/35/2016" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" availabilityStartTime="2022-06-03T11:14:21Z" maxSegmentDuration="PT2.002S" minBufferTime="PT2S" minimumUpdatePeriod="PT0S" profiles="urn:mpeg:dash:profile:isoff-broadcast:2015" publishTime="2022-02-10T15:39:41Z" type="dynamic" xsi:schemalocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd http://dashif.org/guidelines/ContentProtection laurl.xsd">
+  <Period id="P0" start="PT0S">
+    <AdaptationSet contentType="video" id="0" maxFrameRate="30000/1001" maxHeight="720" maxWidth="1280" mimeType="video/mp4" minFrameRate="30000/1001" minHeight="720" minWidth="1280" par="16:9" segmentAlignment="true" startWithSAP="1">
+      <ContentProtection cenc:default_KID="391b55f3-8040-5852-a512-a34afb3e757f" schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc"/>
+      <ContentProtection cenc:default_KID="391b55f3-8040-5852-a512-a34afb3e757f" schemeIdUri="urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed" value="Widevine">
+        <cenc:pssh>AAAAUHBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAADAiEnRhbXBhX2xhYl9hdG1fZzFwMkjj3JWbBmoUYXRzY19ncm91cDFfcHJvZmlsZTIAAAJucHNzaAAAAADt74upedZKzqPIJ9zVHSHtAAACTiISdGFtcGFfbGFiX2F0bV9nMXAySOPclZsGWAJqFGF0c2NfZ3JvdXAxX3Byb2ZpbGUyclgKEF2fIrkd/VgUnLUUr3no+QoSEDkbVfOAQFhSpRKjSvs+dX8aIPnJeo6qcAufFYWK2Wj8oS4T1hIQg6F8PR4g+yQHVc8cIhDgz1UaspMYSpdhXPNG3mnuclgKEN6SlLfdHVCBi3A9D5ErIRMSEDkbVfOAQFhSpRKjSvs+dX8aIE5x9Ck+pwZH4INO+MDLN6+xxSn1qmFS3ZMfTr8XrAm7IhBDx4N8YMKrgyqxbNiWx1AIclgKEPwy0ABChFVZjbeUB5sSl64SEMJ0s98kFlAbsDT6RsnANZoaIKtaaPvLgkqfHnM2KsiXYGtfXrAsSNwHrLCrJxQxwQ2iIhCIUEwHGHHGxjPXPfC/4GtoclgKEKZnekO1O1E1kTwxT+bCnCMSEMJ0s98kFlAbsDT6RsnANZoaIG5w6b2lX0QkAh7DiE0AGQcfIUQcUnOomQIFaLv9rqHzIhD93U/3Uq0RskPMpRWUDq9mclgKEBksKBHgs1LVvvSZfncPSUoSEHtN0fMpIF0svDnEEp9ul+8aIBaX9NBz7Ogr4x+m2FXT6TFzuI2IFZRbWIdP3uv8yvPwIhD5jO+hZ/X01kOm9g5lq2bCclgKED/cmo5gI190iTMamSXqwd8SEHtN0fMpIF0svDnEEp9ul+8aIHE+T3V+oyTJImim1PFZhRnupdsztKSpWd1W6begED2SIhACXtQ31Eu3YTY5Z1O5U6Q2</cenc:pssh>
+        <dashif:Laurl licenseType="license-1.0">https://drm-license.a3sa.yottacloud.tv/v1/wv/license?content_id=tampa_lab_atm_g1p2</dashif:Laurl>
+        <dashif:Laurl licenseType="groupLicense-1.0">file://atsc_group1_profile2.lic</dashif:Laurl>
+      </ContentProtection>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <Representation bandwidth="4000000" codecs="hvc1.2.4.L93.11" frameRate="30000/1001" height="720" id="Video1_1" sar="1:1" scanType="progressive" width="1280">
+        <SegmentTemplate duration="2002000" initialization="video-init.mp4v" media="video-$Number$.mp4v" startNumber="821472930" timescale="1000000"/>
+      </Representation>
+      <RandomAccess interval="2002000"/>
+    </AdaptationSet>
+    <AdaptationSet contentType="audio" id="1" lang="spa" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+      <ContentProtection cenc:default_KID="391b55f3-8040-5852-a512-a34afb3e757f" schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc"/>
+      <ContentProtection cenc:default_KID="391b55f3-8040-5852-a512-a34afb3e757f" schemeIdUri="urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed" value="Widevine">
+        <cenc:pssh>AAAAUHBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAADAiEnRhbXBhX2xhYl9hdG1fZzFwMkjj3JWbBmoUYXRzY19ncm91cDFfcHJvZmlsZTIAAAJucHNzaAAAAADt74upedZKzqPIJ9zVHSHtAAACTiISdGFtcGFfbGFiX2F0bV9nMXAySOPclZsGWAJqFGF0c2NfZ3JvdXAxX3Byb2ZpbGUyclgKEF2fIrkd/VgUnLUUr3no+QoSEDkbVfOAQFhSpRKjSvs+dX8aIPnJeo6qcAufFYWK2Wj8oS4T1hIQg6F8PR4g+yQHVc8cIhDgz1UaspMYSpdhXPNG3mnuclgKEN6SlLfdHVCBi3A9D5ErIRMSEDkbVfOAQFhSpRKjSvs+dX8aIE5x9Ck+pwZH4INO+MDLN6+xxSn1qmFS3ZMfTr8XrAm7IhBDx4N8YMKrgyqxbNiWx1AIclgKEPwy0ABChFVZjbeUB5sSl64SEMJ0s98kFlAbsDT6RsnANZoaIKtaaPvLgkqfHnM2KsiXYGtfXrAsSNwHrLCrJxQxwQ2iIhCIUEwHGHHGxjPXPfC/4GtoclgKEKZnekO1O1E1kTwxT+bCnCMSEMJ0s98kFlAbsDT6RsnANZoaIG5w6b2lX0QkAh7DiE0AGQcfIUQcUnOomQIFaLv9rqHzIhD93U/3Uq0RskPMpRWUDq9mclgKEBksKBHgs1LVvvSZfncPSUoSEHtN0fMpIF0svDnEEp9ul+8aIBaX9NBz7Ogr4x+m2FXT6TFzuI2IFZRbWIdP3uv8yvPwIhD5jO+hZ/X01kOm9g5lq2bCclgKED/cmo5gI190iTMamSXqwd8SEHtN0fMpIF0svDnEEp9ul+8aIHE+T3V+oyTJImim1PFZhRnupdsztKSpWd1W6begED2SIhACXtQ31Eu3YTY5Z1O5U6Q2</cenc:pssh>
+        <dashif:Laurl licenseType="license-1.0">https://drm-license.a3sa.yottacloud.tv/v1/wv/license?content_id=tampa_lab_atm_g1p2</dashif:Laurl>
+        <dashif:Laurl licenseType="groupLicense-1.0">file://atsc_group1_profile2.lic</dashif:Laurl>
+      </ContentProtection>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <Representation audioSamplingRate="48000" bandwidth="96000" codecs="ac-4.02.01.00" id="22">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:mpegB:cicp:ChannelConfiguration" value="2"/>
+        <SegmentTemplate duration="2002000" initialization="audio1-init.mp4a" media="audio1-$Number$.mp4a" startNumber="821472930" timescale="1000000"/>
+      </Representation>
+      <RandomAccess interval="2002000"/>
+    </AdaptationSet>
+    <AdaptationSet contentType="audio" id="2" lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+      <ContentProtection cenc:default_KID="391b55f3-8040-5852-a512-a34afb3e757f" schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc"/>
+      <ContentProtection cenc:default_KID="391b55f3-8040-5852-a512-a34afb3e757f" schemeIdUri="urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed" value="Widevine">
+        <cenc:pssh>AAAAUHBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAADAiEnRhbXBhX2xhYl9hdG1fZzFwMkjj3JWbBmoUYXRzY19ncm91cDFfcHJvZmlsZTIAAAJucHNzaAAAAADt74upedZKzqPIJ9zVHSHtAAACTiISdGFtcGFfbGFiX2F0bV9nMXAySOPclZsGWAJqFGF0c2NfZ3JvdXAxX3Byb2ZpbGUyclgKEF2fIrkd/VgUnLUUr3no+QoSEDkbVfOAQFhSpRKjSvs+dX8aIPnJeo6qcAufFYWK2Wj8oS4T1hIQg6F8PR4g+yQHVc8cIhDgz1UaspMYSpdhXPNG3mnuclgKEN6SlLfdHVCBi3A9D5ErIRMSEDkbVfOAQFhSpRKjSvs+dX8aIE5x9Ck+pwZH4INO+MDLN6+xxSn1qmFS3ZMfTr8XrAm7IhBDx4N8YMKrgyqxbNiWx1AIclgKEPwy0ABChFVZjbeUB5sSl64SEMJ0s98kFlAbsDT6RsnANZoaIKtaaPvLgkqfHnM2KsiXYGtfXrAsSNwHrLCrJxQxwQ2iIhCIUEwHGHHGxjPXPfC/4GtoclgKEKZnekO1O1E1kTwxT+bCnCMSEMJ0s98kFlAbsDT6RsnANZoaIG5w6b2lX0QkAh7DiE0AGQcfIUQcUnOomQIFaLv9rqHzIhD93U/3Uq0RskPMpRWUDq9mclgKEBksKBHgs1LVvvSZfncPSUoSEHtN0fMpIF0svDnEEp9ul+8aIBaX9NBz7Ogr4x+m2FXT6TFzuI2IFZRbWIdP3uv8yvPwIhD5jO+hZ/X01kOm9g5lq2bCclgKED/cmo5gI190iTMamSXqwd8SEHtN0fMpIF0svDnEEp9ul+8aIHE+T3V+oyTJImim1PFZhRnupdsztKSpWd1W6begED2SIhACXtQ31Eu3YTY5Z1O5U6Q2</cenc:pssh>
+        <dashif:Laurl licenseType="license-1.0">https://drm-license.a3sa.yottacloud.tv/v1/wv/license?content_id=tampa_lab_atm_g1p2</dashif:Laurl>
+        <dashif:Laurl licenseType="groupLicense-1.0">file://atsc_group1_profile2.lic</dashif:Laurl>
+      </ContentProtection>
+      <Representation audioSamplingRate="48000" bandwidth="96000" codecs="ac-4.02.01.00" id="a3_3">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:mpegB:cicp:ChannelConfiguration" value="2"/>
+        <SegmentTemplate duration="2002000" initialization="audio2-init.mp4a" media="audio2-$Number$.mp4a" startNumber="821472930" timescale="1000000"/>
+      </Representation>
+      <RandomAccess interval="2002000"/>
+    </AdaptationSet>
+    <AdaptationSet contentType="text" id="3" mimeType="application/mp4" segmentAlignment="true" startWithSAP="1">
+      <SupplementalProperty schemeIdUri="http://dashif.org/guidelines/dash-atsc-closedcaption" value="ar:16-9;er:0;profile:0;3d:0"/>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="subtitle"/>
+      <Representation bandwidth="50000" codecs="stpp.ttml.im1t" id="d4_4">
+        <SegmentTemplate duration="2002000" initialization="data-init.mp4s" media="data-$Number$.mp4s" startNumber="821472930" timescale="1000000"/>
+      </Representation>
+      <RandomAccess interval="2002000"/>
+    </AdaptationSet>
+  </Period>
+</MPD>
+ */
+
+typedef struct atsc3_pssh_box_v1_keys {
+	uint64_t	key_id_msb;
+	uint64_t 	key_id_lsb;
+} atsc3_pssh_box_v1_keys_t;
+
+
+//if pssh_box_version == 1, then read our key ids
+typedef struct pssh_box_v1 {
+	uint32_t number_of_key_ids;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_pssh_box_v1_keys);
+} pssh_box_v1_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(pssh_box_v1, atsc3_pssh_box_v1_keys);
+
+typedef struct atsc3_cenc_single_pssh_box {
+	uint32_t		pssh_box_version;
+
+	uint64_t 		system_id_msb;
+	uint64_t 		system_id_lsb;
+
+	pssh_box_v1_t	pssh_box_v1;
+
+	block_t*		pssh_box_data;
+} atsc3_cenc_single_pssh_box_t;
+
+typedef struct atsc3_route_dash_cenc_pssh_element {
+	block_t* 	raw_pssh_box_from_mpd;
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_cenc_single_pssh_box);
+} atsc3_route_dash_cenc_pssh_element_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_dash_cenc_pssh_element, atsc3_cenc_single_pssh_box);
+
+typedef struct atsc3_route_dashif_laurl {
+	block_t* 	license_type;
+	block_t*	license_server_url;
+} atsc3_route_dashif_laurl_t;
+
+typedef struct atsc3_route_dash_content_protection_element {
+	block_t*	cenc_default_KID;
+	block_t*	schemeIdUri;
+	block_t*	value_attribute;
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_dash_cenc_pssh_element);
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_dashif_laurl);
+
+} atsc3_route_dash_content_protection_element_t;
+
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_dash_content_protection_element, atsc3_route_dash_cenc_pssh_element);
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_dash_content_protection_element, atsc3_route_dashif_laurl);
+
+typedef struct atsc3_route_dash_adaptation_set {
+	block_t*	adaptation_set_content_type; //video | audio | text
+	block_t*	adaptation_set_id;
+	block_t*	adaptation_set_mime_type;
+
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_dash_content_protection_element);
+
+} atsc3_route_dash_adaptation_set_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_dash_adaptation_set, atsc3_route_dash_content_protection_element);
+
+typedef struct atsc3_route_dash_metadata {
+	ATSC3_VECTOR_BUILDER_STRUCT(atsc3_route_dash_adaptation_set);
+
+} atsc3_route_dash_metadata_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_dash_metadata, atsc3_route_dash_adaptation_set);
+
 /**
  * used to store monitor references of current flows
 
@@ -848,7 +1063,6 @@ typedef struct lls_sls_alc_monitor {
         atsc3_lls_slt_service_t*            atsc3_lls_slt_service_stale;
     } transients;
 
-
     lls_sls_alc_session_t* 					lls_alc_session;
 	
 	atsc3_fdt_instance_t* 					atsc3_fdt_instance;
@@ -862,35 +1076,39 @@ typedef struct lls_sls_alc_monitor {
     uint32_t 	usbd_tsi;
 	uint32_t 	stsid_tsi;
 	uint32_t 	apd_tsi;
-	uint32_t 	mpd_tsi;
 	uint32_t 	held_tsi;
 	uint32_t 	dwd_tsi;
-	
-    bool		has_discontiguous_toi_flow;
-	block_t* 	last_mpd_payload;
-    block_t* 	last_mpd_payload_patched;
 
-    atsc3_sls_alc_flow_v 	atsc3_sls_alc_all_s_tsid_flow_v;
+	//dash related attributes
+	uint32_t 						mpd_tsi;
+    bool							has_discontiguous_toi_flow;
+	block_t* 						last_mpd_payload;
+    block_t* 						last_mpd_payload_patched;
+
+	//jjustman-2022-06-04 - add in new route dash manifest metadata for content protection system id andkeyids
+	atsc3_route_dash_metadata_t*	last_atsc3_route_dash_metadata;
+
+	atsc3_sls_alc_flow_v 			atsc3_sls_alc_all_s_tsid_flow_v;
 
     //atsc3_sls_alc_flow_v 	atsc3_sls_alc_all_mediainfo_flow_v;
 	
 	//method callback handlers
-    atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_f  atsc3_lls_sls_alc_on_metadata_fragments_updated_callback;
+    atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_f  	atsc3_lls_sls_alc_on_metadata_fragments_updated_callback;
 
-    atsc3_alc_on_object_close_flag_s_tsid_content_location_f	atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback;
+    atsc3_alc_on_object_close_flag_s_tsid_content_location_f		atsc3_lls_sls_alc_on_object_close_flag_s_tsid_content_location_callback;
+
+	atsc3_alc_on_route_mpd_metadata_adaptation_set_cenc_pssh_f		atsc3_alc_on_route_mpd_metadata_adaptation_set_cenc_pssh_callback;
+	atsc3_alc_on_route_mpd_patched_f    							atsc3_lls_sls_alc_on_route_mpd_patched_callback;                             //dispatched in atsc3_route_sls_processor.c
+	atsc3_alc_on_route_mpd_patched_with_filename_f		 			atsc3_lls_sls_alc_on_route_mpd_patched_with_filename_callback;				//dispatched in atsc3_route_sls_processor.c
 	
-	atsc3_alc_on_route_mpd_patched_f    						atsc3_lls_sls_alc_on_route_mpd_patched_callback;                             //dispatched in atsc3_route_sls_processor.c
-	atsc3_alc_on_route_mpd_patched_with_filename_f		 		atsc3_lls_sls_alc_on_route_mpd_patched_with_filename_callback;				//dispatched in atsc3_route_sls_processor.c
-	
-	atsc3_alc_on_package_extract_completed_f					atsc3_lls_sls_alc_on_package_extract_completed_callback;
+	atsc3_alc_on_package_extract_completed_f						atsc3_lls_sls_alc_on_package_extract_completed_callback;
 
 	//this should be in the sls_monitor...
-	atsc3_sls_on_held_trigger_received_f						atsc3_sls_on_held_trigger_received_callback;
-	atsc3_sls_on_held_trigger_received_with_version_f			atsc3_sls_on_held_trigger_received_with_version_callback;
+	atsc3_sls_on_held_trigger_received_f							atsc3_sls_on_held_trigger_received_callback;
+	atsc3_sls_on_held_trigger_received_with_version_f				atsc3_sls_on_held_trigger_received_with_version_callback;
 
 
-	uint64_t													lct_packets_received_count;
-
+	uint64_t														lct_packets_received_count;
 
     //jjustman-2020-07-01 #WI - todo: dispatch HELD block_t* payload to application callback
 
@@ -926,6 +1144,9 @@ typedef struct lls_sls_alc_monitor {
 	
     lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
     lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;
+
+	atsc3_certification_data_t* 			atsc3_certification_data;
+
 } lls_sls_alc_monitor_t;
 
 typedef struct lls_slt_service_id {
@@ -977,7 +1198,11 @@ typedef struct lls_slt_monitor {
     //use this against on_screen_message_notification
     lls_table_t* lls_latest_on_screen_message_notification_table;
 
+    //LATEST: last successfully processed certification data table
+    lls_table_t* lls_latest_certification_data_table;
+
     //jjustman-2019-10-12 - adding lls event callback hooks
+
 
     //defined in atsc3_monitor_events_lls.h
 	atsc3_lls_on_sls_table_present_f								atsc3_lls_on_sls_table_present_callback;
@@ -999,6 +1224,12 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_mmt_session_flow
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_monitor);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_sls_alc_session_flows);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_slt_service_id_group_id_cache);
+
+atsc3_lls_table_t* atsc3_lls_table_new();
+void atsc3_lls_table_free(atsc3_lls_table_t** atsc3_lls_table_p);
+
+atsc3_route_dash_metadata_t* atsc3_route_dash_metadata_new();
+void atsc3_route_dash_metadata_free(atsc3_route_dash_metadata_t** atsc3_route_dash_metadata_p);
 
 
 lls_slt_service_id_t* lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service_t* atsc3_lls_slt_service);

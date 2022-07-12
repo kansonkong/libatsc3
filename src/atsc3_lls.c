@@ -87,10 +87,10 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 
 	//peek and re-assign as necessary for SignedMultiTable
 	if(base_table->lls_table_id == SignedMultiTable) {
-	    block_t* signed_multi_table_block = block_Duplicate_from_position(lls_packet_block);
+	    block_t* signed_multi_table_block = block_Duplicate(lls_packet_block);
         uint8_t* signed_multi_table_block_start_lls_payload_count = block_Get(signed_multi_table_block);
 
-        base_table->signed_multi_table.lls_payload_count = block_Read_uint8_bitlen(signed_multi_table_block, 8);
+        base_table->signed_multi_table.lls_payload_count = block_Read_uint8(signed_multi_table_block);
 
         _LLS_TRACE("__lls_create_base_table_raw: SignedMultiTable: setting raw_signed_mutli_table block_t p: %p, len: %d, to first 4 hex: 0x%x 0x%x 0x%x 0x%x, payload_count: %d",
                    signed_multi_table_block,
@@ -105,10 +105,9 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
         for(int i=0; i < base_table->signed_multi_table.lls_payload_count && base_table; i++) {
             //read out lls_payload_id, lls_payload_version and lls_payload_length, and re-cast a block_T buffer for lls_payload() parsing
             atsc3_signed_multi_table_lls_payload_t* lls_payload = atsc3_signed_multi_table_lls_payload_new();
-            lls_payload->lls_payload_id = block_Read_uint8_bitlen(signed_multi_table_block, 8);
-            lls_payload->lls_payload_version = block_Read_uint8_bitlen(signed_multi_table_block, 8);
+            lls_payload->lls_payload_id = block_Read_uint8(signed_multi_table_block);
+            lls_payload->lls_payload_version = block_Read_uint8(signed_multi_table_block);
             lls_payload->lls_payload_length = block_Read_uint16_ntohs(signed_multi_table_block);
-
 
             _LLS_DEBUG("__lls_create_base_table_raw: parsed lls_payload[%d], lls_payload_id: %d, lls_payload_version: %d, lls_payload_length: %d",
                        i,
@@ -117,46 +116,44 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
                        lls_payload->lls_payload_length);
 
             if(lls_payload->lls_payload_length < block_Remaining_size(signed_multi_table_block)) {
-                lls_payload->lls_payload = block_Duplicate_from_ptr(block_Get(signed_multi_table_block), lls_payload->lls_payload_length);
-                block_Seek_Relative(signed_multi_table_block, lls_payload->lls_payload_length);
-
-                uint8_t *decompressed_payload;
+                lls_payload->lls_payload = block_Duplicate_from_position_and_size(signed_multi_table_block, lls_payload->lls_payload_length); //block_Duplicate_from_ptr(block_Get(signed_multi_table_block), lls_payload->lls_payload_length);
+				block_Seek_Relative(signed_multi_table_block, lls_payload->lls_payload_length);
                 block_Rewind(lls_payload->lls_payload);
-                uint8_t* compressed_payload_start = block_Get(lls_payload->lls_payload);
-                uint32_t compressed_payload_length = block_Remaining_size(lls_payload->lls_payload);
 
-                int32_t ret = atsc3_unzip_gzip_payload(compressed_payload_start, compressed_payload_length, &decompressed_payload);
+				lls_payload->lls_table = atsc3_lls_table_new();
+				//jjustman-2022-05-27 - reamp from A/331-2020 and extract our lls payload
+				//hack warning
+				lls_payload->lls_table->lls_table_id = lls_payload->lls_payload_id; //remapping from a/331 section 6.7
+				lls_payload->lls_table->lls_group_id = base_table->lls_group_id; //hack...
+				lls_payload->lls_table->group_count_minus1 = base_table->group_count_minus1;
+				lls_payload->lls_table->lls_table_version = lls_payload->lls_payload_version;
 
-                if(ret > 0) {
-                    //such a hack
-                    lls_payload->lls_table = (lls_table_t*)calloc(1, sizeof(lls_table_t));
-                    lls_payload->lls_table->lls_table_id = lls_payload->lls_payload_id;
-                    lls_payload->lls_table->lls_group_id = base_table->lls_group_id;
-                    lls_payload->lls_table->group_count_minus1 = base_table->group_count_minus1;
-                    lls_payload->lls_table->lls_table_version = lls_payload->lls_payload_version;
+				int smt_remaining_payload_size = __MIN(65536, block_Remaining_size(lls_payload->lls_payload));
 
-                    lls_payload->lls_table->raw_xml.xml_payload = decompressed_payload;
-                    lls_payload->lls_table->raw_xml.xml_payload_size = ret;
+				//copy/paste warning
 
-                    _LLS_DEBUG("__lls_create_base_table_raw: lls_payload[%d], lls_payload->lls_table->lls_table_version: %d, lls_payload->lls_table->raw_xml.xml_payload_compressed: %p, size: %d, lls_table->raw_xml.xml_payload_size: %d, lls_table->raw_xml.xml_payload: %s",
-                            i,
-                            lls_payload->lls_table->lls_table_version,
-                            lls_payload->lls_table->raw_xml.xml_payload_compressed,
-                            lls_payload->lls_table->raw_xml.xml_payload_compressed_size,
-                            lls_payload->lls_table->raw_xml.xml_payload_size,
-                            lls_payload->lls_table->raw_xml.xml_payload);
-                } else {
-                    _LLS_ERROR("__lls_create_base_table_raw: lls_payload[%d], unable to extract raw_xml.xml_payload",
-                               i);
+				uint8_t* temp_gzip_payload = (uint8_t*)calloc(smt_remaining_payload_size, sizeof(uint8_t));
+				memcpy(temp_gzip_payload, block_Get(lls_payload->lls_payload), smt_remaining_payload_size);
+
+				lls_payload->lls_table->raw_xml.xml_payload_compressed = temp_gzip_payload;
+				lls_payload->lls_table->raw_xml.xml_payload_compressed_size = smt_remaining_payload_size;
+
+				uint8_t *decompressed_payload;
+				int32_t ret = atsc3_unzip_gzip_payload(lls_payload->lls_table->raw_xml.xml_payload_compressed, lls_payload->lls_table->raw_xml.xml_payload_compressed_size, &decompressed_payload);
+
+				if(ret > 0) {
+					lls_payload->lls_table->raw_xml.xml_payload = decompressed_payload;
+					lls_payload->lls_table->raw_xml.xml_payload_size = ret;
+					atsc3_signed_multi_table_add_atsc3_signed_multi_table_lls_payload(&base_table->signed_multi_table, lls_payload);
+					_LLS_DEBUG("__lls_create_base_table_raw: adding lls_payload[%d], lls_payload_id: %d, lls_payload_version: %d, lls_payload_length: %d",
+							   i,
+							   lls_payload->lls_payload_id,
+							   lls_payload->lls_payload_version,
+							   lls_payload->lls_payload_length);
+				} else {
+                    _LLS_ERROR("__lls_create_base_table_raw: lls_payload[%d], unable to extract raw_xml.xml_payload", i);
+					atsc3_lls_table_free(&lls_payload->lls_table);
                 }
-
-                atsc3_signed_multi_table_add_atsc3_signed_multi_table_lls_payload(&base_table->signed_multi_table, lls_payload);
-                _LLS_DEBUG("__lls_create_base_table_raw: adding lls_payload[%d], lls_payload_id: %d, lls_payload_version: %d, lls_payload_length: %d",
-                        i,
-                        lls_payload->lls_payload_id,
-                        lls_payload->lls_payload_version,
-                        lls_payload->lls_payload_length);
-
             } else {
                 _LLS_ERROR("__lls_create_base_table_raw: unable to add table[%d], payload_length: %d is too long for remaining: %d, clearing out base_table to NULL",
                            i,
@@ -198,10 +195,10 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
                     base_table,
                     block_Remaining_size(signed_multi_table_block));
             freeclean((void**)&base_table);
+			_LLS_ERROR("before block_Destroy(signed_multi_table_block) base_table as: %p", base_table);
+			block_Destroy(&signed_multi_table_block);
         }
-        _LLS_ERROR("before block_Destroy(signed_multi_table_block) base_table as: %p", base_table);
-        block_Destroy(&signed_multi_table_block);
-        _LLS_ERROR("returning base_table as: %p", base_table);
+        _LLS_DEBUG("returning base_table as: %p", base_table);
 	} else {
         uint8_t *temp_gzip_payload = (uint8_t*)calloc(remaining_payload_size, sizeof(uint8_t));
         memcpy(temp_gzip_payload, block_Get(lls_packet_block), remaining_payload_size);
@@ -361,8 +358,14 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
         _LLS_DEBUG("lls_table_create_or_update_from_lls_slt_monitor_with_metrics: iterating over %d entries", lls_table_new->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count);
         //iterate over our interior tables...
         for(int i=0; i < lls_table_new->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
-            atsc3_signed_multi_table_lls_payload_t *lls_table_payload = lls_table_new->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
-            atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor, lls_table_payload->lls_table, parsed, parsed_update, parsed_error);
+            atsc3_signed_multi_table_lls_payload_t* lls_table_payload = lls_table_new->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
+            atsc3_lls_table_t* processed_table = atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor, lls_table_payload->lls_table, parsed, parsed_update, parsed_error);
+			if(!processed_table) {
+				//jjustman-2022-05-30 - remove this element if we aren't processed via table update
+				atsc3_signed_multi_table_remove_atsc3_signed_multi_table_lls_payload(&lls_table_new->signed_multi_table, lls_table_payload);
+				i--; //decrement our i position to process the next element (if applicable)
+
+			}
         }
 
         return lls_table_new;
@@ -410,12 +413,30 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
         }
         return lls_table_new;
     }
+
+	if(lls_table_new->lls_table_id == CertificationData) {
+		//persist this CDT information as needed
+		if(!lls_slt_monitor->lls_latest_certification_data_table) {
+			_LLS_INFO("Adding new CertificationData table reference: %s", lls_table_new->certification_data);
+			lls_slt_monitor->lls_latest_certification_data_table = lls_table_new;
+		} else if(lls_slt_monitor->lls_latest_certification_data_table->lls_group_id == lls_table_new->lls_group_id &&
+				  lls_slt_monitor->lls_latest_certification_data_table->lls_table_version != lls_table_new->lls_table_version) {
+			_LLS_INFO("Updating new CertificationData table reference: %s", lls_table_new->certification_data.raw_certification_data_xml_fragment);
+
+			lls_table_free(&lls_slt_monitor->lls_latest_certification_data_table);
+			lls_slt_monitor->lls_latest_certification_data_table = lls_table_new;
+		} else {
+			lls_table_free(&lls_table_new);
+		}
+		return lls_table_new;
+	}
    
     //unhandled lls_table_id
     if(lls_table_new->lls_table_id != SLT) {
         _LLS_INFO("lls_table_create_or_update_from_lls_slt_monitor_with_metrics, ignoring lls_table_id: %d", lls_table_new->lls_table_id);
         
-        lls_table_free(&lls_table_new);
+        //jjustman-2022-05-31 - don't free this table early...
+		lls_table_free(&lls_table_new);
         return NULL;
     }
 
@@ -501,7 +522,7 @@ lls_table_t* __lls_table_create(block_t* lls_packet_block) {
     } else {
         //iterate over our interior tables...
         for(int i=0; i < lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
-            atsc3_signed_multi_table_lls_payload_t *lls_table_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
+            atsc3_signed_multi_table_lls_payload_t* lls_table_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
             atsc3_lls_table_parse_raw_xml(lls_table_payload->lls_table);
         }
 
@@ -661,6 +682,8 @@ int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_root)
         ret = atsc3_aeat_table_populate_from_xml(lls_table, xml_root);
 	} else if(lls_table->lls_table_id == OnscreenMessageNotification) {
         ret = build_onscreen_message_notification_table(lls_table, xml_root);
+	} else if(lls_table->lls_table_id == CertificationData) {
+		ret = atsc3_lls_build_certificationdata_table(lls_table, xml_root);
 	} else {
 		_LLS_ERROR("lls_create_table_type_instance: Unknown LLS table type: %d",  lls_table->lls_table_id);
 	}
@@ -792,6 +815,137 @@ int build_onscreen_message_notification_table(lls_table_t* lls_table, xml_node_t
     _LLS_WARN("build_onscreen_message_notification_table: NOT IMPLEMENTED");
     return ret;
 }
+
+
+/*
+ * see atsc3lls_types.h for atsc3_certification_data_t
+ */
+int atsc3_lls_build_certificationdata_table(lls_table_t* lls_table, xml_node_t* xml_root) {
+
+	int ret = 0;
+
+	atsc3_certification_data_t*  atsc3_certification_data = &lls_table->certification_data;
+	xml_string_t* root_node_name = xml_node_name(xml_root); //CertificationData
+	dump_xml_string(root_node_name);
+
+
+	int certificationDataNode_count = xml_node_children(xml_root); //ToBeSignedData, CMSSignedData, OSCPResponse
+	for(int i=0; i < certificationDataNode_count; i++) {
+
+		xml_node_t* certificationData_child_node = xml_node_child(xml_root, i);
+		xml_string_t* certificationData_child_node_xml_string = xml_node_name(certificationData_child_node);
+
+		if(xml_string_equals_ignore_case(certificationData_child_node_xml_string, "ToBeSignedData")) {
+			dump_xml_string(certificationData_child_node_xml_string);
+
+			//walk thru Certificates
+
+			int toBeSignedData_child_node_count = xml_node_children(certificationData_child_node);
+
+			dump_xml_string(certificationData_child_node);
+
+			for(int j=0; j < toBeSignedData_child_node_count; j++) {
+				xml_node_t* child_row_node = xml_node_child(certificationData_child_node, j);
+				xml_string_t* child_row_node_xml_string = xml_node_name(child_row_node);
+				if(xml_string_equals_ignore_case(child_row_node_xml_string, "Certificates")) {
+					//append
+					xml_string_t* child_certificate_data = xml_node_content(child_row_node);
+					uint8_t* child_certificate_data_string = xml_string_clone(child_certificate_data);
+
+					atsc3_certification_data_to_be_signed_data_certificates_t* atsc3_certification_data_to_be_signed_data_certificates = atsc3_certification_data_to_be_signed_data_certificates_new();
+					atsc3_certification_data_to_be_signed_data_certificates->base64_payload = block_Promote(child_certificate_data_string);
+
+					atsc3_certification_data_to_be_signed_data_add_atsc3_certification_data_to_be_signed_data_certificates(&atsc3_certification_data->atsc3_certification_data_to_be_signed_data, atsc3_certification_data_to_be_signed_data_certificates);
+
+					freesafe(child_certificate_data_string);
+                }
+			}
+
+		} else if(xml_string_equals_ignore_case(certificationData_child_node_xml_string, "CMSSignedData")) {
+			//jjustman-2022-06-06 - TODO
+
+		} else if(xml_string_equals_ignore_case(certificationData_child_node_xml_string, "OCSPResponse")) {
+			//jjustman-2022-06-06 - TODO
+
+		} else {
+			//unknown
+		}
+	}
+//
+//				uint8_t* CertificationData_attributes = xml_attributes_clone(root_node_name);
+//	kvp_collection_t* CertificationData_attributes_kvp = kvp_collection_parse(CertificationData_attributes);
+//
+//	int scratch_i = 0;
+//
+//	char* currentUtcOffset =	kvp_collection_get(SystemTime_attributes_collecton, "currentUtcOffset");
+//	char* ptpPrepend = 			kvp_collection_get(SystemTime_attributes_collecton, "ptpPrepend");
+//	char* leap59 =				kvp_collection_get(SystemTime_attributes_collecton, "leap59");
+//	char* leap61 = 				kvp_collection_get(SystemTime_attributes_collecton, "leap61");
+//	char* utcLocalOffset = 		kvp_collection_get(SystemTime_attributes_collecton, "utcLocalOffset");
+//	char* dsStatus = 			kvp_collection_get(SystemTime_attributes_collecton, "dsStatus");
+//	char* dsDayOfMonth = 		kvp_collection_get(SystemTime_attributes_collecton, "dsDayOfMonth");
+//	char* dsHour = 				kvp_collection_get(SystemTime_attributes_collecton, "dsHour");
+//
+//	if(!currentUtcOffset || !utcLocalOffset) {
+//		_LLS_ERROR("build_SystemTime_table, required elements missing: currentUtcOffset: %p, utcLocalOffset: %p", currentUtcOffset, utcLocalOffset);
+//		ret = -1;
+//		goto cleanup;
+//	}
+//
+//	scratch_i = atoi(currentUtcOffset);
+//	freesafe(currentUtcOffset);
+//
+//	//munge negative sign
+//	if(scratch_i < 0) {
+//		lls_table->system_time_table.current_utc_offset = (1 << 15) | (scratch_i & 0x7FFF);
+//	} else {
+//		lls_table->system_time_table.current_utc_offset = scratch_i & 0x7FFF;
+//	}
+//
+//	lls_table->system_time_table.utc_local_offset = utcLocalOffset;
+//
+//	if(ptpPrepend) {
+//		scratch_i = atoi(ptpPrepend);
+//		lls_table->system_time_table.ptp_prepend = scratch_i & 0xFFFF;
+//	}
+//
+//	if(leap59) {
+//		lls_table->system_time_table.leap59 = strcasecmp(leap59, "t") == 0;
+//	}
+//
+//	if(leap61) {
+//		lls_table->system_time_table.leap61 = strcasecmp(leap61, "t") == 0;
+//	}
+//
+//	if(dsStatus) {
+//		lls_table->system_time_table.ds_status = strcasecmp(dsStatus, "t") == 0;
+//		freesafe(dsStatus);
+//	}
+//
+//	if(dsDayOfMonth) {
+//		scratch_i = atoi(dsDayOfMonth);
+//		lls_table->system_time_table.ds_status = scratch_i & 0xFF;
+//		freesafe(dsDayOfMonth);
+//	}
+//
+//	if(dsHour) {
+//		scratch_i = atoi(dsHour);
+//		lls_table->system_time_table.ds_status = scratch_i & 0xFF;
+//		freesafe(dsHour);
+//	}
+//
+//	cleanup:
+//	if(SystemTime_attributes_collecton) {
+//		kvp_collection_free(SystemTime_attributes_collecton);
+//	}
+//
+//	if(SystemTime_attributes) {
+//		free(SystemTime_attributes);
+//	}
+
+	return ret;
+}
+
 
 
 void lls_dump_instance_table(lls_table_t* base_table) {

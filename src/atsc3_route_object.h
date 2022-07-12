@@ -146,7 +146,6 @@ typedef struct atsc3_route_object {
 
 	long 					recovery_complete_timestamp; 					//gtl() for when atsc3_route_object_set_object_recovery_complete was invoked on this object
 
-
 } atsc3_route_object_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_route_object, atsc3_route_object_lct_packet_received);

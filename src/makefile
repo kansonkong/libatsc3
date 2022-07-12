@@ -1,12 +1,6 @@
 # jjustman - updated - 2019-10-05
 # 
-# MIT "compatable" library is built as libatsc3.o (e.g. non-gpl distribution)
-#
-# GPL "compatable" gpl binaries are only built for the toosl output linkages, as it will contain linking steps againt Bento4 for ISOBMFF box management
-#	e.g. bento4_gpl.o and atsc3_isobmff_tools_gpl.o (with -D__ENABLE_GPL_BENTO4__)
-#
-# 	requirements: bento4 libary, ncurses libary and headers
-#
+# MIT "compatable" library is built as libatsc3.o
 
 # jjustman-2020-03-13 - add support for older $(CC) versions (e.g. 4.8.4)
 # jjustman-2020-03-26 - disabling as it causes libpacap typedef headers to fail (e.g.  typedef u_int bpf_u_int32;)
@@ -89,7 +83,6 @@ all: 	intermediate_lls \
 		intermediate_ffplay \
 		intermediate_virtual_phy \
 		intermediate_smime \
-		interemediate_gpl_and_mock_linkage  \
 		libatsc3_core   \
 		unit_tests \
 		libmicrohttpd_tests \
@@ -98,7 +91,8 @@ all: 	intermediate_lls \
 		phy_tests \
 		tools \
 		atsc3_sl_phy \
-		atsc3_sony_phy
+		atsc3_sony_phy \
+		atsc3_tolka_phy
 
 clean:
 	-rm -f *.o
@@ -125,6 +119,7 @@ clean:
 	-rm -f test/atsc3_hevc_nal_extractor_test	
 	-rm -f test/atsc3_pcap_replay_test
 	-rm -f test/atsc3_route_dash_mpd_patch_test
+	-rm -f listener_tests/atsc3_mmt_context_callback_driver_test
 	-rm -f listener_tests/atsc3_alc_listener_test
 	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
 	-rm -f listener_tests/atsc3_lls_listener_test
@@ -161,6 +156,7 @@ clean:
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics
 	-rm -f test_sony/atsc3_sony_ts_alp_reader_test
+	-rm -f test_tolka/atsc3_tolka_ts_alp_reader_test
 
 intermediate_lls: 	atsc3_lls.o \
 					atsc3_lls_types.o \
@@ -233,9 +229,8 @@ intermediate_virtual_phy: 	PcapDemuxedVirtualPHY.o \
 
 intermediate_smime:	atsc3_smime_utils.o	  
 
-interemediate_gpl_and_mock_linkage: bento4_gpl_link \
-									bento4_mock_link
-libatsc3_core: libatsc3.o
+libatsc3_core: libatsc3.o \
+				libatsc3_asan.o
 listener_ncurses: tools/atsc3_listener_metrics_ncurses
 
 # unit tests are standalone drivers with default or CLI parameters for processing relevant 
@@ -261,14 +256,12 @@ unit_tests: test/atsc3_lmt_test \
 			test/atsc3_hevc_nal_extractor_test \
 			test/atsc3_pcap_replay_test \
 			test/atsc3_route_dash_mpd_patch_test \
-			test/atsc3_smime_validation_test
+			test/atsc3_smime_validation_test \
+			listener_tests/atsc3_mmt_context_callback_driver_test
 
 # 			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7 \
 
 libmicrohttpd_tests: test/atsc3_libmicrohttpd_test
-
-# listener_tests: atsc3_alc_listener_test  atsc3_mmt_listener_test atsc3_listener_test atsc3_mmt_listener_test_bento atsc3_listener_metrics_test
-# jjustman-2020-07-28 - dead: 				listener_tests/atsc3_mmt_listener_test_bento \
 
 listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_alc_listener_test_valgrind \
@@ -315,6 +308,9 @@ atsc3_sl_phy: atsc3_sl_tlv_demod_type.o	\
 
 atsc3_sony_phy: \
 	test_sony/atsc3_sony_ts_alp_reader_test
+
+atsc3_tolka_phy: \
+	test_tolka/atsc3_tolka_ts_alp_reader_test
 
 # intermediate object generation for linking into libatsc3.o
 
@@ -720,18 +716,11 @@ mmt_extractor.o: mmt/MMTExtractor.h mmt/MMTExtractor.cpp
 test_collection: test_collection.c
 	$(CC) test_collection.c -I ../Collections-C/src/include/ ../Collections-C/build/src/libcollectc.a -L ../Collections-C/build/src -o test_collection 
 
-#build a compile time-linked WITHOUT bento4 which should not face license compliance issues
-bento4_mock_link: bento4_mock.o
-bento4_mock.o: bento4/ISOBMFFTrackJoiner.h bento4/ISOBMFFTrackJoiner_mock.cpp 
-	$(CXX)  $(CFLAGS) $(DEBUG)  -D __ISOBMFF_LIB=true -o bento4_mock.o -c bento4/ISOBMFFTrackJoiner_mock.cpp -I../bento/include/ 
-
 
 # core libatsc3 library gen
-# the gpl bento4 library is NOT is not linked in, it by default will not be included 
-
 # only link in atsc3_logging_externs.o if you are using ncurses
 
-libatsc3_intermediate.o: atsc3_lls.o \
+libatsc3.o: atsc3_lls.o \
 		atsc3_lls_types.o \
 		atsc3_lls_slt_parser.o \
 		atsc3_lls_sls_parser.o \
@@ -809,7 +798,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 #		atsc3_srt_live_receiver.o \
 #		SRTRxSTLTPVirtualPHY.o 
 
-	ld  -o libatsc3_intermediate.o -r \
+	ld  -o libatsc3.o -r \
 		atsc3_lls.o \
 		atsc3_lls_types.o \
 		atsc3_lls_slt_parser.o \
@@ -888,7 +877,7 @@ libatsc3_intermediate.o: atsc3_lls.o \
 #		atsc3_srt_live_receiver.o \
 #		SRTRxSTLTPVirtualPHY.o 
 
-libatsc3_intermediate_asan.o: \
+libatsc3_asan.o: \
 		atsc3_lls_asan.o \
 		atsc3_lls_types_asan.o \
 		atsc3_lls_slt_parser_asan.o \
@@ -962,9 +951,8 @@ libatsc3_intermediate_asan.o: \
 		atsc3_mmt_context_signalling_information_callbacks_internal.o \
 		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o \
 		atsc3_smime_utils.o
-
-
-	ld  -o libatsc3_intermediate_asan.o -r \
+		
+	ld  -o libatsc3_asan.o -r \
 		atsc3_lls_asan.o \
 		atsc3_lls_types_asan.o \
 		atsc3_lls_slt_parser_asan.o \
@@ -1008,7 +996,7 @@ libatsc3_intermediate_asan.o: \
 		atsc3_sls_held_fragment.o  \
 		atsc3_sls_metadata_fragment_types.o \
 		atsc3_sls_metadata_fragment_types_parser.o \
-		atsc3_mbms_envelope_xml.o	\
+		atsc3_mbms_envelope_xml.o       \
 		atsc3_mime_multipart_related.o \
 		atsc3_mime_multipart_related_parser.o \
 		atsc3_mbms_envelope_parser.o \
@@ -1039,29 +1027,12 @@ libatsc3_intermediate_asan.o: \
 		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o \
 		atsc3_smime_utils.o
 
-libatsc3.o: libatsc3_intermediate.o bento4_mock.o
-	ld  -o libatsc3.o -r libatsc3_intermediate.o bento4_mock.o
 
 # MIT-compatable linkage (no bento4) by default...
 atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.cpp
-	$(CXX)  $(CFLAGS) $(DEBUG)  -o atsc3_isobmff_tools.o -c atsc3_isobmff_tools.cpp -I../bento/include/
-
-# GPL-compatable linkage (w/ bento4)...
-atsc3_isobmff_tools_gpl.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.cpp
-	$(CXX)  -D__ENABLE_GPL_BENTO4__ $(CFLAGS) $(DEBUG)  -o atsc3_isobmff_tools_gpl.o -c atsc3_isobmff_tools.cpp -I../bento/include/
-
-
-# bento4 included library linkage
-bento4_gpl_link: bento4_gpl.o 
-bento4_gpl.o: bento4/ISOBMFFTrackJoiner.h bento4/ISOBMFFTrackJoiner.cpp
-	$(CXX)  $(CFLAGS) $(DEBUG)  -D __ISOBMFF_LIB=true -o bento4_gpl.o -c bento4/ISOBMFFTrackJoiner.cpp -I../bento/include/ 
-
-libatsc3_bento4_gpl.o: libatsc3_intermediate.o bento4_gpl.o
-	ld  -o libatsc3_bento4_gpl.o -r libatsc3_intermediate.o bento4_gpl.o -L../bento/lib -lap4
+	$(CXX)  $(CFLAGS) $(DEBUG)  -o atsc3_isobmff_tools.o -c atsc3_isobmff_tools.cpp
+	
 #-lm -lpthread -lz
-
-libatsc3_bento4_gpl_asan.o: libatsc3_intermediate_asan.o bento4_gpl.o
-	ld  -o libatsc3_bento4_gpl_asan.o -r libatsc3_intermediate_asan.o bento4_gpl.o -L../bento/lib -lap4
 
 ###  unit test generation - drivers are in test/
 
@@ -1524,6 +1495,12 @@ test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 ### integration tests
 ### TODO: move these into target makefile in listener_test/folder
 
+listener_tests/atsc3_mmt_context_callback_driver_test: listener_tests/atsc3_mmt_context_callback_driver_test.c libatsc3.o
+	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG) listener_tests/atsc3_mmt_context_callback_driver_test.c libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_context_callback_driver_test
+
 # low level signal listener testing
 listener_tests/atsc3_lls_listener_test: listener_tests/atsc3_lls_listener_test.cpp libatsc3.o 
 	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG) listener_tests/atsc3_lls_listener_test.cpp libatsc3.o \
@@ -1568,33 +1545,33 @@ listener_tests/atsc3_mmt_sls_listener_test: listener_tests/atsc3_mmt_sls_listene
 		-o listener_tests/atsc3_mmt_sls_listener_test
 
 # simple MMT listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
-listener_tests/atsc3_mmt_listener_test: listener_tests/atsc3_mmt_listener_test.cpp libatsc3_bento4_gpl.o 
+listener_tests/atsc3_mmt_listener_test: listener_tests/atsc3_mmt_listener_test.cpp libatsc3.o
 	$(CXX)  $(ASAN) -D __ISOBMFF_LIB=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_listener_test.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_listener_test
 		
 # simple MMT listener that dumps all mmt packets to mpu/ files for tracing
-listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets: listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets.cpp libatsc3_bento4_gpl.o
+listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets: listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets.cpp libatsc3.o
 	$(CXX)  $(ASAN) -D __ISOBMFF_LIB=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
-listener_tests/atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o
+listener_tests/atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.cpp libatsc3.o
 	$(CXX) $(ASAN) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_alc_listener_test.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_alc_listener_test
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
-listener_tests/atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp libatsc3_bento4_gpl.o
+listener_tests/atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp libatsc3.o
 	$(CXX)  $(ASAN) $(INCLUDE_PATHS) -D _TEST_RUN_VALGRIND_OSX_=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_alc_listener_test.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_alc_listener_test_valgrind
@@ -1602,9 +1579,9 @@ listener_tests/atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listen
 # mfu context depacketizer/callback testing
 
 listener_tests/atsc3_mmt_context_mfu_depacketizer_test: listener_tests/atsc3_mmt_context_mfu_depacketizer_test.cpp \
-		libatsc3_bento4_gpl.o
+		libatsc3.o
 	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_mfu_depacketizer_test.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_context_mfu_depacketizer_test
@@ -1613,9 +1590,9 @@ listener_tests/atsc3_mmt_context_mfu_depacketizer_test: listener_tests/atsc3_mmt
 # stpp context depacketizer/callback testing
 
 listener_tests/atsc3_mmt_context_stpp_depacketizer_test: listener_tests/atsc3_mmt_context_stpp_depacketizer_test.cpp \
-		libatsc3_bento4_gpl.o
+		libatsc3.o
 	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_stpp_depacketizer_test.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_context_stpp_depacketizer_test
@@ -1626,9 +1603,9 @@ listener_tests/atsc3_mmt_context_stpp_depacketizer_test: listener_tests/atsc3_mm
 
 # a324_tests
 
-a324_tests/a324_dstp_lls_aeat_emission_test: a324_tests/a324_dstp_lls_aeat_emission_test.cpp libatsc3_bento4_gpl.o
+a324_tests/a324_dstp_lls_aeat_emission_test: a324_tests/a324_dstp_lls_aeat_emission_test.cpp libatsc3.o
 	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  a324_tests/a324_dstp_lls_aeat_emission_test.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o a324_tests/a324_dstp_lls_aeat_emission_test
@@ -1636,59 +1613,59 @@ a324_tests/a324_dstp_lls_aeat_emission_test: a324_tests/a324_dstp_lls_aeat_emiss
 # jjustman-2020-08-10 - phy tests
 
 # Demuxed pcap virtual phy
-phy_tests/pcap_demuxed_virtual_phy_test: phy_tests/PcapDemuxedVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+phy_tests/pcap_demuxed_virtual_phy_test: phy_tests/PcapDemuxedVirtualPHYTest.cpp libatsc3.o
 	$(CXX) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
 		phy_tests/PcapDemuxedVirtualPHYTest.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o phy_tests/pcap_demuxed_virtual_phy_test
 
-phy_tests/pcap_demuxed_virtual_phy_test_noasan: phy_tests/PcapDemuxedVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+phy_tests/pcap_demuxed_virtual_phy_test_noasan: phy_tests/PcapDemuxedVirtualPHYTest.cpp libatsc3.o
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
 		phy_tests/PcapDemuxedVirtualPHYTest.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o phy_tests/pcap_demuxed_virtual_phy_test_noasan
 
 # STLTP pcap virtual phy
-phy_tests/pcap_stltp_virtual_phy_test: phy_tests/PcapSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+phy_tests/pcap_stltp_virtual_phy_test: phy_tests/PcapSTLTPVirtualPHYTest.cpp libatsc3.o
 	$(CXX) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
 		phy_tests/PcapSTLTPVirtualPHYTest.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o phy_tests/pcap_stltp_virtual_phy_test
 
-phy_tests/pcap_stltp_virtual_phy_test_noasan: phy_tests/PcapSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o
+phy_tests/pcap_stltp_virtual_phy_test_noasan: phy_tests/PcapSTLTPVirtualPHYTest.cpp libatsc3.o
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) -I . \
 		phy_tests/PcapSTLTPVirtualPHYTest.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o phy_tests/pcap_stltp_virtual_phy_test_noasan
 
 # jjustman-2020-08-17 - srt virtual phy test		
-phy_tests/srt_stltp_virtual_phy_test: phy_tests/SRTRxSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o
+phy_tests/srt_stltp_virtual_phy_test: phy_tests/SRTRxSTLTPVirtualPHYTest.cpp libatsc3.o atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o
 	$(CXX) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		phy_tests/SRTRxSTLTPVirtualPHYTest.cpp \
 		atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		$(LOCAL_LD_LIBS_SRT_PATH) $(LOCAL_LD_LIBS_SRT) \
 		-o phy_tests/srt_stltp_virtual_phy_test
 
-phy_tests/srt_stltp_virtual_phy_test_noasan: phy_tests/SRTRxSTLTPVirtualPHYTest.cpp libatsc3_bento4_gpl.o atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o
+phy_tests/srt_stltp_virtual_phy_test_noasan: phy_tests/SRTRxSTLTPVirtualPHYTest.cpp libatsc3.o atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o
 	$(CXX) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		phy_tests/SRTRxSTLTPVirtualPHYTest.cpp \
 		atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		$(LOCAL_LD_LIBS_SRT_PATH) $(LOCAL_LD_LIBS_SRT) \
@@ -1708,17 +1685,15 @@ tools/atsc3_listener_metrics_ncurses: tools/atsc3_listener_metrics_ncurses.cpp \
 								atsc3_output_statistics_ncurses.c \
 								atsc3_mmt_reconstitution_from_media_sample.o \
 								atsc3_logging_externs.o \
-								atsc3_isobmff_tools_gpl.o \
-								libatsc3_bento4_gpl.o
+								libatsc3.o
 
 	$(CXX) $(INCLUDE_PATHS) -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses.cpp \
-			atsc3_isobmff_tools_gpl.o \
 			atsc3_output_statistics_ncurses.c \
 			atsc3_bandwidth_statistics.c \
 			atsc3_packet_statistics.c \
 			atsc3_mmt_reconstitution_from_media_sample.c \
 			atsc3_logging_externs.o \
-			libatsc3_bento4_gpl.o \
+			libatsc3.o \
 			-I../bento/include/ \
 			$(LOCAL_LD_LIBS_NCURSES) \
 			$(LOCAL_LD_LIBS_OPENSSL) \
@@ -1731,12 +1706,10 @@ tools/atsc3_listener_metrics_ncurses_httpd_isobmff: tools/atsc3_listener_metrics
 								atsc3_output_statistics_ncurses.c  \
 								atsc3_mmt_reconstitution_from_media_sample.o \
 								atsc3_logging_externs.o \
-								atsc3_isobmff_tools_gpl.o \
-								libatsc3_bento4_gpl.o
+								libatsc3.o
 
 	$(CXX) $(INCLUDE_PATHS)  -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_listener_metrics_ncurses_httpd_isobmff.cpp \
-			libatsc3_bento4_gpl.o \
-			atsc3_isobmff_tools_gpl.o \
+			libatsc3.o \
 			atsc3_output_statistics_ncurses.c \
 			atsc3_bandwidth_statistics.c \
 			atsc3_packet_statistics.c \
@@ -1758,13 +1731,11 @@ tools/atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp \
 						atsc3_output_statistics_mfu_ncurses.c \
 						atsc3_mmt_reconstitution_from_media_sample.o \
 						atsc3_logging_externs.o \
-						atsc3_isobmff_tools_gpl.o \
-						libatsc3_bento4_gpl.o
+						libatsc3.o
 
 	$(CXX) $(INCLUDE_PATHS)  -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG) \
 			tools/atsc3_mmt_mfu_monitor.cpp \
-			libatsc3_bento4_gpl.o \
-			atsc3_isobmff_tools_gpl.o \
+			libatsc3.o \
 			atsc3_output_statistics_mfu_ncurses.c \
 			atsc3_bandwidth_statistics.c \
 			atsc3_packet_statistics.c \
@@ -1776,34 +1747,34 @@ tools/atsc3_mmt_mfu_monitor: tools/atsc3_mmt_mfu_monitor.cpp \
 			-o tools/atsc3_mmt_mfu_monitor
 
 # jjustman-2020-03-26 - malloc/double free debugging
-# atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
+# atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3.o
 #	$(CXX)   -D OUTPUT_STATISTICS=NCURSES -D__MALLOC_DEBUGGING=1 \
 #		$(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer.cpp \
-#		libatsc3_bento4_gpl.o \
+#		libatsc3.o \
 #		-I../bento/include/ -lpcap  -lncurses -lpcap -lz -lpthread -lmcheck\
 #		-o tools/atsc3_alc_listener_mde_writer
 
 
-tools/atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
+tools/atsc3_alc_listener_mde_writer: tools/atsc3_alc_listener_mde_writer.cpp libatsc3.o
 	$(CXX) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer
 
-tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl_asan.o
+tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cpp libatsc3_asan.o
 	$(CXX) $(INCLUDE_PATHS) $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer.cpp \
-		libatsc3_bento4_gpl_asan.o \
+		libatsc3_asan.o \
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer_asan
 
 # STLTP pcap replay and ROUTE / ALC extractor
-tools/atsc3_alc_listener_mde_writer_from_stltp_pcap: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3_bento4_gpl.o
+tools/atsc3_alc_listener_mde_writer_from_stltp_pcap: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3.o
 	$(CXX) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		-I../bento/include/ \
 		-I . \
 		$(LOCAL_LD_LIBS_OPENSSL) \
@@ -1811,9 +1782,9 @@ tools/atsc3_alc_listener_mde_writer_from_stltp_pcap: tools/atsc3_alc_listener_md
 		-o tools/atsc3_alc_listener_mde_writer_from_stltp_pcap
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
-tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3_bento4_gpl.o
+tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3.o
 	$(CXX) $(INCLUDE_PATHS) $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
-		libatsc3_bento4_gpl_asan.o \
+		libatsc3_asan.o \
 		-I../bento/include/ \
 		-I . \
 		$(LOCAL_LD_LIBS_OPENSSL) \
@@ -1822,54 +1793,54 @@ tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan: tools/atsc3_alc_listen
 
 # jjustman-2020-08-18 - adding web-ba support tool: atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
 
-tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3_bento4_gpl.o
+tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3.o
 	$(CXX) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(INCLUDE_PATHS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp \
 		atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS) \
 		$(LOCAL_LD_LIBS_SRT_PATH) $(LOCAL_LD_LIBS_SRT) \
 		-o tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
 
-tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3_bento4_gpl.o
+tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan: tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp libatsc3.o
 	$(CXX)  $(CFLAGS) $(CXXFLAGS) $(INCLUDE_PATHS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer.cpp \
 		atsc3_srt_live_receiver.o atsc3_srt_app_libs.o SRTRxSTLTPVirtualPHY.o \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS) \
 		$(LOCAL_LD_LIBS_SRT_PATH) $(LOCAL_LD_LIBS_SRT) \
 		-o tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan
 
-tools/atsc3_pcap_stltp_preamble_timing_management_validate: tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp libatsc3_bento4_gpl.o
+tools/atsc3_pcap_stltp_preamble_timing_management_validate: tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp libatsc3.o
 	$(CXX)  $(CFLAGS) $(CXXFLAGS) $(INCLUDE_PATHS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_pcap_stltp_preamble_timing_management_validate
 
 
-tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan: tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp libatsc3_bento4_gpl.o
+tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan: tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp libatsc3.o
 	$(CXX) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(INCLUDE_PATHS) $(DEBUG) \
 		$(SRT_PLATFORM_BUILD_DEFS) \
 		-I . \
 		tools/atsc3_pcap_stltp_preamble_timing_management_validate.cpp \
-		libatsc3_bento4_gpl.o \
+		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan
 
 #		
-# tools/atsc3_alc_listener_mde_writer_malloc_debug: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3_bento4_gpl.o
+# tools/atsc3_alc_listener_mde_writer_malloc_debug: tools/atsc3_alc_listener_mde_writer.cpp	libatsc3.o
 #	$(CXX)  -D __MALLOC_DEBUGGING \
 #		 $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer.cpp \
-#		libatsc3_bento4_gpl.o \
+#		libatsc3.o \
 #		-I../bento/include/ \
 #		-I../gnulib/ \
 #		$(LOCAL_LD_LIBS) \
@@ -1878,12 +1849,10 @@ tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan: tools/atsc3_pca
 tools/atsc3_mmt_listener_to_http_hls_fmp4: tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
 								atsc3_mmt_reconstitution_from_media_sample.o  \
 								atsc3_logging_externs.o \
-								atsc3_isobmff_tools_gpl.o \
-								libatsc3_bento4_gpl.o
+								libatsc3.o
 
 	$(CXX) $(INCLUDE_PATHS)  -Wno-deprecated -D OUTPUT_STATISTICS=NCURSES $(CFLAGS) $(DEBUG)  tools/atsc3_mmt_listener_to_http_hls_fmp4.cpp \
-		libatsc3_bento4_gpl.o \
-		atsc3_isobmff_tools_gpl.o \
+		libatsc3.o \
 		atsc3_mmt_reconstitution_from_media_sample.c atsc3_logging_externs.o \
 		-I../bento/include/ \
 		$(LOCAL_LD_LIBS) \
@@ -1939,4 +1908,17 @@ test_sony/atsc3_sony_ts_alp_reader_test: 	test_sony/atsc3_sony_ts_alp_reader_tes
 			$(LOCAL_LD_LIBS) \
 			$(LOCAL_LD_LIBS_OPENSSL) \
 	   -o test_sony/atsc3_sony_ts_alp_reader_test
+	   
+
+
+
+# jjustman-2022-05-23 - tolka test tools
+
+test_tolka/atsc3_tolka_ts_alp_reader_test: 	test_tolka/atsc3_tolka_ts_alp_reader_test.c \
+											libatsc3.o
+	$(CC) $(CFLAGS) $(DEBUG)  test_tolka/atsc3_tolka_ts_alp_reader_test.c \
+			libatsc3.o \
+			$(LOCAL_LD_LIBS) \
+			$(LOCAL_LD_LIBS_OPENSSL) \
+	   -o test_tolka/atsc3_tolka_ts_alp_reader_test
 	   

@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Endeavour_SL3000_R855</string>
+    <string name="title_home">Home</string>
+    <string name="title_status">Status</string>
+    <string name="title_analysis">Analysis</string>
+    <string name="apply">Apply</string>
+</resources>

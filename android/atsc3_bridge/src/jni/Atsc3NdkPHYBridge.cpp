@@ -127,6 +127,11 @@ void Atsc3NdkPHYBridge::atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metri
         return;
     }
 
+    //jjustman-2022-05-26 - adding 3 additional fileds
+    env->SetIntField(jobj, env->GetFieldID(jcls, "freq_tune_khz", "I"), atsc3_ndk_phy_client_rf_metrics->freq_tune_khz);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "atsc_std", "I"),      atsc3_ndk_phy_client_rf_metrics->atsc_std);
+    env->SetIntField(jobj, env->GetFieldID(jcls, "channel_bw", "I"),    atsc3_ndk_phy_client_rf_metrics->channel_bw);
+
     //map fields...
     env->SetIntField(jobj, env->GetFieldID(jcls, "tuner_lock", "I"), atsc3_ndk_phy_client_rf_metrics->tuner_lock);
     env->SetIntField(jobj, env->GetFieldID(jcls, "demod_lock", "I"), atsc3_ndk_phy_client_rf_metrics->demod_lock);

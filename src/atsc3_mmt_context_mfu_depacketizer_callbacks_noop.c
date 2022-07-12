@@ -301,7 +301,11 @@ void atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_pr
 atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_noop_new() {
     atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_internal_flows_new();
 
-    //MPU related callbacks
+	//helper methods
+	atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number                                           = atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number; //&atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_last_failsafe;
+	atsc3_mmt_mfu_context->get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential = atsc3_get_mpu_timestamp_from_packet_id_mpu_sequence_number_with_mmtp_timestamp_recovery_differential;
+
+	//MPU related callbacks
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_number_change 						= &atsc3_mmt_mpu_on_sequence_number_change_noop;
     atsc3_mmt_mfu_context->atsc3_mmt_mpu_on_sequence_mpu_metadata_present               = &atsc3_mmt_mpu_on_sequence_mpu_metadata_present_noop;
 
@@ -350,6 +354,8 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_noop_new() {
 
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL
 	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present = &atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present_noop;
+
+
 
     return atsc3_mmt_mfu_context;
 }

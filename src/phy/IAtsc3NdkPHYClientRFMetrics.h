@@ -11,7 +11,7 @@ using namespace std;
 #include <atsc3_utils.h>
 
 typedef struct atsc3_ndk_phy_client_rf_plp_metrics {
-    uint8_t     plp_id;
+	uint8_t     plp_id;
 
     uint32_t    modcod_valid; //i.e. is PLP[n] ALP data able to be demod?  e.g. SL_DEMOD_LOCK_STATUS_MASK_BB_PLP0_LOCK
 
@@ -32,7 +32,11 @@ typedef struct atsc3_ndk_phy_client_rf_plp_metrics {
 
 
 typedef struct atsc3_ndk_phy_client_rf_metrics {
-    int32_t     tuner_lock;
+	uint32_t    freq_tune_khz;
+	uint8_t     atsc_std; //1 or 3
+	uint32_t    channel_bw;
+
+	int32_t     tuner_lock;
     int32_t     demod_lock;
 
     uint8_t     plp_lock_any;
