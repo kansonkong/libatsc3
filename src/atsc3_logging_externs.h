@@ -370,7 +370,6 @@ extern int _ATSC3_SRTRXSTLTPVIRTUALPHY_DEBUG_ENABLED;
 extern int _ATSC3_SRTRXSTLTPVIRTUALPHY_TRACE_ENABLED;
 
 //c++ linkage
-//extern int _ISOBMFFTRACKJOINER_DEBUG_ENABLED;
 
 //jjustman-2019-07-24 - normaolized debug logging format
 

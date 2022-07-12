@@ -186,7 +186,9 @@ void atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_ndk(lls_sls_alc_mo
     if(ip_mulitcast_flows_added_count) {
         //jjustman-2021-07-28 - TODO: re-calculate our distinct IP flows here.. and listen to any additional PLP's as needed
         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_ndk: added %d ip mulitcast flows for alc, TODO: refresh listen plps as needed", ip_mulitcast_flows_added_count);
-    }
+
+		atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor);
+	}
 }
 
 lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_create_with_core_service_player_bridge_default_callbacks(atsc3_lls_slt_service_t* atsc3_lls_slt_service) {
@@ -220,7 +222,7 @@ lls_sls_alc_monitor_t* atsc3_lls_sls_alc_monitor_create_with_core_service_player
 void atsc3_core_service_phy_bridge_init(IAtsc3NdkPHYBridge* atsc3NdkPHYBridge) {
 	Atsc3NdkPHYBridge_ptr = atsc3NdkPHYBridge;
 	if(Atsc3NdkApplicationBridge_ptr) {
-	        Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_phy_bridge_init - Atsc3NdkPHYBridge_ptr: %p", Atsc3NdkPHYBridge_ptr);
+		Atsc3NdkApplicationBridge_ptr->LogMsgF("atsc3_core_service_phy_bridge_init - Atsc3NdkPHYBridge_ptr: %p", Atsc3NdkPHYBridge_ptr);
 	}
 }
 
@@ -408,7 +410,7 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
                                                 }
                                             }
                                         }
-                                        }
+									}
 								}
 							}
 						}
@@ -667,18 +669,11 @@ atsc3_lls_slt_service_t* atsc3_core_service_player_bridge_remove_monitor_a331_se
         lls_slt_monitor->lls_sls_alc_monitor = NULL;
     }
 
-    //remove lls_sls_alc_monitor entry
-    //TODO: jjustman-2019-11-07: hack, move this into atsc3_vector_builder.h
     for(int i=0; i < lls_slt_monitor->lls_sls_alc_monitor_v.count && !my_lls_sls_alc_monitor_entry_to_release; i++) {
         lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[i];
         if(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == service_id) {
-            my_lls_sls_alc_monitor_entry_to_release = lls_sls_alc_monitor;
-            for(int j=i + 1; j < lls_slt_monitor->lls_sls_alc_monitor_v.count; j++) {
-                lls_slt_monitor->lls_sls_alc_monitor_v.data[j-1] = lls_slt_monitor->lls_sls_alc_monitor_v.data[j];
-            }
-            lls_slt_monitor->lls_sls_alc_monitor_v.data[lls_slt_monitor->lls_sls_alc_monitor_v.count-1] = NULL;
-            lls_slt_monitor->lls_sls_alc_monitor_v.count--;
             //clear out last entry
+            lls_slt_monitor_remove_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
         }
     }
 
@@ -1452,15 +1447,22 @@ bool atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk(atsc
     //kick start our ROUTE SLS for s-tsid processing
     lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_or_create_from_ip_udp_values(lls_slt_monitor, atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->atsc3_lls_slt_service, mmt_atsc3_route_component->stsid_destination_ip_address, mmt_atsc3_route_component->stsid_destination_udp_port, mmt_atsc3_route_component->stsid_source_ip_address);
     if(!lls_sls_alc_session) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_core_service_player_bridge_set_single_monitor_a331_service_id: lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk: lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
     }
     lls_sls_alc_monitor->lls_alc_session = lls_sls_alc_session;
 
     //jjustman-2021-07-07 - TODO: deprecate me
     lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
+	lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
 
-    lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor);
+	vector<uint8_t> updated_plp_listeners = atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_monitor);
+	__ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk - after atsc3_phy_build_plp_listeners_from_lls_slt_monitor, with lls_slt_monitor: %p, updated_plp_listeners.size: %lu", lls_slt_monitor, updated_plp_listeners.size());
 
+	if(updated_plp_listeners.size()) {
+		__ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk - before atsc3_phy_notify_plp_selection_changed");
+		Atsc3NdkApplicationBridge_ptr->atsc3_phy_notify_plp_selection_changed(updated_plp_listeners);
+	    __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_TRACE("atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk - after atsc3_phy_notify_plp_selection_changed");
+    }
     return true;
 }
 

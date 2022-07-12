@@ -589,6 +589,49 @@ void Atsc3NdkApplicationBridge::atsc3_phy_notify_plp_selection_changed(vector<ui
 }
 
 
+bool Atsc3NdkApplicationBridge::atsc3_get_demod_pcap_capture() {
+    return is_enabled_demod_pcap_capture;
+}
+
+void Atsc3NdkApplicationBridge::atsc3_set_demod_pcap_capture(bool new_state) {
+    if(new_state) {
+        if(!is_enabled_demod_pcap_capture) {
+            //create a new pcap file handle here, and assign our header payload
+
+            char launch_timestamp_string[32] = {0};
+            double launch_timestamp = gt();
+
+            snprintf((char*)&launch_timestamp_string, 31, "%s.%.4f.%s", "atsc3_demod_pcap_dump", launch_timestamp, ".pcap");
+
+            demod_pcap_capture_fp = fopen(launch_timestamp_string, "w");
+            demod_pcap_capture_filename = string(launch_timestamp_string);
+
+            _NDK_APPLICATION_BRIDGE_INFO("atsc3_set_demod_pcap_capture: new_state is true, creating new pcap file: %s, fp: %p", demod_pcap_capture_filename.c_str(), demod_pcap_capture_fp);
+
+            is_enabled_demod_pcap_capture = true;
+        } else {
+            //todo - we shouldn't do anything if we are already open...
+            _NDK_APPLICATION_BRIDGE_WARN("atsc3_set_demod_pcap_capture: new_state is true, but we are already enabled, file: %s, fp: %p", demod_pcap_capture_filename.c_str(), demod_pcap_capture_fp);
+
+        }
+    } else {
+        _NDK_APPLICATION_BRIDGE_INFO("atsc3_set_demod_pcap_capture: new_state is false, closing out demod_pcap_file_name: %s", demod_pcap_capture_filename.c_str());
+
+        //we should close out our file handle
+        if(demod_pcap_capture_fp) {
+            fclose(demod_pcap_capture_fp);
+            demod_pcap_capture_fp = nullptr;
+        }
+
+        demod_pcap_capture_filename = "";
+
+        is_enabled_demod_pcap_capture = false;
+    }
+
+};
+
+
+
 //--------------------------------------------------------------------------
 
 extern "C" JNIEXPORT jint JNICALL
@@ -834,4 +877,21 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1slt_1alc_1get
     env->SetIntField(jobj, env->GetFieldID(jcls, "sdk_ver", "I"), properties.sdk_ver);
 
     return jobj;
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL
+Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1get_1demod_1pcap_1capture(JNIEnv *env, jobject thiz) {
+
+    jboolean ret = apiAppBridge->atsc3_get_demod_pcap_capture();
+    return ret;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1set_1demod_1pcap_1capture(JNIEnv *env, jobject thiz, jboolean enabled) {
+	// TODO: implement atsc3_set_demod_pcap_capture()
+	//public native Boolean atsc3_get_demod_pcap_capture();
+	//public native void atsc3_set_demod_pcap_capture(Boolean enabled);
+	apiAppBridge->atsc3_set_demod_pcap_capture((bool) (enabled == JNI_TRUE));
 }

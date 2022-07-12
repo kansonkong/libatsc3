@@ -376,28 +376,28 @@ epReadTs: 2022-05-24 05:41:44.177 27647-27647/com.example.endeavour_SL3000_R855.
     SL3000_R855_driver[0].R855_Info.R855_Standard = R855_ATSC_IF_5M;
     R855_result = Init_R855(&Endeavour_s, &SL3000_R855_driver[0].R855_Info);
     if(R855_result != R855_Success) {
-        printf("R855 Init error = %d\n", R855_result);
+        _TOLKA_PHY_ANDROID_INFO("R855 Init error = %d\n", R855_result);
     } else {
-        printf("R855 Init succeeful = %d\n", R855_result);
+        _TOLKA_PHY_ANDROID_INFO("R855 Init succeeful = %d\n", R855_result);
     }
     error = R855_result;
 
+    int tvStandard = 3;
     // Init SL3000
-    printf("SL3000 initialize. \n");
-    if(true) {
-        printf("Init TVStandard = %d\n", SL_TUNERSTD_ATSC3_0);
+    _TOLKA_PHY_ANDROID_INFO("SL3000 initialize");
+    if(tvStandard == 3) {
+        _TOLKA_PHY_ANDROID_INFO("Init TVStandard: SL_TUNERSTD_ATSC3_0 (%d)", SL_TUNERSTD_ATSC3_0);
         SL3000_R855_driver[0].tunerCfg.std = SL_TUNERSTD_ATSC3_0;
         sl3000_result = SL3000_atsc3_init(&Endeavour_s, &SL3000_R855_driver[0].tunerCfg, &SL3000_R855_driver[0].PlfConfig, SL_DEMODSTD_ATSC3_0);
+    } else if(tvStandard == 1) {
+        _TOLKA_PHY_ANDROID_INFO("Init TVStandard: SL_TUNERSTD_ATSC1_0 (%d)", SL_TUNERSTD_ATSC1_0);
+        SL3000_R855_driver[0].tunerCfg.std = SL_TUNERSTD_ATSC1_0;
+        sl3000_result = SL3000_atsc1_init(&Endeavour_s, &SL3000_R855_driver[0].tunerCfg, &SL3000_R855_driver[0].PlfConfig, SL_DEMODSTD_ATSC1_0);
+    } else {
+        printf("SL3000 Unknown tvStandard = %d\n", tvStandard);
+        error = SL_ERR_INVALID_ARGUMENTS;
+        return error;
     }
-        //    } else if(tvStandard == ATSC1) {
-//        printf("Init TVStandard = %d\n", tvStandard);
-//        SL3000_R855_driver[0].tunerCfg.std = SL_TUNERSTD_ATSC1_0;
-//        sl3000_result = SL3000_atsc1_init(&Endeavour_s, &SL3000_R855_driver[0].tunerCfg, &SL3000_R855_driver[0].PlfConfig, SL_DEMODSTD_ATSC1_0);
-//    } else {
-//        printf("SL3000 Unknown tvStandard = %d\n", tvStandard);
-//        error = SL_ERR_INVALID_ARGUMENTS;
-//        goto exit;
-//    }
 
     if(sl3000_result != SL_OK)
         printf("SL3000 Init error = %d\n", sl3000_result);
@@ -555,8 +555,6 @@ SL_Result_t TolkaPHYAndroid::SL3000_atsc3_init(Endeavour  *Endeavour_s, SL_Tuner
     afeInfo.agcRefValue = 125; //afcRefValue in mV
     outPutInfo.TsoClockInvEnable = SL_TSO_CLK_INV_ON;
 
-
-
     atsc3ConfigInfo.plpConfig.plp0 = 0x0;
     atsc3ConfigInfo.plpConfig.plp1 = 0xFF;
     atsc3ConfigInfo.plpConfig.plp2 = 0xFF;
@@ -571,7 +569,6 @@ SL_Result_t TolkaPHYAndroid::SL3000_atsc3_init(Endeavour  *Endeavour_s, SL_Tuner
     }
 
     SL_Printf("\n Initializing SL Demod..: ");
-
 
 
     slres = SL_DemodInit(slUnit, cmdIf, SL_DEMODSTD_ATSC3_0);
@@ -777,7 +774,8 @@ SL_Result_t TolkaPHYAndroid::SL3000_atsc3_tune(SL_TunerConfig_t *pTunerCfg, SL_P
     SL_TunerSignalInfo_t tunerInfo;
     SL_TunerResult_t tres;
 
-    SL_DemodStd_t std = SL_DEMODSTD_ATSC3_0;
+
+	SL_DemodStd_t std = SL_DEMODSTD_ATSC3_0;
 
     slres = SL_DemodConfigureEx(slUnit, SL_DEMODSTD_ATSC3_0, &atsc3ConfigInfo);
     if (slres != 0)
@@ -904,7 +902,7 @@ int TolkaPHYAndroid::tune(int freqKhz, int single_plp) {
 
     int id = 0;
     int bandwidthKHz = 6000;
-    _TOLKA_PHY_ANDROID_INFO("tune: id: %d, freq: %d, bandwidhtKhz: %d", freqKhz, bandwidthKHz);
+    _TOLKA_PHY_ANDROID_INFO("tune: id: %d, freq: %d, bandwidhtKhz: %d", id, freqKhz, bandwidthKHz);
 
     TolkaPHYAndroid::cb_should_discard = true;
 
@@ -935,6 +933,10 @@ int TolkaPHYAndroid::tune(int freqKhz, int single_plp) {
     //acquire our lock for setting tuning parameters (including re-tuning)
     unique_lock<mutex> SL_I2C_command_mutex_tuner_tune(SL_I2C_command_mutex);
     unique_lock<mutex> SL_PlpConfigParams_mutex_update_plps(SL_PlpConfigParams_mutex, std::defer_lock);
+	//jjustman-2022-06-03 - hack!
+	SL_DemodStop(slUnit);
+	usleep(1000000);
+
 
     atsc3_core_service_application_bridge_reset_context();
 
@@ -1095,32 +1097,6 @@ int TolkaPHYAndroid::tune(int freqKhz, int single_plp) {
 //
 //            /*
 //
-//             jjustman-2021-05-04 - testing for (seemingly) random YOGA cpu crashes:
-//
-//                2021-05-04 19:17:38.042 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 627:DEBUG:1620170258.0428:SL_DemodInit: SUCCESS, slUnit: 0, slres: 0
-//                2021-05-04 19:17:38.043 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 632:DEBUG:1620170258.0432:before SL_DemodGetStatus: slUnit: 0, slres is: 0
-//                2021-05-04 19:17:38.045 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 634:DEBUG:1620170258.0454:SL_DemodGetStatus: slUnit: 0, slres is: 0
-//                2021-05-04 19:17:38.295 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 643:DEBUG:1620170258.2957:Demod Boot Status  :
-//                2021-05-04 19:17:38.296 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 650:DEBUG:1620170258.2960:COMPLETED
-//                2021-05-04 19:17:38.316 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SL_DemodConfigPlps, instance: 0, plp [0]: 0x00, [1]: 0xff, [2]: 0xff, [3]: 0xff
-//                2021-05-04 19:17:38.325 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 701:DEBUG:1620170258.3259:Demod SW Version: 3.24
-//                2021-05-04 19:17:38.669 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 763:DEBUG:1620170258.6698:OPEN COMPLETE!
-//                2021-05-04 19:17:38.670 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :2431:DEBUG:1620170258.6701:Java_org_ngbp_libatsc3_middleware_android_phy_SaankhyaPHYAndroid_open: fd: 145, return: 0
-//                2021-05-04 19:17:38.670 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/UsbAtsc3Source: prepareDevices: open with org.ngbp.libatsc3.middleware.android.phy.SaankhyaPHYAndroid@d66354a for path: /dev/bus/usb/002/002, fd: 145, success
-//                2021-05-04 19:17:38.710 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: atsc3_core_service_player_bridge: 122:WARN :1620170258.7103:atsc3_core_service_application_bridge_reset_context!
-//                2021-05-04 19:17:38.710 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid::tune: Frequency: 593000, PLP: 0
-//                2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          : 815:DEBUG:1620170258.7400:Error:SL_TunerSetFrequency :
-//                2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1412:DEBUG:1620170258.7401: Sl Tuner Operation Failed
-//
-//
-//            if (getPlfConfig.boardType == SL_KAILASH_DONGLE_3) {
-//                _SAANKHYA_PHY_ANDROID_DEBUG("::tune - before SL_DemodStart - sleeping for 2000 seconds to avoid double SL_DemodConfigPlps call(s)");
-//                usleep(2000000);
-//
-//            }
-//             */
-//
-//
 //            _SAANKHYA_PHY_ANDROID_DEBUG("Starting SLDemod: ");
 //
 //            slres = SL_DemodStart(slUnit);
@@ -1161,7 +1137,12 @@ int TolkaPHYAndroid::tune(int freqKhz, int single_plp) {
         ret = 0;
         Last_tune_freq = freqKhz;
 
-        goto UNLOCK;
+		usleep(1000000);
+		//jjustman-2022-06-03 - hack!
+		SL_DemodStart(slUnit);
+
+
+		goto UNLOCK;
 
         ERROR:
         ret = -1;
@@ -1178,9 +1159,77 @@ int TolkaPHYAndroid::tune(int freqKhz, int single_plp) {
     return result;
 };
 
-int  TolkaPHYAndroid::listen_plps(vector<uint8_t> plps) {
-    //jj: todo
-    return -1;
+int TolkaPHYAndroid::listen_plps(vector<uint8_t> plps_original_list) {
+    _TOLKA_PHY_ANDROID_INFO("TolkaPHYAndroid::listen_plps, size: %d", plps_original_list.size());
+
+    vector<uint8_t> plps;
+    for(int i=0; i < plps_original_list.size(); i++) {
+        if(plps_original_list.at(i) == 0) {
+            //skip, duplicate plp0 will cause demod to fail
+        } else {
+            bool duplicate = false;
+            for(int j=0; j < plps.size(); j++) {
+                if(plps.at(j) == plps_original_list.at(i)) {
+                    duplicate = true;
+                }
+            }
+            if(!duplicate) {
+                plps.push_back(plps_original_list.at(i));
+            }
+        }
+    }
+
+    unique_lock<mutex> SL_PlpConfigParams_mutex_update_plps(SL_PlpConfigParams_mutex);
+
+    //jjustman-2022-05-17 - TODO - listen to plp that contains LLS info, may not always be plp0
+    if(plps.size() == 0) {
+        //we always need to listen to plp0...kinda
+        atsc3ConfigInfo.plpConfig.plp0 = 0;
+        atsc3ConfigInfo.plpConfig.plp1 = 0xFF;
+        atsc3ConfigInfo.plpConfig.plp2 = 0xFF;
+        atsc3ConfigInfo.plpConfig.plp3 = 0xFF;
+    } else if(plps.size() == 1) {
+        atsc3ConfigInfo.plpConfig.plp0 = 0;
+        atsc3ConfigInfo.plpConfig.plp1 = plps.at(0);
+        atsc3ConfigInfo.plpConfig.plp2 = 0xFF;
+        atsc3ConfigInfo.plpConfig.plp3 = 0xFF;
+    } else if(plps.size() == 2) {
+        atsc3ConfigInfo.plpConfig.plp0 = 0;
+        atsc3ConfigInfo.plpConfig.plp1 = plps.at(0);
+        atsc3ConfigInfo.plpConfig.plp2 = plps.at(1);
+        atsc3ConfigInfo.plpConfig.plp3 = 0xFF;
+    } else if(plps.size() == 3) {
+        atsc3ConfigInfo.plpConfig.plp0 = 0;
+        atsc3ConfigInfo.plpConfig.plp1 = plps.at(0);
+        atsc3ConfigInfo.plpConfig.plp2 = plps.at(1);
+        atsc3ConfigInfo.plpConfig.plp3 = plps.at(2);
+    } else if(plps.size() == 4) {
+        atsc3ConfigInfo.plpConfig.plp0 = plps.at(0);
+        atsc3ConfigInfo.plpConfig.plp1 = plps.at(1);
+        atsc3ConfigInfo.plpConfig.plp2 = plps.at(2);
+        atsc3ConfigInfo.plpConfig.plp3 = plps.at(3);
+    }
+
+    _TOLKA_PHY_ANDROID_DEBUG("TolkaPHYAndroid::listen_plps - calling SL_DemodConfigPLPS with 0: %02x, 1: %02x, 2: %02x, 3: %02x",
+                                atsc3ConfigInfo.plpConfig.plp0,
+                                atsc3ConfigInfo.plpConfig.plp1,
+                                atsc3ConfigInfo.plpConfig.plp2,
+                                atsc3ConfigInfo.plpConfig.plp3);
+
+    unique_lock<mutex> SL_I2C_command_mutex_demod_configure_plps(SL_I2C_command_mutex);
+
+    slres = SL_DemodConfigureEx(slUnit, demodStandard, &atsc3ConfigInfo);
+
+    SL_I2C_command_mutex_demod_configure_plps.unlock();
+    SL_PlpConfigParams_mutex_update_plps.unlock();
+
+    if (slres != 0)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("SL_DemodConfigPLP failed, res: %d", slres);
+    }
+
+    statusMetricsResetFromPLPListenChange();
+    return slres;
 };
 
 void TolkaPHYAndroid::NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, void *context) {
@@ -1784,7 +1833,7 @@ static volatile bool stopRx = false;
 static volatile int  isCaptStarted = 0;
 static unsigned int reqsize = 16;  // Request size in number of packets
 static unsigned int queuedepth = 16;   // Number of requests to queue
-static unsigned int pktsize = 1024;     // Maximum packet size for the endpoint
+static unsigned int pktsize = 512;     // Maximum packet size for the endpoint
 static unsigned int        success_count = 0;  // Number of successful transfers
 static unsigned int        failure_count = 0;  // Number of failed transfers
 static volatile int        rqts_in_flight = 0; // Number of transfers that are in progress
@@ -2189,7 +2238,7 @@ int TolkaPHYAndroid::statusThread()
 
         //if this is our first loop after a Tune() command has completed, dump SL_DemodGetConfiguration
         if(statusThreadFirstLoopAfterTuneComplete) {
-            SL_SleepMS(250); // Delay to accomdate set configurations at SL to take effect
+            SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
             statusThreadFirstLoopAfterTuneComplete = false;
 
             slres = SL_DemodGetConfiguration(slUnit, &cfgInfo);
@@ -2248,7 +2297,7 @@ int TolkaPHYAndroid::statusThread()
 
         */
 
-        dres = SL_DemodGetStatus(this->slUnit, SL_DEMOD_STATUS_TYPE_CPU, (int*)&cpuStatus);
+        dres = SL_DemodGetStatus(slUnit, SL_DEMOD_STATUS_TYPE_CPU, (int*)&cpuStatus);
         if (dres != SL_OK) {
             _TOLKA_PHY_ANDROID_ERROR("Error:SL_Demod Get CPU Status: dres: %d", dres);
             goto sl_i2c_tuner_mutex_unlock;
@@ -2726,7 +2775,275 @@ void TolkaPHYAndroid::RxDataCallback(unsigned char *data, long len) {
     //_SAANKHYA_PHY_ANDROID_DEBUG("atsc3NdkClientSlImpl::RxDataCallback: pushing data: %p, len: %d", data, len);
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
     if(TolkaPHYAndroid::cb) {
-        CircularBufferPush(TolkaPHYAndroid::cb, (char *) data, len);
+        CircularBufferPush(TolkaPHYAndroid::cb, (char *) data , len);
     }
     CircularBufferMutex_local.unlock();
+}
+
+
+//jjustman-2022-05-24 - hack
+
+
+SL_Result_t TolkaPHYAndroid::SL3000_atsc1_init(Endeavour  *endeavour, SL_TunerConfig_t *pTunerCfg, SL_PlatFormConfigParams_t *sPlfConfig, SL_DemodStd_t std)
+{
+    SL_I2cResult_t i2cres;
+    SL_Result_t slres;
+    SL_AfeIfConfigParams_t afeInfo;
+    SL_OutIfConfigParams_t outPutInfo;
+    SL_IQOffsetCorrectionParams_t iqOffSetCorrection;
+    int swMajorNo, swMinorNo;
+    unsigned int cFrequency = 0;
+    SL_DemodBootStatus_t bootStatus;
+    SL_ExtLnaConfigParams_t       lnaInfo;
+
+    uint8_t i2c_bus = 3;
+
+    sPlfConfig->chipType = SL_CHIP_3000;
+    sPlfConfig->chipRev = SL_CHIP_REV_BB;
+    sPlfConfig->boardType = SL_EVB_3000;//SL_KAILASH_DONGLE_3;// SL_EVB_3000;
+    sPlfConfig->tunerType = (SL_TunerType_t)TUNER_R855;//TUNER_NXP;
+    sPlfConfig->demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
+    sPlfConfig->demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
+
+    sPlfConfig->demodI2cAddr = SL_DEMOD_I2C_ADDR; /* SLDemod 7-bit Physical I2C Address */
+
+    //sPlfConfig.slsdkPath = "..";
+    sPlfConfig->slsdkPath = "";
+    //SL_Printf("\n SL3000_atsc1_tune Start!!");
+    /* Tuner Config */
+    pTunerCfg->bandwidth = SL_TUNER_BW_6MHZ;
+
+    /* Set Configuration Parameters */
+    SL_ConfigSetPlatform(*sPlfConfig);
+
+    cmdIf = SL_CMD_CONTROL_IF_I2C;
+
+    afeInfo.spectrum = SL_SPECTRUM_INVERTED;
+    afeInfo.iftype = SL_IFTYPE_LIF;
+    afeInfo.ifreq = 5 + TOLKA_R855_ATSC1_IF_OFFSET;
+
+
+    outPutInfo.oif = SL_OUTPUTIF_TSSERIAL_MSB_FIRST;
+
+
+
+    afeInfo.iswap = SL_IPOL_SWAP_DISABLE;
+    afeInfo.qswap = SL_QPOL_SWAP_DISABLE;
+    iqOffSetCorrection.iCoeff1 = 1.0;
+    iqOffSetCorrection.qCoeff1 = 1.0;
+    iqOffSetCorrection.iCoeff2 = 0.0;
+    iqOffSetCorrection.qCoeff2 = 0.0;
+
+    afeInfo.iqswap = SL_IQSWAP_DISABLE;
+    afeInfo.agcRefValue = 100; //afcRefValue in mV
+    outPutInfo.TsoClockInvEnable = SL_TSO_CLK_INV_ON;
+
+    slres = SL_DemodCreateInstance(&slUnit);
+    if (slres != SL_OK)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("Error:SL_DemodCreateInstance: slres: %d", slres);
+
+        //goto TEST_ERROR;
+    }
+
+    _TOLKA_PHY_ANDROID_INFO("atsc1: Initializing SL Demod..: ");
+
+    slres = SL_DemodInit(slUnit, cmdIf, std);
+    if (slres != SL_OK)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("Error:SL_DemodInit: res: %d", slres);
+    }
+    else
+    {
+        _TOLKA_PHY_ANDROID_INFO("atsc1: SL_DemodInit SUCCESS");
+    }
+
+    do
+    {
+        slres = SL_DemodGetStatus(slUnit, SL_DEMOD_STATUS_TYPE_BOOT, (SL_DemodBootStatus_t*)&bootStatus);
+        if (slres != SL_OK)
+        {
+            _TOLKA_PHY_ANDROID_ERROR("Error:SL_Demod Get Boot Status : slres: %d", slres);
+        }
+    } while (bootStatus != SL_DEMOD_BOOT_STATUS_COMPLETE);
+    _TOLKA_PHY_ANDROID_INFO("Demod Boot Status      : ");
+    if (bootStatus == SL_DEMOD_BOOT_STATUS_INPROGRESS)
+    {
+        _TOLKA_PHY_ANDROID_INFO(" %s", "INPROGRESS");
+    }
+    else if (bootStatus == SL_DEMOD_BOOT_STATUS_COMPLETE)
+    {
+        _TOLKA_PHY_ANDROID_INFO(" %s", "COMPLETED");
+    }
+    else if (bootStatus == SL_DEMOD_BOOT_STATUS_ERROR)
+    {
+        _TOLKA_PHY_ANDROID_ERROR(" %s", "ERROR");
+    }
+
+    slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_AFEIF, &afeInfo);
+    if (slres != 0)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("Error:SL_DemodConfigure : slres: %d", slres);
+    }
+
+    slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_IQ_OFFSET_CORRECTION, &iqOffSetCorrection);
+    if (slres != 0)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("Error:SL_DemodConfigure : res: %d", slres);
+    }
+
+    slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_OUTPUTIF, &outPutInfo);
+    if (slres != 0)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("\n Error:SL_DemodConfigure : res: %d", slres);
+    }
+    slres = SL_DemodConfigure(slUnit, SL_CONFIGTYPE_EXT_LNA, (unsigned int *)&lnaInfo.lnaMode);
+    if (slres != 0)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("\n Error:SL_DemodConfigure : res: %d", slres);
+        //goto TEST_ERROR;
+    }
+
+    slres = SL_DemodGetSoftwareVersion(slUnit, &swMajorNo, &swMinorNo);
+    if (slres == SL_OK)
+    {
+        _TOLKA_PHY_ANDROID_INFO("\n Demod SW Version       : %d.%d", swMajorNo, swMinorNo);
+    }
+
+
+    atsc1ConfigInfo.bw = SL_BW_6MHZ;
+    atsc1ConfigInfo.blockSize = TOLKA_ATSC1_BLOCK_SIZE;
+
+    slres = SL_DemodConfigureEx(slUnit, std, &atsc1ConfigInfo);
+    if (slres != 0)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("Error:SL_DemodConfigureEx : slres: %d", slres);
+
+    }
+    slres = SL_DemodStart(slUnit);
+
+    if (slres != 0)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("Saankhya Demod Start Failed");
+        //goto TEST_ERROR;
+    }
+    else
+    {
+        _TOLKA_PHY_ANDROID_ERROR("SUCCESS");
+    }
+    SL_SleepMS(1000); // Delay to accomdate set configurations at SL to take effect
+    return slres;
+}
+SL_Result_t TolkaPHYAndroid::SL3000_atsc1_tune(Endeavour  *endeavour, SL_TunerConfig_t *pTunerCfg, SL_PlatFormConfigParams_t *sPlfConfig)
+{
+    SL_I2cResult_t i2cres;
+    SL_Result_t slres;
+    SL_AfeIfConfigParams_t afeInfo;
+    SL_OutIfConfigParams_t outPutInfo;
+    SL_IQOffsetCorrectionParams_t iqOffSetCorrection;
+    SL_DemodBootStatus_t bootStatus;
+    SL_TunerSignalInfo_t tunerInfo;
+    SL_TunerResult_t tres;
+
+    SL_DemodStd_t std = SL_DEMODSTD_ATSC1_0;
+
+    slres = SL_DemodGetConfiguration(slUnit, &cfgInfo);
+
+    if (slres == SL_OK)
+    {
+        slres = SL_DemodGetConfigurationEx(slUnit, std, &atsc1ConfigInfo);
+    }
+
+    if (slres != SL_OK)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("\n Error:SL_Demod Get ATSC1 Configuration : res: %d", slres);
+        if (slres == SL_ERR_CMD_IF_FAILURE)
+        {
+            SL_Printf("\n Error:SL_ERR_CMD_IF_FAILURE");
+            //handleCmdIfFailure();
+            //goto TEST_ERROR;
+        }
+    }
+    else
+    {
+        //printToConsoleDemodConfiguration(cfgInfo);
+        //printToConsoleDemodAtsc1Configuration(atsc1ConfigInfo);
+    }
+
+    //SL_SleepMS(500);
+    return slres;
+}
+void TolkaPHYAndroid::Monitor_SL3000_ATSC1_Signal(SignalInfo_t *pSigInfo, int freq, R855_Standard_Type RT_Standard)
+{
+    SL_TunerResult_t     tres;
+    //SL_TunerSignalInfo_t tunerInfo;
+    SL_DemodLockStatus_t lockStatus;
+    int                  cpuStatus = 0;
+    SL_Result_t          dres;
+    int                  lockStatusFlag = 0;
+
+
+    dres = SL_DemodGetStatus(slUnit, SL_DEMOD_STATUS_TYPE_LOCK, (SL_DemodLockStatus_t*)&lockStatus);
+    if (dres != SL_OK)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("\n Error:SL_Demod Get Lock Status                : dres: %d", dres);
+    }
+    else
+    {
+        if ((lockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC1p0_RF_LOCK))
+        {
+            pSigInfo->locked = LOCKED;
+        }
+        else
+        {
+            pSigInfo->locked = UNLOCKED;
+            _TOLKA_PHY_ANDROID_INFO("\n Demod Lock Status : Unlocked");
+        }
+    }
+
+    R855_GetTotalRssi(freq, RT_Standard, &pSigInfo->rssi);
+//	SL_Printf("\n Tuner RSSI		: %d dBm", pSigInfo->rssi);
+
+
+    dres = SL_DemodGetStatus(slUnit, SL_DEMOD_STATUS_TYPE_CPU, (int*)&cpuStatus);
+
+    if (dres != SL_OK)
+    {
+        _TOLKA_PHY_ANDROID_ERROR("SL_DemodGetStatus: cpu: error: dres: %d", dres);
+    }
+
+    if (lockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC1p0_RF_LOCK)
+    {
+        dres = SL_DemodGetDiagnostics(slUnit, SL_DEMOD_DIAG_TYPE_ATSC1P0_PERF, (SL_Atsc1p0Perf_Diag_t*)&atsc1PerfDiag);
+        if (dres != SL_OK)
+        {
+            _TOLKA_PHY_ANDROID_ERROR("error getting atsc1 performance diagnostics: %d", dres);
+        }
+        else
+        {
+            //printAtsc1Diagnostics(atsc1PerfDiag);
+            /* SNR */
+            double snr = (double)52428800.0 / (double)atsc1PerfDiag.PostEquSNR;
+            pSigInfo->snr = 10.0 * log10(snr);
+			_TOLKA_PHY_ANDROID_INFO("\n SNR               : %3.2f dB", pSigInfo->snr);
+
+            /* BER */
+            pSigInfo->ber = (double)atsc1PerfDiag.BitErrorCnt / ((double)atsc1PerfDiag.TotalTxBitCnt * 188.0 * 8.0);
+			_TOLKA_PHY_ANDROID_INFO("\n BER               : %1.2e", pSigInfo->ber);
+
+            /* PER */
+            pSigInfo->per = (double)atsc1PerfDiag.BlockErrorCnt / (double)atsc1PerfDiag.TotalTxBlockCnt;
+			_TOLKA_PHY_ANDROID_INFO("\n PER               : %1.2e", pSigInfo->per);
+
+            /* Confidence */
+            pSigInfo->confidence = (atsc1PerfDiag.BlockErrorCnt == 0 ? 100 : (double)(100.0 - (100.0 * (double)atsc1PerfDiag.BlockErrorCnt / (double)atsc1PerfDiag.TotalTxBlockCnt)));
+			_TOLKA_PHY_ANDROID_INFO("\n CONF              : %.2f %%\n\n", pSigInfo->confidence);
+        }
+
+        if (dres == SL_ERR_CMD_IF_FAILURE)
+        {
+            //handleCmdIfFailure();
+            _TOLKA_PHY_ANDROID_ERROR("\n SL_ERR_CMD_IF_FAILURE\n");
+        }
+    }
 }

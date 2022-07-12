@@ -322,7 +322,7 @@ LOCAL_CFLAGS += -D__DISABLE_LIBPCAP__ \
 				-Dlinux  \
 				-DSI_TUNER \
 				-D__ANDROID_ARCH_$(TARGET_ARCH_ABI)__
-# 			 				-D__JJ_CALIBRATION_ENABLED
+#							 				-D__JJ_CALIBRATION_ENABLED
 
 LOCAL_LDFLAGS += -L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
 				 -L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/

@@ -21,7 +21,7 @@ extern jlong busRx(Dword bufferLength, Byte* buffer);
 
 /** Define USB frame size */
 #define IT9300User_USB20_MAX_PACKET_SIZE      512
-#define IT9300User_USB20_FRAME_SIZE           (188 * 87)//(188 * 348)
+#define IT9300User_USB20_FRAME_SIZE           2048 //(188 * 7)//(188 * 348)
 #define IT9300User_USB20_FRAME_SIZE_DW        (IT9300User_USB20_FRAME_SIZE / 4)
 #define IT9300User_USB11_MAX_PACKET_SIZE      64
 #define IT9300User_USB11_FRAME_SIZE           (188 * 21)
