@@ -19,6 +19,8 @@ public interface IAtsc3NdkMediaMMTBridgeCallbacks {
 
     public void pushAudioDecoderConfigurationRecord(MMTAudioDecoderConfigurationRecord mmtAudioDecoderConfigurationRecord);
 
+    public void atsc3_signallingContext_notify_audio_packet_id_and_mpu_timestamp_descriptor(int audio_packet_id, long mpu_sequence_number, long mpu_presentation_time_ntp64, long mpu_presentation_time_seconds, int mpu_presentation_time_microseconds);
+
     public void onVideoStreamProperties(MmtVideoProperties.MmtVideoPropertiesDescriptor descriptor);
     public void onCaptionAssetProperties(MmtCaptionProperties.MmtCaptionPropertiesDescriptor descriptor);
     public void onAudioStreamProperties(MmtAudioProperties.MmtAudioPropertiesDescriptor descriptor);

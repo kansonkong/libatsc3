@@ -10,6 +10,9 @@
 #include "R855.h"
 #include "I2C_Sys.h"    // "I2C_Sys" is only for SW porting reference.
 
+
+
+
 #define  R855_FILTER_GAIN_DELAY   2    //3 or 2
 #define  R855_FILTER_CODE_DELAY   2    //2
 #define  R855_XTAL_CHK_DELAY      10
@@ -1847,6 +1850,14 @@ R855_SysFreq_Info_Type R855_SysFreq_Sel(R855_Standard_Type R855_Standard,UINT32 
 		R855_SysFreq_Info.VGA_ATV_MODEL_R23_1_1BT=1;			//[0:10dB large (dvbt), 1:normal (analog)]
 		R855_SysFreq_Info.VGA_OUT_ATT_R36_2_1BT=1;			//[0:normal, 1:-5dB]
 
+
+		//exception(overwrite)
+		//if(RF_freq>=782000 && RF_freq<790000) //LTE
+		//{
+			R855_SysFreq_Info.LNA_TOP_R37_0_4BT=4;
+			R855_SysFreq_Info.RF_TOP_R37_4_3BT=5;
+			R855_SysFreq_Info.LNA_RF_DIS_FAST_R44_2_2BT=3;		//[0:0.9u, 1:1.5u, 2:2.4u, 3:3u]
+		//}
 
 		//exception
 		if(R855_DetectTfType_Cal==R855_UL_USING_270NH) //270n

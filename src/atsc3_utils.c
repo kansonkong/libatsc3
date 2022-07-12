@@ -103,6 +103,39 @@ char* kvp_collection_get(kvp_collection_t *collection, char* key) {
 }
 
 
+/*
+ if we have a match, then return a strdup'd version of the value we match on, otherwise return null
+ */
+char* kvp_collection_get_value(kvp_collection_t *collection, char* val) {
+	char* key = NULL;
+
+	for(int i=0; i < collection->size_n && !key; i++) {
+		kvp_t* check = collection->kvp_collection[i];
+		_ATSC3_UTILS_TRACE("kvp_collection_get_value: checking: %s against %s, resolved key is: %s", val, check->val, check->key);
+		if(check->val && strcasecmp(val, check->val) == 0) {
+			_ATSC3_UTILS_TRACE("kvp_find_key: MATCH for val: %s, resolved key is: %s", check->key, check->val);
+			key = check->key;
+		}
+	}
+	if(!key) {
+		return NULL;
+	}
+
+	//don't forget our null terminator
+	int len = strlen(key) + 1;
+	char* newkey = (char*)calloc(len, sizeof(char));
+
+	if(!newkey) {
+		_ATSC3_UTILS_ERROR("kvp_collection_get_value: unable to clone key return!");
+		return NULL;
+	}
+	memcpy(newkey, key, len);
+	_ATSC3_UTILS_TRACE("kvp_collection_get: cloning len: %d, key: %s, neykey: %s", len, key, newkey);
+	return newkey;
+}
+
+
+
 kvp_collection_t* kvp_collection_parse(uint8_t* input_string) {
 	int input_len = strlen((const char*)input_string);
 	_ATSC3_UTILS_TRACE("kvp_parse_string: input string len: %d, input string:\n\n%s\n\n", input_len, input_string);

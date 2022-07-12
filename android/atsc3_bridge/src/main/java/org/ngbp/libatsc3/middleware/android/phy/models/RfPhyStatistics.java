@@ -2,6 +2,11 @@ package org.ngbp.libatsc3.middleware.android.phy.models;
 
 public class RfPhyStatistics {
 
+    //jjustman-2022-05-26 - rf config details
+    public int freq_tune_khz;
+    public int atsc_std;      //3 or 1
+    public int channel_bw;
+
     //jjustman-2020-12-24 - work in progress hack to refactor quickly for IAtsc3NdkPHYClientRFMetrics
     
     public int tuner_lock;

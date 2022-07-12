@@ -147,6 +147,9 @@ void atsc3_mmt_mpu_mfu_on_sample_complete_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt
         service_id = atsc3_mmt_mfu_context->matching_lls_sls_mmt_session->service_id;
     }
 
+//    __LIBATSC3_TIMESTAMP_TRACE_TAB("atsc3_mmt_mpu_mfu_on_sample_complete_ndk\tservice_id\t%d\tpacket_id\t%d\tmpu_sequence_number\t%d\tsample_number\t%d\tpresentationUs\t%" PRId64 "\tmfu_fragment_count_rebuilt\t%d",
+//                                   service_id, packet_id, mpu_sequence_number, sample_number, mpu_timestamp_descriptor, mfu_fragment_count_rebuilt);
+
     //hevc NAL append...
     if(atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record &&
         atsc3_mmt_mfu_context->mmtp_packet_id_packets_container->atsc3_video_decoder_configuration_record->hevc_decoder_configuration_record &&

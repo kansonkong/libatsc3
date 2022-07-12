@@ -145,9 +145,12 @@ int main(int argc, char* argv[] ) {
 //    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB-gps-and-video.ts";
 //    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB.ts";
 //    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB-separate-plps-with-audio-video-gps.ts";
-    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB-single-plp-with-audio-video-gps.ts";
+//    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/DVB-single-plp-with-audio-video-gps.ts";
+    //2022-02-16-725-sony.ts
+    const char* SONY_TS_ALP_READER_TEST_FILENAME = "testdata/2022-02-16-725-sony.ts";
 
-	atsc3_sony_ts_alp_replay_context_t* atsc3_sony_ts_alp_replay_context = atsc3_sony_ts_alp_replay_context_new();
+
+    atsc3_sony_ts_alp_replay_context_t* atsc3_sony_ts_alp_replay_context = atsc3_sony_ts_alp_replay_context_new();
 	//hack-ish for now
 	atsc3_sony_ts_alp_replay_context->ts_file_name = strdup(SONY_TS_ALP_READER_TEST_FILENAME);
 	

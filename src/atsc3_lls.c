@@ -853,16 +853,19 @@ int atsc3_lls_build_certificationdata_table(lls_table_t* lls_table, xml_node_t* 
 					uint8_t* child_certificate_data_string = xml_string_clone(child_certificate_data);
 
 					atsc3_certification_data_to_be_signed_data_certificates_t* atsc3_certification_data_to_be_signed_data_certificates = atsc3_certification_data_to_be_signed_data_certificates_new();
-					atsc3_certification_data_to_be_signed_data_certificates->base64_payload = block_Duplicate_from_ptr(child_certificate_data_string, strlen(child_certificate_data_string));
+					atsc3_certification_data_to_be_signed_data_certificates->base64_payload = block_Promote(child_certificate_data_string);
 
 					atsc3_certification_data_to_be_signed_data_add_atsc3_certification_data_to_be_signed_data_certificates(&atsc3_certification_data->atsc3_certification_data_to_be_signed_data, atsc3_certification_data_to_be_signed_data_certificates);
 
+					freesafe(child_certificate_data_string);
                 }
 			}
 
 		} else if(xml_string_equals_ignore_case(certificationData_child_node_xml_string, "CMSSignedData")) {
+			//jjustman-2022-06-06 - TODO
 
 		} else if(xml_string_equals_ignore_case(certificationData_child_node_xml_string, "OCSPResponse")) {
+			//jjustman-2022-06-06 - TODO
 
 		} else {
 			//unknown

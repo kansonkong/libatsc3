@@ -42,11 +42,14 @@ using namespace std;
 #include <sl_ts.h>
 #include <sl_utils.h>
 #include <sl_demod_atsc3.h>
+#include <sl_demod_atsc1.h>
 
 #define TLV_CIRCULAR_BUFFER_SIZE                 4096000            // TLV circular buffer size, calculated for 2 seconds of user-space interruption at ~15Mbit/sec -> 1.875 * 2 -> 4 MB
 #define TLV_CIRCULAR_BUFFER_MIN_PROCESS_SIZE    (16 * 1024 * 2)         //CircularBuffer pending data size threshold for TLV depacketization processing, pinned at 8KB to match SL4000 ALP buffer
 #define TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE  (16 * 1024 * 2)    //CircularBuffer block read size for depacketization callback processing ~ 65KB
 #define TOLKA_R855_ATSC3_IF_OFFSET              (0.003453)          // User can Update as needed
+#define TOLKA_R855_ATSC1_IF_OFFSET              (0.000)             // User can Update as needed
+#define TOLKA_ATSC1_BLOCK_SIZE                  (10000)             // User can Update as needed
 
 #include "CircularBuffer.h"
 
@@ -156,7 +159,10 @@ public:
 //
 //    //jjustman-2021-03-03   this is expected to be always accurate, when using, be sure to acquire SL_plpConfigParams_mutex, and SL_I2c_command_mutex, if necessary
     SL_Atsc3p0ConfigParams_t        atsc3ConfigInfo;
-//
+
+    SL_Atsc1p0ConfigParams_t        atsc1ConfigInfo;
+
+    //
 //    //status thread details - use statusMetricsResetFromContextChange to initalize or to reset when tune() is completed or when PLP selection has changed
     SL_TunerSignalInfo_t    tunerInfo;
     SL_DemodLockStatus_t    demodLockStatus;
@@ -167,6 +173,8 @@ public:
     SL_Atsc3p0Bsr_Diag_t    bsrDiag = { 0 };
     SL_Atsc3p0L1B_Diag_t    l1bDiag = { 0 };
     SL_Atsc3p0L1D_Diag_t    l1dDiag = { 0 };
+
+    SL_Atsc1p0Perf_Diag_t   atsc1PerfDiag = { 0 };
 
 
     //jjustman-2021-03-02 - don't use this method...
@@ -197,6 +205,11 @@ private:
 
     SL_Result_t SL3000_atsc3_init(Endeavour  *endeavour, SL_TunerConfig_t *pTunerCfg, SL_PlatFormConfigParams_t *sPlfConfig, SL_DemodStd_t std);
     SL_Result_t SL3000_atsc3_tune(SL_TunerConfig_t *pTunerCfg, SL_PlatFormConfigParams_t *sPlfConfig);
+
+
+    SL_Result_t SL3000_atsc1_init(Endeavour  *endeavour, SL_TunerConfig_t *pTunerCfg, SL_PlatFormConfigParams_t *sPlfConfig, SL_DemodStd_t std);
+    SL_Result_t SL3000_atsc1_tune(Endeavour  *endeavour, SL_TunerConfig_t *pTunerCfg, SL_PlatFormConfigParams_t *sPlfConfig);
+    void        Monitor_SL3000_ATSC1_Signal(SignalInfo_t *pSigInfo, int freq, R855_Standard_Type RT_Standard);
 
 
     //sanjay

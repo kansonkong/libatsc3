@@ -358,11 +358,21 @@ bool atsc3_route_sls_process_from_sls_metadata_fragments_patch_mpd_availability_
 	for(int i=0; i < atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.count; i++) {
 		atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload = atsc3_sls_metadata_fragments->atsc3_mime_multipart_related_instance->atsc3_mime_multipart_related_payload_v.data[i];
 		if(atsc3_mime_multipart_related_payload->content_type) {
+
 			//jjustman-2019-11-05 - patch MPD type="dynamic" with availabilityStartTime to NOW and startNumber to the most recent A/V flows for TOI delivery
 			if(strncmp(atsc3_mime_multipart_related_payload->content_type, ATSC3_ROUTE_MPD_TYPE, __MIN(strlen(atsc3_mime_multipart_related_payload->content_type), strlen(ATSC3_ROUTE_MPD_TYPE))) == 0) {
 				fragment_route_sls_patch_mpd = atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mime_multipart_related_payload, lls_sls_alc_monitor);
-				
+
 				if(fragment_route_sls_patch_mpd) {
+
+					atsc3_route_dash_metadata_t*  atsc3_route_dash_metadata = atsc3_route_sls_extract_cenc_pssh_metadata_if_available(atsc3_mime_multipart_related_payload, lls_sls_alc_monitor);
+					if(atsc3_route_dash_metadata) {
+						_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("atsc3_route_sls_extract_cenc_pssh_metadata_if_available: extracted metadata: true, adaptation_set size: %d", lls_sls_alc_monitor->last_atsc3_route_dash_metadata->atsc3_route_dash_adaptation_set_v.size);
+						if(lls_sls_alc_monitor->atsc3_alc_on_route_mpd_metadata_adaptation_set_cenc_pssh_callback) {
+							lls_sls_alc_monitor->atsc3_alc_on_route_mpd_metadata_adaptation_set_cenc_pssh_callback(lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, atsc3_route_dash_metadata);
+						}
+					}
+
 					atsc3_sls_write_mime_multipart_related_payload_to_file(atsc3_mime_multipart_related_payload, lls_sls_alc_monitor);
 					//jjustman-2020-07-27 - send a forced callback that our ROUTE/DASH flow is discontigous and needs to be reloaded once we are written to disk
 					if(lls_sls_alc_monitor->atsc3_lls_sls_alc_on_route_mpd_patched_callback) {
@@ -491,6 +501,7 @@ bool atsc3_route_sls_patch_mpd_availability_start_time_and_start_number(atsc3_mi
         }
     }
 
+	block_Rewind(atsc3_mime_multipart_related_payload->payload);
 	block_t* in_flight_last_mpd_payload = block_Duplicate(atsc3_mime_multipart_related_payload->payload);
 
     if(lls_sls_alc_monitor->has_discontiguous_toi_flow || !lls_sls_alc_monitor->last_mpd_payload) {
@@ -670,3 +681,260 @@ error:
 
     return false;
 }
+
+atsc3_route_dash_metadata_t* atsc3_route_sls_extract_cenc_pssh_metadata_if_available(atsc3_mime_multipart_related_payload_t* atsc3_mime_multipart_related_payload, lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+
+	atsc3_route_dash_metadata_free(&lls_sls_alc_monitor->last_atsc3_route_dash_metadata);
+	atsc3_route_dash_metadata_t* atsc3_route_dash_metadata = atsc3_route_dash_metadata_new();
+
+	block_Rewind(atsc3_mime_multipart_related_payload->payload);
+	xml_document_t* xml_document = xml_parse_document(block_Get(atsc3_mime_multipart_related_payload->payload), block_Remaining_size(atsc3_mime_multipart_related_payload->payload));
+
+	//look for our first adaptation set
+
+	xml_node_t* xml_document_root_node = xml_document_root(xml_document);
+	xml_string_t* xml_document_root_node_name = xml_node_name(xml_document_root_node);
+
+	//opening header should be xml
+	if(!xml_string_equals_ignore_case(xml_document_root_node_name, "xml")) {
+		_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("atsc3_route_sls_extract_cenc_pssh_metadata_if_available: opening tag missing xml preamble");
+		return NULL;
+	}
+
+	size_t num_root_children = xml_node_children(xml_document_root_node);
+	for(int i=0; i < num_root_children; i++) {
+		xml_node_t* root_child = xml_node_child(xml_document_root_node, i);
+		xml_string_t* root_child_name = xml_node_name(root_child);
+
+		uint8_t* root_child_name_string = xml_string_clone(root_child_name);
+		_ATSC3_ROUTE_SLS_PROCESSOR_ERROR("checking root_child tag at: %i, val: %s", i, root_child_name_string);
+		freeclean_uint8_t(&root_child_name_string);
+
+		//look for mpd node
+		if(xml_node_equals_ignore_case(root_child, "mpd")) {
+			block_t* xml_cenc_namespace_tag = NULL;
+			block_t* xml_dashif_namesapce_tag = NULL;
+
+			//look for 2 private namespace elements: xmlns:cenc="urn:mpeg:cenc:2013" xmlns:dashif="http://dashif.org/guidelines/ContentProtection"
+
+			uint8_t* xml_attributes = xml_attributes_clone_node(root_child);
+			_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("metadataEnvelope.item.attributes: %s", xml_attributes);
+
+			kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
+			char* matching_key = NULL;
+
+			if((matching_key = kvp_collection_get_value(kvp_collection,  "urn:mpeg:cenc:2013"))) {
+				//xml_cenc_namespace_tag, chomp off the xmlns:
+				int matching_key_len = strlen(matching_key);
+				if(matching_key_len > 6) {
+					xml_cenc_namespace_tag = block_Duplicate_from_ptr(matching_key + 6, matching_key_len - 6);
+				}
+			}
+
+			if((matching_key = kvp_collection_get_value(kvp_collection,  "http://dashif.org/guidelines/ContentProtection"))) {
+				//xml_dasif_namesapce_tag
+				int matching_key_len = strlen(matching_key);
+				if(matching_key_len > 6) {
+					xml_dashif_namesapce_tag = block_Duplicate_from_ptr(matching_key + 6, matching_key_len - 6);
+				}
+			}
+
+			free(xml_attributes);
+			kvp_collection_free(kvp_collection);
+
+			xml_node_t* my_child = root_child;
+			atsc3_route_sls_extract_cenc_pssh_metadata_walk_child(atsc3_route_dash_metadata, my_child, xml_cenc_namespace_tag, xml_dashif_namesapce_tag);
+		}
+	}
+
+cleanup:
+
+	xml_document_free(xml_document, false);
+
+	if(atsc3_route_dash_metadata->atsc3_route_dash_adaptation_set_v.count == 0) {
+		atsc3_route_dash_metadata_free(&atsc3_route_dash_metadata);
+	} else {
+		lls_sls_alc_monitor->last_atsc3_route_dash_metadata = atsc3_route_dash_metadata;
+	}
+
+	return atsc3_route_dash_metadata;
+}
+
+
+bool atsc3_route_sls_extract_cenc_pssh_metadata_walk_child(atsc3_route_dash_metadata_t* atsc3_route_dash_metadata, xml_node_t* anchor, block_t* xml_cenc_namespace_tag, block_t* xml_dashif_namesapce_tag) {
+	bool end_of_child = false;
+
+	//walk thru children...
+	size_t num_envelope_children = xml_node_children(anchor);
+	for(int i=0; i < num_envelope_children; i++) {
+
+		xml_node_t* envelope_child = xml_node_child(anchor, i);
+		if(xml_node_equals_ignore_case(envelope_child, "AdaptationSet")) {
+
+			/*
+			 *     <AdaptationSet contentType="video" id="0" maxFrameRate="30000/1001" maxHeight="720" maxWidth="1280" mimeType="video/mp4" minFrameRate="30000/1001" minHeight="720" minWidth="1280" par="16:9" segmentAlignment="true" startWithSAP="1">
+			*/
+
+			atsc3_route_dash_adaptation_set_t* atsc3_route_dash_adaptation_set = atsc3_route_dash_adaptation_set_new();
+			atsc3_route_dash_metadata_add_atsc3_route_dash_adaptation_set(atsc3_route_dash_metadata, atsc3_route_dash_adaptation_set);
+
+			uint8_t* xml_attributes = xml_attributes_clone_node(envelope_child);
+			_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("adaptationSet attributes: %s", xml_attributes);
+
+			kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
+			char* matching_val = NULL;
+			if((matching_val = kvp_collection_get(kvp_collection,  "contentType"))) {
+				atsc3_route_dash_adaptation_set->adaptation_set_content_type = block_Promote(matching_val);
+			}
+
+			if((matching_val = kvp_collection_get(kvp_collection,  "id"))) {
+				atsc3_route_dash_adaptation_set->adaptation_set_id = block_Promote(matching_val);
+			}
+
+			if((matching_val = kvp_collection_get(kvp_collection,  "mimeType"))) {
+				atsc3_route_dash_adaptation_set->adaptation_set_mime_type = block_Promote(matching_val);
+			}
+
+			free(xml_attributes);
+			kvp_collection_free(kvp_collection);
+
+
+			/* parse thru looking for contentprotection element(s), e.g
+				<ContentProtection cenc:default_KID="391b55f3-8040-5852-a512-a34afb3e757f" schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc"/>
+			    <ContentProtection cenc:default_KID="391b55f3-8040-5852-a512-a34afb3e757f" schemeIdUri="urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed" value="Widevine">
+					<cenc:pssh>AAAAUHBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAADAiEnRhbXBhX2xhYl9hdG1fZzFwMkjj3JWbBmoUYXRzY19ncm91cDFfcHJvZmlsZTIAAAJucHNzaAAAAADt74upedZKzqPIJ9zVHSHtAAACTiISdGFtcGFfbGFiX2F0bV9nMXAySOPclZsGWAJqFGF0c2NfZ3JvdXAxX3Byb2ZpbGUyclgKEF2fIrkd/VgUnLUUr3no+QoSEDkbVfOAQFhSpRKjSvs+dX8aIPnJeo6qcAufFYWK2Wj8oS4T1hIQg6F8PR4g+yQHVc8cIhDgz1UaspMYSpdhXPNG3mnuclgKEN6SlLfdHVCBi3A9D5ErIRMSEDkbVfOAQFhSpRKjSvs+dX8aIE5x9Ck+pwZH4INO+MDLN6+xxSn1qmFS3ZMfTr8XrAm7IhBDx4N8YMKrgyqxbNiWx1AIclgKEPwy0ABChFVZjbeUB5sSl64SEMJ0s98kFlAbsDT6RsnANZoaIKtaaPvLgkqfHnM2KsiXYGtfXrAsSNwHrLCrJxQxwQ2iIhCIUEwHGHHGxjPXPfC/4GtoclgKEKZnekO1O1E1kTwxT+bCnCMSEMJ0s98kFlAbsDT6RsnANZoaIG5w6b2lX0QkAh7DiE0AGQcfIUQcUnOomQIFaLv9rqHzIhD93U/3Uq0RskPMpRWUDq9mclgKEBksKBHgs1LVvvSZfncPSUoSEHtN0fMpIF0svDnEEp9ul+8aIBaX9NBz7Ogr4x+m2FXT6TFzuI2IFZRbWIdP3uv8yvPwIhD5jO+hZ/X01kOm9g5lq2bCclgKED/cmo5gI190iTMamSXqwd8SEHtN0fMpIF0svDnEEp9ul+8aIHE+T3V+oyTJImim1PFZhRnupdsztKSpWd1W6begED2SIhACXtQ31Eu3YTY5Z1O5U6Q2</cenc:pssh>
+					<dashif:Laurl licenseType="license-1.0">https://drm-license.a3sa.yottacloud.tv/v1/wv/license?content_id=tampa_lab_atm_g1p2</dashif:Laurl>
+					<dashif:Laurl licenseType="groupLicense-1.0">file://atsc_group1_profile2.lic</dashif:Laurl>
+			    </ContentProtection>
+			 */
+
+			char* contentProtection_cenc_default_kid = NULL;
+			if(xml_cenc_namespace_tag) {
+				char default_kid_text[] = ":default_KID";
+				uint default_kid_length = strlen(default_kid_text);
+
+				contentProtection_cenc_default_kid = calloc(1, xml_cenc_namespace_tag->p_size + default_kid_length + 1);
+				memcpy(contentProtection_cenc_default_kid, xml_cenc_namespace_tag->p_buffer, xml_cenc_namespace_tag->p_size);
+				memcpy(contentProtection_cenc_default_kid + xml_cenc_namespace_tag->p_size, default_kid_text, default_kid_length);
+			}
+
+			size_t num_envelope_adaptation_set_children = xml_node_children(envelope_child);
+
+			for(int j=0; j < num_envelope_adaptation_set_children; j++) {
+
+				xml_node_t* adaptation_set_child = xml_node_child(envelope_child, j);
+
+				//find our ContentProtection element...
+				if(xml_node_equals_ignore_case(adaptation_set_child, "ContentProtection")) {
+					atsc3_route_dash_content_protection_element_t* atsc3_route_dash_content_protection_element = atsc3_route_dash_content_protection_element_new();
+					atsc3_route_dash_adaptation_set_add_atsc3_route_dash_content_protection_element(atsc3_route_dash_adaptation_set, atsc3_route_dash_content_protection_element);
+
+					uint8_t* xml_attributes = xml_attributes_clone_node(adaptation_set_child);
+					_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("ContentProtection attributes: %s", xml_attributes);
+
+					kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
+					char* matching_val = NULL;
+					if((matching_val = kvp_collection_get(kvp_collection,  "schemeIdUri"))) {
+						atsc3_route_dash_content_protection_element->schemeIdUri = block_Promote(matching_val);
+					}
+
+					if((matching_val = kvp_collection_get(kvp_collection,  "value"))) {
+						atsc3_route_dash_content_protection_element->value_attribute = block_Promote(matching_val);
+					}
+
+					if(contentProtection_cenc_default_kid && (matching_val = kvp_collection_get(kvp_collection,  contentProtection_cenc_default_kid))) {
+						atsc3_route_dash_content_protection_element->cenc_default_KID = block_Promote(matching_val);
+					}
+
+					free(xml_attributes);
+					kvp_collection_free(kvp_collection);
+
+
+					char* cenc_pssh = NULL;
+					if(xml_cenc_namespace_tag) {
+						char cenc_pssh_text[] = ":pssh";
+						uint cenc_pssh_text_length = strlen(cenc_pssh_text);
+
+						cenc_pssh = calloc(1, xml_cenc_namespace_tag->p_size + cenc_pssh_text_length + 1);
+						memcpy(cenc_pssh, xml_cenc_namespace_tag->p_buffer, xml_cenc_namespace_tag->p_size);
+						memcpy(cenc_pssh + xml_cenc_namespace_tag->p_size, cenc_pssh_text, cenc_pssh_text_length);
+					}
+
+					//jjustman-2022-06-07 - hack warning, watch out for internal namespace self ref's, e.g.
+					//<dashif:Laurl xmlns:dashif="http://dashif.org/guidelines/ContentProtection" licenseType="license-1.0">https://drm-license.a3sa.yottacloud.tv/v1/wv/license?content_id=tampa_lab_ota_g1p2</dashif:Laurl>
+
+
+					char* dashif_laurl = NULL;
+					if(xml_dashif_namesapce_tag) {
+						char dashif_laurl_text[] = ":Laurl";
+						uint dashif_laurl_text_length = strlen(dashif_laurl_text);
+
+						dashif_laurl = calloc(1, xml_dashif_namesapce_tag->p_size + dashif_laurl_text_length + 1);
+						memcpy(dashif_laurl, xml_dashif_namesapce_tag->p_buffer, xml_dashif_namesapce_tag->p_size);
+						memcpy(dashif_laurl + xml_dashif_namesapce_tag->p_size, dashif_laurl_text, dashif_laurl_text_length);
+					} else {
+						//fallback and assume tag is similar to above ^^^
+						char dashif_laurl_text_fixup[] = "dashif:Laurl";
+						dashif_laurl = calloc(1, strlen(dashif_laurl_text_fixup) + 1);
+						memcpy(dashif_laurl, dashif_laurl_text_fixup, strlen(dashif_laurl_text_fixup));
+					}
+
+					//process any interior cenc:pssh or dashif:laurl elements here
+					size_t num_contentprotection_child = xml_node_children(adaptation_set_child);
+
+					for(int k=0; k < num_contentprotection_child; k++) {
+						xml_node_t* contentprotection_node_child = xml_node_child(adaptation_set_child, k);
+
+						xml_string_t* xml_node_name_string = xml_node_name(contentprotection_node_child);
+
+						if(cenc_pssh && xml_string_equals_ignore_case(xml_node_name_string, cenc_pssh)) {
+							//extract our cenc_pssh value here, e.g.
+							//<cenc:pssh>AAAAUHBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAADAiEnRhbXBhX2xhYl9hdG1fZzFwMkjj3JWbBmoUYXRzY19ncm91cDFfcHJvZmlsZTIAAAJucHNzaAAAAADt74upedZKzqPIJ9zVHSHtAAACTiISdGFtcGFfbGFiX2F0bV9nMXAySOPclZsGWAJqFGF0c2NfZ3JvdXAxX3Byb2ZpbGUyclgKEF2fIrkd/VgUnLUUr3no+QoSEDkbVfOAQFhSpRKjSvs+dX8aIPnJeo6qcAufFYWK2Wj8oS4T1hIQg6F8PR4g+yQHVc8cIhDgz1UaspMYSpdhXPNG3mnuclgKEN6SlLfdHVCBi3A9D5ErIRMSEDkbVfOAQFhSpRKjSvs+dX8aIE5x9Ck+pwZH4INO+MDLN6+xxSn1qmFS3ZMfTr8XrAm7IhBDx4N8YMKrgyqxbNiWx1AIclgKEPwy0ABChFVZjbeUB5sSl64SEMJ0s98kFlAbsDT6RsnANZoaIKtaaPvLgkqfHnM2KsiXYGtfXrAsSNwHrLCrJxQxwQ2iIhCIUEwHGHHGxjPXPfC/4GtoclgKEKZnekO1O1E1kTwxT+bCnCMSEMJ0s98kFlAbsDT6RsnANZoaIG5w6b2lX0QkAh7DiE0AGQcfIUQcUnOomQIFaLv9rqHzIhD93U/3Uq0RskPMpRWUDq9mclgKEBksKBHgs1LVvvSZfncPSUoSEHtN0fMpIF0svDnEEp9ul+8aIBaX9NBz7Ogr4x+m2FXT6TFzuI2IFZRbWIdP3uv8yvPwIhD5jO+hZ/X01kOm9g5lq2bCclgKED/cmo5gI190iTMamSXqwd8SEHtN0fMpIF0svDnEEp9ul+8aIHE+T3V+oyTJImim1PFZhRnupdsztKSpWd1W6begED2SIhACXtQ31Eu3YTY5Z1O5U6Q2</cenc:pssh>
+							xml_string_t* cenc_pssh_value = xml_node_content(contentprotection_node_child);
+							uint8_t* cenc_pssh_value_string = xml_string_clone(cenc_pssh_value);
+
+							atsc3_route_dash_cenc_pssh_element_t* atsc3_route_dash_cenc_pssh_element = atsc3_route_dash_cenc_pssh_element_new();
+							atsc3_route_dash_cenc_pssh_element->raw_pssh_box_from_mpd = block_Promote(cenc_pssh_value_string);
+
+							//jjustman-2022-06-06 - TODO: extract out concatenated pssh boxes here as needed...
+
+							atsc3_route_dash_content_protection_element_add_atsc3_route_dash_cenc_pssh_element(atsc3_route_dash_content_protection_element, atsc3_route_dash_cenc_pssh_element);
+							freesafe(cenc_pssh_value_string);
+						} else if(dashif_laurl && xml_string_equals_ignore_case(xml_node_name_string, dashif_laurl)) {
+							//extract our dashif laurl value here, e.g.
+							//<dashif:Laurl licenseType="license-1.0">https://drm-license.a3sa.yottacloud.tv/v1/wv/license?content_id=tampa_lab_atm_g1p2</dashif:Laurl>
+							xml_string_t* dashif_laurl_value = xml_node_content(contentprotection_node_child);
+							uint8_t* dashif_laurl_value_string = xml_string_clone(dashif_laurl_value);
+
+							atsc3_route_dashif_laurl_t* atsc3_route_dashif_laurl = atsc3_route_dashif_laurl_new();
+							atsc3_route_dashif_laurl->license_server_url = block_Promote(dashif_laurl_value_string);
+
+							uint8_t* xml_attributes = xml_attributes_clone_node(contentprotection_node_child);
+							_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("dashif attributes: %s", xml_attributes);
+
+							kvp_collection_t* kvp_collection = kvp_collection_parse(xml_attributes);
+							char* matching_val = NULL;
+							if((matching_val = kvp_collection_get(kvp_collection,  "licenseType"))) {
+								atsc3_route_dashif_laurl->license_type = block_Promote(matching_val);
+							}
+
+							free(xml_attributes);
+							kvp_collection_free(kvp_collection);
+
+							atsc3_route_dash_content_protection_element_add_atsc3_route_dashif_laurl(atsc3_route_dash_content_protection_element, atsc3_route_dashif_laurl);
+							freesafe(dashif_laurl_value_string);
+						}
+					}
+				}
+			}
+		} else {
+			return atsc3_route_sls_extract_cenc_pssh_metadata_walk_child(atsc3_route_dash_metadata, envelope_child, xml_cenc_namespace_tag, xml_dashif_namesapce_tag);
+		}
+	}
+
+
+
+	return true;
+}
+
+

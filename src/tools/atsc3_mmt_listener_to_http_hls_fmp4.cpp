@@ -838,7 +838,6 @@ int main(int argc,char **argv) {
 	_MMT_RECON_FROM_SAMPLE_TRACE_ENABLED = 1;
 
     _LLS_DEBUG_ENABLED = 1;
-    _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;
     _PLAYER_FFPLAY_DEBUG_ENABLED = 1;
     _PLAYER_FFPLAY_TRACE_ENABLED = 0;
 
@@ -855,8 +854,6 @@ int main(int argc,char **argv) {
     _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 1;
     _FDT_PARSER_DEBUG_ENABLED=1;
 
-    //if this is disabled, be sure to run this driver with stderr redirect
-    _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 1;
 
     //recon debugging
     _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED = 1;

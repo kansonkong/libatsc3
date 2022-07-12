@@ -170,6 +170,7 @@ private:
 
     //jjustman-2021-10-24 - super-hacky workaround for preboot firmware d/l and proper device type open on re-enumeration call for now..
     static int Last_download_bootloader_firmware_device_id;
+    static int Last_tune_freq;
 
     int slUnit = -1;
     int tUnit = SL_TUNER_NIL_INSTANCE;
