@@ -27,12 +27,29 @@ typedef struct libatsc3_android_system_properties {
     char sdk_ver_str[PROP_VALUE_MAX];                   //ro.build.version.sdk
     int sdk_ver;
 
-
+    //jjustman-2022-06-16 - example for how to set/get persistant adb props across reboot by using persist. prefix
+    //https://source.android.com/devices/architecture/configuration/add-system-properties#property-name
+    #define SAANKHYA_SDR_CALIBRATED_I_SYSPROP_NAME "persist.saankhya.sdr.calibrated_i"
+    char i_val_str[PROP_VALUE_MAX];
+    int i_val;
 
 } libatsc3_android_system_properties_t;
 
 int libatsc3_android_test_populate_system_properties(libatsc3_android_system_properties_t* libatsc3_android_system_properties) {
     int ret = 0;
+
+    //boot.serialno
+    if (__system_property_get(SAANKHYA_SDR_CALIBRATED_I_SYSPROP_NAME, libatsc3_android_system_properties->i_val_str)) {
+        libatsc3_android_system_properties->i_val = atoi(libatsc3_android_system_properties->i_val_str);
+        printf("%s:found matching " SAANKHYA_SDR_CALIBRATED_I_SYSPROP_NAME " prop: %d (raw: %s)",
+               __FILE__,
+               libatsc3_android_system_properties->i_val,
+               libatsc3_android_system_properties->i_val_str);
+    } else {
+        //jjustman-2022-06-16 - testing
+        int ret_i = __system_property_set(SAANKHYA_SDR_CALIBRATED_I_SYSPROP_NAME, "14");
+        printf("%s:adding " SAANKHYA_SDR_CALIBRATED_I_SYSPROP_NAME "prop, ret_i is: %d", __FILE__, ret_i);
+    }
 
     //boot.serialno
     if (__system_property_get("ro.boot.serialno", libatsc3_android_system_properties->boot_serialno_str)) {

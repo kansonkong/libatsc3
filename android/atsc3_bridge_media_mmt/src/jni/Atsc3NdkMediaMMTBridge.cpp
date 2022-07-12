@@ -607,6 +607,19 @@ void Atsc3NdkMediaMMTBridge::atsc3_setVideoWidthHeightFromTrak(uint16_t packet_i
 
 //on fully recovered MFU packet
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_rebuilt) {
+
+    //__LIBATSC3_TIMESTAMP_TRACE_TAB("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket\tservice_id\t%d\tpacket_id\t%d\tmpu_sequence_number\t%d\tsample_number\t%d\tpresentationUs\t%" PRId64 "\tmfu_fragment_count_rebuilt\t%d",
+    //                                                                        service_id, packet_id, mpu_sequence_number, sample_number, presentationUs, mfu_fragment_count_rebuilt);
+
+    if(presentationUs == 0) {
+        //jjustman-2022-02-16 - if we don't have a presentationUs anchor, drop this mfu sample...
+        _NDK_MEDIA_MMT_BRIDGE_ERROR("ats3_onMfuPacket: presentationUs is 0 for service_id: %d, packet_id: %d, mpu_sequence_number: %d, sample_number: %d",
+                                    service_id, packet_id, mpu_sequence_number, sample_number);
+
+        return;
+    }
+
+
     if (fragmentBuffer == nullptr) {
         Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
 
@@ -643,6 +656,9 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacket(uint16_t service_id, uint16_t pac
 
 //on partially corrupt MFU packet data
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
+    //__LIBATSC3_TIMESTAMP_TRACE_TAB("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt\tservice_id\t%d\tpacket_id\t%d\tmpu_sequence_number\t%d\tsample_number\t%d\tpresentationUs\t%" PRId64 "\tmfu_fragment_count_rebuilt\t%d",
+    //                               service_id, packet_id, mpu_sequence_number, sample_number, presentationUs, mfu_fragment_count_rebuilt);
+
 #ifdef __MMT_PROCESS_CORRUPT_FRAMES__
     if (fragmentBuffer == nullptr) {
         Atsc3JniEnv* localJniEnv = Atsc3NdkMediaMMTBridge::GetBridgeConsumerJniEnv();
@@ -660,6 +676,9 @@ void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorrupt(uint16_t service_id, uint1
 //on partially corrupt MFU missing MMTHSample header
 
 void Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader(uint16_t service_id, uint16_t packet_id, uint32_t mpu_sequence_number, uint32_t sample_number, uint8_t* buffer, uint32_t bufferLen, uint64_t presentationUs, uint32_t mfu_fragment_count_expected, uint32_t mfu_fragment_count_rebuilt) {
+    //__LIBATSC3_TIMESTAMP_TRACE_TAB("Atsc3NdkMediaMMTBridge::atsc3_onMfuPacketCorruptMmthSampleHeader\tservice_id\t%d\tpacket_id\t%d\tmpu_sequence_number\t%d\tsample_number\t%d\tpresentationUs\t%" PRId64 "\tmfu_fragment_count_rebuilt\t%d",
+    //                               service_id, packet_id, mpu_sequence_number, sample_number, presentationUs, mfu_fragment_count_rebuilt);
+
 #ifdef __MMT_PROCESS_CORRUPT_FRAMES__
     if (fragmentBuffer == nullptr) {
         this->pinConsumerThreadAsNeeded(); //jjustman-2020-12-17 - hack

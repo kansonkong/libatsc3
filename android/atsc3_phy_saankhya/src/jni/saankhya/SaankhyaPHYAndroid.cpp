@@ -73,6 +73,7 @@ SL_Result_t     SaankhyaPHYAndroid::global_sl_result_error_flag = SL_OK;
 SL_I2cResult_t  SaankhyaPHYAndroid::global_sl_i2c_result_error_flag = SL_I2C_OK;
 
 int SaankhyaPHYAndroid::Last_download_bootloader_firmware_device_id = -1;
+int SaankhyaPHYAndroid::Last_tune_freq = -1;
 
 SaankhyaPHYAndroid::SaankhyaPHYAndroid(JNIEnv* env, jobject jni_instance) {
     this->env = env;
@@ -586,8 +587,9 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
 
 
             //jjustman-2022-01-07 - testcase, change from SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE to AUTO and
-//            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
-            lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
+           //             lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_ENABLE;
+           lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_AUTO;
+            //lnaInfo.lnaMode = SL_EXT_LNA_CFG_MODE_MANUAL_BYPASS;
 
             lnaInfo.lnaGpioNum = (0x00000A00 >> 8); //should be 0xA after shift, d10
 
@@ -907,6 +909,13 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     unsigned int cFrequency = 0;
     int isRxDataStartedSpinCount = 0;
 
+    if(freqKHz == Last_tune_freq) {
+        _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - re-tuning to frequency freqKHz (%d)", Last_tune_freq);
+
+//        _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - returning because Last_tune_freq == freqKHz (%d)", Last_tune_freq);
+//        return 0;
+    }
+
     //tell any RXDataCallback or process event that we should discard
     SaankhyaPHYAndroid::cb_should_discard = true;
 
@@ -966,13 +975,27 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     }
 
     printf("SaankhyaPHYAndroid::tune: Frequency: %d, PLP: %d", freqKHz, plpid);
+    //jjustman-2022-06-03 - hack!
 
+#ifndef __JJ_CALIBRATION_ENABLED
+
+    SL_DemodStop(slUnit);
+    usleep(1000000);
+#endif
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
     if (tres != 0)
     {
         printToConsoleTunerError("SL_TunerSetFrequency", tres);
         goto ERROR;
     }
+    usleep(1000000);
+
+#ifndef __JJ_CALIBRATION_ENABLED
+
+    //jjustman-2022-06-03 - hack!
+    SL_DemodStart(slUnit);
+    usleep(1000000);
+#endif
 
     tres = SL_TunerGetConfiguration(tUnit, &tunerGetCfg);
     if (tres != 0)
@@ -1225,6 +1248,7 @@ TEST_ERROR:
         }
          */
 
+
         _SAANKHYA_PHY_ANDROID_DEBUG("Starting SLDemod: ");
 
         slres = SL_DemodStart(slUnit);
@@ -1263,10 +1287,13 @@ TEST_ERROR:
     statusMetricsResetFromTuneChange();
 
     ret = 0;
+    Last_tune_freq = freqKHz;
+
     goto UNLOCK;
 
 ERROR:
     ret = -1;
+    Last_tune_freq = -1;
 
     //unlock our i2c mutex
 UNLOCK:
@@ -1322,6 +1349,7 @@ int SaankhyaPHYAndroid::listen_plps(vector<uint8_t> plps_original_list)
 
     unique_lock<mutex> SL_PlpConfigParams_mutex_update_plps(SL_PlpConfigParams_mutex);
 
+    //jjustman-2022-05-17 - TODO - listen to plp that contains LLS info, may not always be plp0
     if(plps.size() == 0) {
         //we always need to listen to plp0...kinda
         atsc3ConfigParams.plpConfig.plp0 = 0;
@@ -1688,8 +1716,27 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_markone() {
     //2022-01-07 16:29:43.724 21558-21758/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1079:INFO :1641601783.7242:I Off Set Value        : 13
     //2022-01-07 16:29:43.724 21558-21758/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1080:INFO :1641601783.7242:Q Off Set Value        : 9
 
-    tunerIQDcOffSet.iOffSet = 13;
-    tunerIQDcOffSet.qOffSet = 9;
+//    tunerIQDcOffSet.iOffSet = 13;
+//    tunerIQDcOffSet.qOffSet = 9;
+
+//      jjustman-2022-03-30 - evt2 smt1.5 from borqs assy
+//    2022-03-30 12:35:12.187 7751-8148/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1080:INFO :1648668912.1878:Completing calibration with status: 2
+//    2022-03-30 12:35:12.187 7751-8148/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1081:INFO :1648668912.1878:I Off Set Value        : 12
+//    2022-03-30 12:35:12.187 7751-8148/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1082:INFO :1648668912.1878:Q Off Set Value        : 12
+//    2022-03-30 12:35:18.990 7751-7768/com.nextgenbroadcast.mobile.middleware.sample I/ddleware.sampl: Background concurrent copying GC freed 705142(21MB) AllocSpace objects, 28(560KB) LOS objects, 50% free, 22MB/44MB, paused 377us total 1.468s
+//    2022-03-30 12:35:22.188 7751-8148/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SL_SiTunerExSetDcOffSet: setting iOffset to: 12, qOffset to: 12
+
+//    tunerIQDcOffSet.iOffSet = 12;
+//    tunerIQDcOffSet.qOffSet = 12;
+//
+
+//jjustman-2022-06-29 - for 9501c690 BB
+
+    tunerIQDcOffSet.iOffSet = 10;
+    tunerIQDcOffSet.qOffSet = 12;
+
+
+
 
     return res;
 }
@@ -1939,7 +1986,8 @@ void SaankhyaPHYAndroid::processTLVFromCallback()
 
                 uint64_t l1dTimeNs_value = atsc3_sl_tlv_payload->l1d_time_sec + (atsc3_sl_tlv_payload->l1d_time_msec * 1000) + (atsc3_sl_tlv_payload->l1d_time_usec * 1000000) + (atsc3_sl_tlv_payload->l1d_time_nsec * 1000000000) ;
 
-                //jjustman-2021-10-24 - hack-ish to push our l1d time info
+                //jjustman-2021-10-24 - hack-ish to push our l1d time info - still needed?
+                //true ||
                 if(last_l1dTimeNs_value != l1dTimeNs_value) {
                     _SAANKHYA_PHY_ANDROID_TRACE("atsc3NdkClientSlImpl::processTLVFromCallback() L1DTimeInfo is: L1time: flag: %d, s: %d, ms: %d, us: %d, ns: %d, current l1dTimeNs: %d, last_l1dTimeNs_value: %d, frame duration: %",
                                                 last_l1bTimeInfoFlag,
@@ -2227,9 +2275,11 @@ int SaankhyaPHYAndroid::processThread()
             processTLVFromCallbackInvocationCount++;
             this->processTLVFromCallback();
         }
-       // CircularBufferMutex_local.unlock();
+       //CircularBufferMutex_local.unlock();
 
-        usleep(33000); //pegs us at ~ 30 spinlocks/sec if no data
+       //jjustman - try increasing to 50ms? shortest atsc3 subframe?
+        usleep(33000); //jjustman-2022-02-16 - peg us at 16.67ms/2 ~ 8ms
+        // pegs us at ~ 30 spinlocks/sec if no data
     }
 
     this->releasePinnedConsumerThreadAsNeeded();
@@ -2364,6 +2414,7 @@ int SaankhyaPHYAndroid::statusThread()
             }
 #else
 
+            //2022-03-30 - updated to 10s...hack testing for 256QAM 11/15
             usleep(2000000);
             //jjustman: target: sleep for 500ms
             //TODO: jjustman-2019-12-05: investigate FX3 firmware and i2c single threaded interrupt handling instead of dma xfer
@@ -2466,7 +2517,7 @@ int SaankhyaPHYAndroid::statusThread()
         //jjustman-2021-05-11 - give 256qam 11/15 fec bitrates a chance to flush ALP buffer without oveflowing and lose bootstrap/l1b/l1d lock
 
 #ifdef _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
-        SL_SleepMS(100);
+        SL_SleepMS(10);
 #endif
 
 
@@ -2478,11 +2529,18 @@ int SaankhyaPHYAndroid::statusThread()
         }
 
 #ifdef _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
-        SL_SleepMS(100);
+        SL_SleepMS(10);
 #endif
+
+		atsc3_ndk_phy_client_rf_metrics.freq_tune_khz = Last_tune_freq;
+		//jjustman-2022-06-08 - fixme for std/channel bw
+		atsc3_ndk_phy_client_rf_metrics.atsc_std = (demodStandard == SL_DEMODSTD_ATSC3_0 || demodStandard == SL_DEMODSTD_ATSC3_0) ? 3 : 1;
+		atsc3_ndk_phy_client_rf_metrics.channel_bw = (tunerGetCfg.std == SL_TUNERSTD_ATSC3_0) ? 8000 : 6000;
+
 
         atsc3_ndk_phy_client_rf_metrics.tuner_lock = (tunerInfo.status == 1);
 
+        //jjustman-2022-03-30 - this call may cause the demod to hang with 256QAM 11/15
         //important, we should only query BSR, L1B, and L1D Diag data after each relevant lock has been acquired to prevent i2c bus txns from crashing the demod...
         dres = SL_DemodGetStatus(this->slUnit, SL_DEMOD_STATUS_TYPE_LOCK, (SL_DemodLockStatus_t*)&demodLockStatus);
         if (dres != SL_OK) {
@@ -2491,7 +2549,7 @@ int SaankhyaPHYAndroid::statusThread()
         }
 
 #ifdef _JJ_I2C_TUNER_STATUS_THREAD_SLEEP_MS_ENABLED_
-SL_SleepMS(100);
+SL_SleepMS(10);
 #endif
 
         atsc3_ndk_phy_client_rf_metrics.demod_lock = demodLockStatus;
@@ -2510,14 +2568,14 @@ SL_SleepMS(100);
         //we have RF / Bootstrap lock
         if(demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_ATSC3P0_RF_LOCK) {
             if(!statusThreadFirstLoopAfterTuneComplete_HasBootstrapLock_for_BSR_Diag) {
-                statusThreadFirstLoopAfterTuneComplete_HasBootstrapLock_for_BSR_Diag = true;
+                statusThreadFirstLoopAfterTuneComplete_HasBootstrapLock_for_BSR_Diag = false;
 
                 dres = SL_DemodGetDiagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_ATSC3P0_BSR, (SL_Atsc3p0Bsr_Diag_t*)&bsrDiag);
                 if (dres != SL_OK) {
                     _SAANKHYA_PHY_ANDROID_ERROR("Error: SL_DemodGetDiagnostics with SL_DEMOD_DIAG_TYPE_BSR failed, res: %d", dres);
                     goto sl_i2c_tuner_mutex_unlock;
                 }
-
+                _SAANKHYA_PHY_ANDROID_ERROR("bsr diag: Bsr1SysBw: %d", bsrDiag.Bsr1SysBw);
                 //printAtsc3BsrDiagnostics(bsrDiag, 0);
             }
         }
@@ -2557,13 +2615,15 @@ SL_SleepMS(100);
             }
         }
 
+//#define _JJ_DISABLE_PLP_SNR
         //we need this for SNR
+#ifndef _JJ_DISABLE_PLP_SNR
         dres = SL_DemodGetDiagnostics(this->slUnit, SL_DEMOD_DIAG_TYPE_ATSC3P0_PERF, (SL_Atsc3p0Perf_Diag_t*)&perfDiag);
         if (dres != SL_OK) {
             _SAANKHYA_PHY_ANDROID_ERROR("Error getting ATSC3.0 Performance Diagnostics : dres: %d", dres);
             goto sl_i2c_tuner_mutex_unlock;
         }
-
+#endif
         //jjustman-2021-05-11 - TODO: only run this at PLP selection lock, e.g.:
         //  for each PLPne.g. demodLockStatus & SL_DEMOD_LOCK_STATUS_MASK_BB_PLPn_LOCK) != 0;
         //

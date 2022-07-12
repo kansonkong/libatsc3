@@ -140,6 +140,8 @@ typedef struct kvp_collection {
 kvp_collection_t* kvp_collection_parse(uint8_t* input_string);
 //return the cloned value from the collection for datamodel construction
 char* kvp_collection_get(kvp_collection_t *collection, char* key);
+//search a kvp collection by value
+char* kvp_collection_get_value(kvp_collection_t *collection, char* val);
 //return the reference pointer to the value
 char* kvp_collection_get_reference_p(kvp_collection_t *collection, char* key);
 void kvp_collection_free(kvp_collection_t* collection);

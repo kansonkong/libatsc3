@@ -50,8 +50,12 @@ FILE* atsc3_sl_tlv_open_filename(const char* sl_tlv_filename) {
 #define SL_TLV_BLOCK_SIZE 65535
 #define SL_TLV_REPLAY_TEST_FILENAME_DEFAULT "testdata/2019-11-22-647mhz.tlv.bin"
 
+int                       last_l1bTimeInfoFlag = -1;
+uint64_t                  last_l1dTimeNs_value = 0;
+
 int main(int argc, char* argv[] ) {
 	char* SL_TLV_REPLAY_TEST_FILENAME = NULL;
+	
 	
 	if(argc == 2) {
 		//load our file from the command line parameters
@@ -77,6 +81,10 @@ int main(int argc, char* argv[] ) {
 	
     int alp_completed_packets_parsed = 0;
 
+	__ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
+	_SL_TLV_DEMOD_TRACE_ENABLED = 1;
+
+	
     if(atsc3_sl_tlv_fp) {
         while(!feof(atsc3_sl_tlv_fp)) {
             _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG("fread: position: %ld", ftell(atsc3_sl_tlv_fp));
@@ -93,6 +101,20 @@ int main(int argc, char* argv[] ) {
 
         			if(atsc3_sl_tlv_payload) {
         				atsc3_sl_tlv_payload_dump(atsc3_sl_tlv_payload);
+						_ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG("atsc3_sl_tlv_payload is: %p", atsc3_sl_tlv_payload);
+						uint64_t l1dTimeNs_value = atsc3_sl_tlv_payload->l1d_time_sec + (atsc3_sl_tlv_payload->l1d_time_msec * 1000) + (atsc3_sl_tlv_payload->l1d_time_usec * 1000000) + (atsc3_sl_tlv_payload->l1d_time_nsec * 1000000000) ;
+
+						 //jjustman-2021-10-24 - hack-ish to push our l1d time info
+						if(true || last_l1dTimeNs_value != l1dTimeNs_value) {
+							 _ATSC3_SL_TLV_PARSER_TO_ALP_TEST_DEBUG(" L1DTimeInfo is: L1time: flag: %d, s: %d, ms: %d, us: %d, ns: %d, current l1dTimeNs: %d, last_l1dTimeNs_value: %d, frame duration: %",
+														 last_l1bTimeInfoFlag,
+														 atsc3_sl_tlv_payload->l1d_time_sec, atsc3_sl_tlv_payload->l1d_time_msec, atsc3_sl_tlv_payload->l1d_time_usec, atsc3_sl_tlv_payload->l1d_time_nsec,
+														 l1dTimeNs_value,
+														 last_l1dTimeNs_value
+							 );
+							 last_l1dTimeNs_value = l1dTimeNs_value;
+						 }
+						
         				if(atsc3_sl_tlv_payload->alp_payload_complete) {
         					alp_completed_packets_parsed++;
         				}

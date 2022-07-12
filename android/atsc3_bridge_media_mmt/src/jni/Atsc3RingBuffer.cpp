@@ -80,4 +80,5 @@ void Atsc3RingBuffer::reset() {
     buffer_page_number = 0;
     buffer_position = 0;
     memset(buffer_ptr, 0, buffer_size);
+
 }

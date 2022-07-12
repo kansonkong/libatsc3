@@ -42,6 +42,8 @@ using namespace std;
 #include "mmt/MMTExtractor.h"
 #include "Atsc3RingBuffer.h"
 
+#include <inttypes.h>
+
 class Atsc3NdkMediaMMTBridge : public IAtsc3NdkMediaMMTBridge
 {
 public:

@@ -255,6 +255,41 @@ ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_alc_session_flows);
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_lls_slt_service_cache);
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_slt_service_id_group_id_cache);
 
+//jjustman-2022-06-04 - route dash metadata element extraction for content protection system and key identifers
+//TODO: custom impl's fror free()
+
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(pssh_box_v1, atsc3_pssh_box_v1_keys);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_dash_cenc_pssh_element, atsc3_cenc_single_pssh_box);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_dash_content_protection_element, atsc3_route_dash_cenc_pssh_element);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_dash_content_protection_element, atsc3_route_dashif_laurl);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_dash_adaptation_set, atsc3_route_dash_content_protection_element);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_route_dash_metadata, atsc3_route_dash_adaptation_set);
+
+atsc3_route_dash_metadata_t* atsc3_route_dash_metadata_new() {
+	atsc3_route_dash_metadata_t* atsc3_route_dash_metadata = calloc(1, sizeof(atsc3_route_dash_metadata_t));
+
+	return atsc3_route_dash_metadata;
+}
+
+void atsc3_route_dash_metadata_free(atsc3_route_dash_metadata_t** atsc3_route_dash_metadata_p) {
+	if(atsc3_route_dash_metadata_p) {
+		atsc3_route_dash_metadata_t* atsc3_route_dash_metadata = *atsc3_route_dash_metadata_p;
+		if(atsc3_route_dash_metadata) {
+			atsc3_route_dash_metadata_free_atsc3_route_dash_adaptation_set(atsc3_route_dash_metadata);
+
+			free(atsc3_route_dash_metadata);
+			atsc3_route_dash_metadata = NULL;
+		}
+		*atsc3_route_dash_metadata_p = NULL;
+	}
+}
+
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_pssh_box_v1_keys);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_cenc_single_pssh_box);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_dash_cenc_pssh_element);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_dashif_laurl);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_dash_content_protection_element);
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_route_dash_adaptation_set);
 
 atsc3_lls_table_t* atsc3_lls_table_new() {
 	atsc3_lls_table_t* atsc3_lls_table = calloc(1, sizeof(atsc3_lls_table_t));
