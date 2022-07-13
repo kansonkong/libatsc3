@@ -446,7 +446,11 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
 			//one byte additional header
 			//jjustman-2021-12-14 - TODO: fix me for impl
             uint8_t alp_additional_header_byte_1 = *binary_payload;
-			__ALP_PARSER_INFO("one additional ALP header byte: 0x%x (header_mode==1)", alp_additional_header_byte_1);
+
+            //jjustman-2022-07-12 - fix for off-by-one when reading additional header length
+            binary_payload++;
+
+            __ALP_PARSER_INFO("one additional ALP header byte: 0x%x (header_mode==1)", alp_additional_header_byte_1);
 			
 			alp_packet_header->alp_packet_header_mode.alp_single_packet_header.length_MSB = (alp_additional_header_byte_1 >> 3) & 0x1F; //5 MSB
 			alp_packet_header->alp_packet_header_mode.alp_single_packet_header.reserved = (alp_additional_header_byte_1 >> 2) & 0x01;
