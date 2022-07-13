@@ -60,6 +60,7 @@ extern "C" {
 
 #define ATSC3_PCAP_GLOBAL_HEADER_SIZE_BYTES 			24
 #define ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER 			0xA1B2C3D4
+#define ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION 0xD4C3B2A1
 #define ATSC3_PCAP_GLOBAL_HEADER_MAJOR_VERSION_NUMBER	2
 #define ATSC3_PCAP_GLOBAL_HEADER_MINOR_VERSION_NUMBER	4
 #define ATSC3_PCAP_GLOBAL_HEADER_SNAPLEN				65535
@@ -126,6 +127,7 @@ typedef struct atsc3_pcap_replay_context {
 
 	bool							has_read_atsc3_pcap_global_header;
 	atsc3_pcap_global_header_t		atsc3_pcap_global_header;
+	bool							atsc3_pcap_needs_endian_correction; //only if atsc3_pcap_global_header looks like ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION
 
 	uint32_t						pcap_read_packet_count;
 
