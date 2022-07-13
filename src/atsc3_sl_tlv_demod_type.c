@@ -393,13 +393,14 @@ restart_parsing:
                 //validate our TLV header ALP_packet_size matches what the ALP packet length in header is
                 //IP  ~ 2 bytes ALP header
                 //LMT ~ 7 bytes ALP header after parsing
-                if ((atsc3_alp_packet->alp_packet_header.packet_type == 0x0 && atsc3_sl_tlv_payload->alp_packet_size != atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length + 2) ||
-                    (atsc3_alp_packet->alp_packet_header.packet_type == 0x4 && atsc3_sl_tlv_payload->alp_packet_size != atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length + 7) ) {
+                if ((atsc3_alp_packet->alp_packet_header.packet_type == 0x0 && atsc3_sl_tlv_payload->alp_packet_size != (block_Len(atsc3_alp_packet->alp_packet_header.alp_header_payload) + atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length)) ||
+                    (atsc3_alp_packet->alp_packet_header.packet_type == 0x4 && atsc3_sl_tlv_payload->alp_packet_size != (block_Len(atsc3_alp_packet->alp_packet_header.alp_header_payload) + atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length))) {
                     atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_TLV_header_ALP_size_mismatch_from_parsed_ALP_header_count++;
-                    __SL_TLV_DEMOD_ERROR("FAILED ALP SIZE MATCH: at buf: %p, packet_type: 0x%1x, atsc3_sl_tlv_payload->alp_packet_size (%d) != atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length (%d) + 2 ",
+                    __SL_TLV_DEMOD_ERROR("FAILED ALP SIZE MATCH: at buf: %p, packet_type: 0x%1x, atsc3_sl_tlv_payload->alp_packet_size (%d) != ( block_Len(atsc3_alp_packet->alp_packet_header.alp_header_payload) (%d) + atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length (%d)) ",
                                          buf,
                                          atsc3_alp_packet->alp_packet_header.packet_type,
                                          atsc3_sl_tlv_payload->alp_packet_size,
+										 block_Len(atsc3_alp_packet->alp_packet_header.alp_header_payload),
                                          atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.length);
                 } else {
                     atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_successfully_extracted_alp_count++;
