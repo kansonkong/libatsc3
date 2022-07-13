@@ -401,40 +401,40 @@ static void route_process_from_alc_packet(udp_flow_t* udp_flow, atsc3_alc_packet
 	}
     
     if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.has_written_init_box && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer) {
-
-    	lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_alc_isobmff_fragment(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
-
-		if(!lls_sls_monitor_output_buffer_final_muxed_payload) {
-			lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = false;
-			__ERROR("lls_sls_monitor_output_buffer_final_muxed_payload was NULL!");
-			return;
-		}
-
-        if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
-
-        	pipe_ffplay_buffer_t* pipe_ffplay_buffer = lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer;
-
-        	pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
-        
-        	pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->i_pos);
-        
-        	pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
-        
-			//check to see if we have shutdown
-			lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
-
-			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
-			//reset our buffer pos and should_flush = false;
-        }
-
-        if(true || lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
-        	//don't double write to disk for route objects as we do this already in the route alc refrag client
-            lls_sls_monitor_output_buffer_alc_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/",
-            		lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_audio_toi,
-					lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_video_toi);
-        }
-
-		lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
+//
+//    	lls_sls_monitor_output_buffer_t* lls_sls_monitor_output_buffer_final_muxed_payload = atsc3_isobmff_build_joined_alc_isobmff_fragment(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
+//
+//		if(!lls_sls_monitor_output_buffer_final_muxed_payload) {
+//			lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer.should_flush_output_buffer = false;
+//			__ERROR("lls_sls_monitor_output_buffer_final_muxed_payload was NULL!");
+//			return;
+//		}
+//
+//        if(lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled && lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer) {
+//
+//        	pipe_ffplay_buffer_t* pipe_ffplay_buffer = lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer;
+//
+//        	pipe_buffer_reader_mutex_lock(pipe_ffplay_buffer);
+//        
+//        	pipe_buffer_unsafe_push_block(pipe_ffplay_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->p_buffer, lls_sls_monitor_output_buffer_final_muxed_payload->joined_isobmff_block->i_pos);
+//        
+//        	pipe_buffer_notify_semaphore_post(pipe_ffplay_buffer);
+//        
+//			//check to see if we have shutdown
+//			lls_slt_monitor_check_and_handle_pipe_ffplay_buffer_is_shutdown(lls_slt_monitor);
+//
+//			pipe_buffer_reader_mutex_unlock(pipe_ffplay_buffer);
+//			//reset our buffer pos and should_flush = false;
+//        }
+//
+//        if(true || lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled) {
+//        	//don't double write to disk for route objects as we do this already in the route alc refrag client
+//            lls_sls_monitor_output_buffer_alc_file_dump(lls_sls_monitor_output_buffer_final_muxed_payload, "route/",
+//            		lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_audio_toi,
+//					lls_slt_monitor->lls_sls_alc_monitor->last_completed_flushed_video_toi);
+//        }
+//
+//		lls_sls_monitor_output_buffer_reset_moof_and_fragment_position(&lls_slt_monitor->lls_sls_alc_monitor->lls_sls_monitor_output_buffer);
     }
 }
 
@@ -632,7 +632,6 @@ int main(int argc,char **argv) {
 	_MMT_RECON_FROM_SAMPLE_TRACE_ENABLED = 1;
 
 	_LLS_DEBUG_ENABLED = 0;
-    _ISOBMFF_TOOLS_DEBUG_ENABLED = 1;
     _PLAYER_FFPLAY_DEBUG_ENABLED = 1;
     _PLAYER_FFPLAY_TRACE_ENABLED = 0;
 
@@ -649,9 +648,7 @@ int main(int argc,char **argv) {
     _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 1;
     _FDT_PARSER_DEBUG_ENABLED=1;
 
-    //if this is disabled, be sure to run this driver with stderr redirect
-    _ISOBMFFTRACKJOINER_DEBUG_ENABLED = 1;
-
+    
     //recon debugging
     _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_TRACE_ENABLED = 1;
     _LLS_SLS_MONITOR_OUTPUT_BUFFER_UTILS_DEBUG_ENABLED = 1;

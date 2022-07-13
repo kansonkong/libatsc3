@@ -111,7 +111,6 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 		return NULL;
 	}
 
-
     
     //jjustman-2019-10-11 - clear our our last packet header, but not not overwrite block_t* ptr to packet payload
 	memset(&atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header, 0, ATSC3_PCAP_PACKET_HEADER_SIZE_BYTES);
@@ -285,5 +284,115 @@ void atsc3_pcap_replay_free(atsc3_pcap_replay_context_t** atsc3_pcap_replay_cont
 			free(atsc3_pcap_replay_context);
 		}
 		*atsc3_pcap_replay_context_p = NULL;
+	}
+}
+
+atsc3_pcap_writer_context_t* atsc3_pcap_writer_context_new() {
+	atsc3_pcap_writer_context_t* atsc3_pcap_writer_context = calloc(1, sizeof(atsc3_pcap_writer_context_t));
+
+	//jjustman-2020-08-11 - pre-allocate our block_t for ~MAX_ATSC3_ETHERNET_PHY_FRAME_LENGTH 1518 bytes and then use block_Resize to adjust as needed (will null out slab alloc past p_size)
+	//atsc3_pcap_writer_context->atsc3_pcap_packet_instance.current_pcap_packet = block_Alloc(MAX_ATSC3_ETHERNET_PHY_FRAME_LENGTH);
+
+	return atsc3_pcap_writer_context;
+}
+
+atsc3_pcap_writer_context_t* atsc3_pcap_writer_open_filename(const char* pcap_filename) {
+	atsc3_pcap_writer_context_t* atsc3_pcap_writer_context = atsc3_pcap_writer_context_new();
+
+	atsc3_pcap_writer_context->pcap_file_name = calloc(strlen(pcap_filename) + 1, sizeof(char));
+	strncpy(atsc3_pcap_writer_context->pcap_file_name, pcap_filename, strlen(pcap_filename));
+
+	atsc3_pcap_writer_context->pcap_file_pos = 0;
+
+	atsc3_pcap_writer_context->pcap_fp = fopen(atsc3_pcap_writer_context->pcap_file_name, "w");
+	if(!atsc3_pcap_writer_context->pcap_fp) {
+		_ATSC3_PCAP_TYPE_WARN("atsc3_pcap_writer_open_filename: %s - fopen()  returned NULL!", atsc3_pcap_writer_context->pcap_file_name);
+		return NULL;
+	}
+
+	return atsc3_pcap_writer_context;
+}
+
+atsc3_pcap_writer_context_t* atsc3_pcap_writer_iterate_packet(atsc3_pcap_writer_context_t* atsc3_pcap_writer_context, block_t* packet) {
+
+	if(!atsc3_pcap_writer_context->pcap_fp) {
+		_ATSC3_PCAP_TYPE_WARN("atsc3_pcap_writer_iterate_packet: pcap_fp is NULL for file: %s!", atsc3_pcap_writer_context->pcap_file_name);
+		return NULL;
+	}
+
+	if(!atsc3_pcap_writer_context->has_written_atsc3_pcap_global_header) {
+
+		atsc3_pcap_writer_context->atsc3_pcap_global_header.magic_number = htonl(ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER);
+		atsc3_pcap_writer_context->atsc3_pcap_global_header.version_major = htons(ATSC3_PCAP_GLOBAL_HEADER_MAJOR_VERSION_NUMBER);
+		atsc3_pcap_writer_context->atsc3_pcap_global_header.version_minor = htons(ATSC3_PCAP_GLOBAL_HEADER_MINOR_VERSION_NUMBER);
+		atsc3_pcap_writer_context->atsc3_pcap_global_header.thiszone = 0;
+		atsc3_pcap_writer_context->atsc3_pcap_global_header.sigfigs = 0;
+		atsc3_pcap_writer_context->atsc3_pcap_global_header.snaplen = htonl(ATSC3_PCAP_GLOBAL_HEADER_SNAPLEN);
+		atsc3_pcap_writer_context->atsc3_pcap_global_header.network = htonl(ATSC3_PCAP_GLOBAL_HEADER_NETWORK);
+
+		fwrite((void *) &atsc3_pcap_writer_context->atsc3_pcap_global_header, ATSC3_PCAP_GLOBAL_HEADER_SIZE_BYTES, 1, atsc3_pcap_writer_context->pcap_fp);
+		fflush(atsc3_pcap_writer_context->pcap_fp);
+
+		atsc3_pcap_writer_context->pcap_file_pos = sizeof(atsc3_pcap_global_header_t);
+
+		atsc3_pcap_writer_context->has_written_atsc3_pcap_global_header = true;
+
+		gettimeofday(&atsc3_pcap_writer_context->first_packet_ts_timeval, NULL);
+		atsc3_pcap_writer_context->current_packet_wallclock_timeval = atsc3_pcap_writer_context->first_packet_ts_timeval;
+	} else {
+		gettimeofday(&atsc3_pcap_writer_context->current_packet_wallclock_timeval, NULL);
+	}
+
+	block_Rewind(packet);
+	atsc3_pcap_writer_context->current_packet_info.current_packet_ts_sec  = htonl(atsc3_pcap_writer_context->current_packet_wallclock_timeval.tv_sec);
+	atsc3_pcap_writer_context->current_packet_info.current_packet_ts_usec = htonl(atsc3_pcap_writer_context->current_packet_wallclock_timeval.tv_usec);
+
+	//jjustman-2022-07-12 - todo: sizeof(atsc3_pcap_writer_context->current_packet_info), remove "magic" numbers...
+	atsc3_pcap_writer_context->current_packet_info.captured_packet_len = htonl(14 + block_Len(packet));
+	atsc3_pcap_writer_context->current_packet_info.original_packet_len = htonl(14 + block_Len(packet));
+
+	fwrite((void*) &atsc3_pcap_writer_context->current_packet_info, 16, 1, atsc3_pcap_writer_context->pcap_fp);
+
+	atsc3_pcap_writer_context->atsc3_pcap_packet_ethernet_header.ethernet_type = htons(ATSC3_PCAP_PACKET_ETHERNET_HEADER_ETHERNET_TYPE);
+	fwrite((void*) &atsc3_pcap_writer_context->atsc3_pcap_packet_ethernet_header, 14, 1, atsc3_pcap_writer_context->pcap_fp);
+
+	fwrite(block_Get(packet), block_Len(packet), 1, atsc3_pcap_writer_context->pcap_fp);
+	atsc3_pcap_writer_context->pcap_write_packet_count++;
+	atsc3_pcap_writer_context->pcap_file_pos += 16 + atsc3_pcap_writer_context->current_packet_info.captured_packet_len;
+
+	return atsc3_pcap_writer_context;
+}
+
+atsc3_pcap_writer_context_t* atsc3_pcap_writer_context_close(atsc3_pcap_writer_context_t* atsc3_pcap_writer_context) {
+	if(atsc3_pcap_writer_context) {
+		if(atsc3_pcap_writer_context->pcap_fp) {
+			fclose(atsc3_pcap_writer_context->pcap_fp);
+		}
+
+		atsc3_pcap_writer_context->pcap_fp = NULL;
+	}
+}
+
+void atsc3_pcap_writer_context_free(atsc3_pcap_writer_context_t** atsc3_pcap_writer_context_p) {
+	if(atsc3_pcap_writer_context_p) {
+		atsc3_pcap_writer_context_t* atsc3_pcap_writer_context = *atsc3_pcap_writer_context_p;
+		if(atsc3_pcap_writer_context) {
+			if(atsc3_pcap_writer_context->pcap_file_name) {
+				free(atsc3_pcap_writer_context->pcap_file_name);
+				atsc3_pcap_writer_context->pcap_file_name = NULL;
+			}
+
+			if(atsc3_pcap_writer_context->pcap_fp) {
+				fclose(atsc3_pcap_writer_context->pcap_fp);
+				atsc3_pcap_writer_context->pcap_fp = NULL;
+			}
+//
+//			if(atsc3_pcap_writer_context->atsc3_pcap_packet_instance.current_pcap_packet) {
+//				block_Destroy(&atsc3_pcap_writer_context->atsc3_pcap_packet_instance.current_pcap_packet);
+//			}
+
+			free(atsc3_pcap_writer_context);
+		}
+		*atsc3_pcap_writer_context_p = NULL;
 	}
 }
