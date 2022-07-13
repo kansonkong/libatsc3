@@ -417,7 +417,7 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
 	if(lls_table_new->lls_table_id == CertificationData) {
 		//persist this CDT information as needed
 		if(!lls_slt_monitor->lls_latest_certification_data_table) {
-			_LLS_INFO("Adding new CertificationData table reference: %s", lls_table_new->certification_data);
+			_LLS_INFO("Adding new CertificationData table reference: %s", lls_table_new->certification_data.raw_certification_data_xml_fragment);
 			lls_slt_monitor->lls_latest_certification_data_table = lls_table_new;
 		} else if(lls_slt_monitor->lls_latest_certification_data_table->lls_group_id == lls_table_new->lls_group_id &&
 				  lls_slt_monitor->lls_latest_certification_data_table->lls_table_version != lls_table_new->lls_table_version) {

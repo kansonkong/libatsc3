@@ -158,7 +158,25 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
         	lls_dump_instance_table(lls_table);
         }
 #endif
-        //auto-assign our first ROUTE service id here
+
+	//jjustman-2022-07-12 - hack-ish workaround for non-dispatcher wired up with SignedMultiTable
+	if(lls_table && lls_table->lls_table_id == SignedMultiTable) {
+	  lls_table_t* my_smt_lls_table = NULL;
+	  for(int i=0; i < lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count && !my_smt_lls_table; i++) {
+	    atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
+	    //    atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor, atsc3_signed_multi_table_lls_payload->lls_table);
+	    if(atsc3_signed_multi_table_lls_payload->lls_table->lls_table_id == SLT) {
+	      my_smt_lls_table = atsc3_signed_multi_table_lls_payload->lls_table;
+	    }
+	  }
+
+	  if(my_smt_lls_table) {
+	    lls_table = my_smt_lls_table;
+	  }
+	}
+		
+	//auto-assign our first ROUTE service id here
+
         if(lls_table && lls_table->lls_table_id == SLT) {
             for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
                 atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
@@ -246,11 +264,18 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	#ifdef __MALLOC_DEBUGGING
 	mcheck(0);
 	#endif
-
+       
 				//persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
 				//the full packet has been recovered (e.g. no missing data units in the forward transmission)
 				if(atsc3_route_object) {
-					atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, matching_lls_sls_alc_monitor, atsc3_route_object);
+				  //jjustman-2022-07-12 - set our certification data for lls_slt_monitor for validation
+				    if(lls_slt_monitor->lls_latest_certification_data_table) {
+				      lls_slt_monitor->lls_sls_alc_monitor->atsc3_certification_data = &lls_slt_monitor->lls_latest_certification_data_table->certification_data;
+				    } else {
+				      lls_slt_monitor->lls_sls_alc_monitor->atsc3_certification_data = NULL;
+				    }
+
+				  atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, matching_lls_sls_alc_monitor, atsc3_route_object);
 					alc_packet_received_count++;
 
 	//				if(alc_packet_received_count > 10000) {
@@ -286,6 +311,7 @@ udp_packet_free:
     return udp_packet_free(&udp_packet);
 }
 
+#define __LOTS_OF_DEBUGGING__
 int main(int argc,char **argv) {
 
 #ifdef __MALLOC_DEBUGGING
@@ -295,24 +321,27 @@ int main(int argc,char **argv) {
 	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
 	_LLS_ALC_UTILS_INFO_ENABLED = 1;
 
-    _ALC_UTILS_DEBUG_ENABLED = 0;
-	_ALC_RX_DEBUG_ENABLED = 0;
-    _ALC_UTILS_DEBUG_ENABLED = 0;
+    _ALC_UTILS_DEBUG_ENABLED = 1;
+	_ALC_RX_DEBUG_ENABLED = 1;
+    _ALC_UTILS_DEBUG_ENABLED = 1;
 
     _ROUTE_OBJECT_INFO_ENABLED = 1;
-    _ROUTE_OBJECT_DEBUG_ENABLED = 0;
-    _ROUTE_OBJECT_TRACE_ENABLED = 0;
+    _ROUTE_OBJECT_DEBUG_ENABLED = 1;
+    _ROUTE_OBJECT_TRACE_ENABLED = 1;
 
     _SLS_ALC_FLOW_INFO_ENABLED = 1;
-    _SLS_ALC_FLOW_DEBUG_ENABLED = 0;
-    _SLS_ALC_FLOW_TRACE_ENABLED = 0;
+    _SLS_ALC_FLOW_DEBUG_ENABLED = 1;
+    _SLS_ALC_FLOW_TRACE_ENABLED = 1;
 
-    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
+    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 1;
 
-	
+    _ATSC3_SMIME_UTILS_INFO_ENABLED = 1;
+    _ATSC3_SMIME_UTILS_DEBUG_ENABLED = 1;
+    _ATSC3_SMIME_UTILS_TRACE_ENABLED = 1;
 #ifdef __LOTS_OF_DEBUGGING__
 	_LLS_INFO_ENABLED = 1;
 	_LLS_DEBUG_ENABLED = 1;
+	_LLS_TRACE_ENABLED = 1;
 
 	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
     _ALC_UTILS_DEBUG_ENABLED = 1;
