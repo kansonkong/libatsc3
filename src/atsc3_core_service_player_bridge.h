@@ -53,6 +53,8 @@ using namespace std;
 
 #include "atsc3_mmt_mfu_context_callbacks_default_jni.h"
 
+#include "atsc3_pcap_type.h"
+
 //runtime app interface includes (e.g. I/F for android, etc)
 #include "application/IAtsc3NdkApplicationBridge.h"
 #include "phy/IAtsc3NdkPHYBridge.h"

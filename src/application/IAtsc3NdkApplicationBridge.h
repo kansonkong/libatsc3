@@ -79,6 +79,7 @@ class IAtsc3NdkApplicationBridge {
         virtual bool atsc3_get_demod_pcap_capture() = 0;
         virtual void atsc3_set_demod_pcap_capture(bool enabled) = 0;
 
+        virtual atsc3_pcap_writer_context_t* atsc3_pcap_writer_context_get() = 0;
 };
 
 
