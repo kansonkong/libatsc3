@@ -593,43 +593,55 @@ bool Atsc3NdkApplicationBridge::atsc3_get_demod_pcap_capture() {
     return is_enabled_demod_pcap_capture;
 }
 
+#define ATSC3_NDK_APPLICATION_BRIDGE_PCAP_FILENAME_MAX_LEN 128
 void Atsc3NdkApplicationBridge::atsc3_set_demod_pcap_capture(bool new_state) {
     if(new_state) {
         if(!is_enabled_demod_pcap_capture) {
             //create a new pcap file handle here, and assign our header payload
 
-            char launch_timestamp_string[32] = {0};
+            char pcap_writer_filename_string[ATSC3_NDK_APPLICATION_BRIDGE_PCAP_FILENAME_MAX_LEN + 1] = {0};
             double launch_timestamp = gt();
 
-            snprintf((char*)&launch_timestamp_string, 31, "%s.%.4f.%s", "atsc3_demod_pcap_dump", launch_timestamp, ".pcap");
+			//jjustman-2022-07-12 - todo: add in frequency and PLP's here...
+            snprintf((char*)&pcap_writer_filename_string, ATSC3_NDK_APPLICATION_BRIDGE_PCAP_FILENAME_MAX_LEN, "%s.%.4f.demuxed.pcap", "atsc3_demod_pcap_dump", launch_timestamp);
 
-            demod_pcap_capture_fp = fopen(launch_timestamp_string, "w");
-            demod_pcap_capture_filename = string(launch_timestamp_string);
+            atsc3_pcap_writer_context = atsc3_pcap_writer_open_filename(pcap_writer_filename_string);
 
-            _NDK_APPLICATION_BRIDGE_INFO("atsc3_set_demod_pcap_capture: new_state is true, creating new pcap file: %s, fp: %p", demod_pcap_capture_filename.c_str(), demod_pcap_capture_fp);
+            _NDK_APPLICATION_BRIDGE_INFO("atsc3_set_demod_pcap_capture: new_state is true, creating new pcap file: %s, fp: %p", atsc3_pcap_writer_context->pcap_file_name, atsc3_pcap_writer_context->pcap_fp);
+
+			vector<uint8_t> plps_0_to_3_to_listen{0, 1, 2, 3};
+			atsc3_phy_notify_plp_selection_changed(plps_0_to_3_to_listen);
+			_NDK_APPLICATION_BRIDGE_INFO("atsc3_set_demod_pcap_capture: setting plps to listen to: %d, %d, %d, %d",
+										 plps_0_to_3_to_listen[0],
+										 plps_0_to_3_to_listen[1],
+										 plps_0_to_3_to_listen[2],
+										 plps_0_to_3_to_listen[3]);
+
 
             is_enabled_demod_pcap_capture = true;
         } else {
             //todo - we shouldn't do anything if we are already open...
-            _NDK_APPLICATION_BRIDGE_WARN("atsc3_set_demod_pcap_capture: new_state is true, but we are already enabled, file: %s, fp: %p", demod_pcap_capture_filename.c_str(), demod_pcap_capture_fp);
+            _NDK_APPLICATION_BRIDGE_WARN("atsc3_set_demod_pcap_capture: new_state is true, but we are already enabled, file: %s, fp: %p", atsc3_pcap_writer_context->pcap_file_name, atsc3_pcap_writer_context->pcap_fp);
 
         }
     } else {
-        _NDK_APPLICATION_BRIDGE_INFO("atsc3_set_demod_pcap_capture: new_state is false, closing out demod_pcap_file_name: %s", demod_pcap_capture_filename.c_str());
+        _NDK_APPLICATION_BRIDGE_INFO("atsc3_set_demod_pcap_capture: new_state is false, closing out demod_pcap_file_name: %s", atsc3_pcap_writer_context->pcap_file_name);
 
         //we should close out our file handle
-        if(demod_pcap_capture_fp) {
-            fclose(demod_pcap_capture_fp);
-            demod_pcap_capture_fp = nullptr;
-        }
+        if(atsc3_pcap_writer_context) {
+            atsc3_pcap_writer_context_close(atsc3_pcap_writer_context);
 
-        demod_pcap_capture_filename = "";
+            atsc3_pcap_writer_context_free(&atsc3_pcap_writer_context);
+        }
 
         is_enabled_demod_pcap_capture = false;
     }
 
 };
 
+atsc3_pcap_writer_context_t* Atsc3NdkApplicationBridge::atsc3_pcap_writer_context_get() {
+    return atsc3_pcap_writer_context;
+}
 
 
 //--------------------------------------------------------------------------
@@ -886,6 +898,8 @@ Java_org_ngbp_libatsc3_middleware_Atsc3NdkApplicationBridge_atsc3_1get_1demod_1p
     jboolean ret = apiAppBridge->atsc3_get_demod_pcap_capture();
     return ret;
 }
+
+
 
 extern "C"
 JNIEXPORT void JNICALL
