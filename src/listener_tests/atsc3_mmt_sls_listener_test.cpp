@@ -84,7 +84,8 @@ void mmtp_process_sls_from_payload(udp_packet_t *udp_packet, mmtp_signalling_pac
 }
 
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-
+	mmtp_packet_header_t* mmtp_packet_header = NULL;
+	
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
 	if(!udp_packet) {
 		return;
@@ -110,7 +111,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     if(matching_lls_slt_mmt_session) {
 
 		int8_t mmtp_si_parsed_message_count = 0;
-    	mmtp_packet_header_t* mmtp_packet_header = mmtp_parse_header_from_udp_packet(udp_packet);
+		mmtp_packet_header = mmtp_parse_header_from_udp_packet(udp_packet);
         if(mmtp_packet_header && mmtp_packet_header->mmtp_payload_type == 0x02) {
 
 			//jjustman-2021-09-15 - TODO: fix me for fragmented parsing processing, refactor from atsc3_mmt_context_stpp_depacketizer_test.cpp
@@ -137,9 +138,18 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				__INFO("mmt_signalling_message_parse_packet: TODO: inline mmtp_si fragment reassembly for si_fragmentation_indicator: %d", mmtp_signalling_packet->si_fragmentation_indicator );			
 			}
         }
-
-        return udp_packet_free(&udp_packet);
 	}
+
+cleanup:
+	if(mmtp_packet_header) {
+		mmtp_packet_header_free(&mmtp_packet_header);
+	}
+
+	if(udp_packet) {
+		udp_packet_free(&udp_packet);
+	}
+
+
 
 }
 
