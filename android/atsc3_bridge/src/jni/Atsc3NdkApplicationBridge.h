@@ -87,7 +87,9 @@ public:
     bool atsc3_get_demod_pcap_capture() override;
     void atsc3_set_demod_pcap_capture(bool enabled) override;
 
-private:
+    atsc3_pcap_writer_context_t* atsc3_pcap_writer_context_get() override;
+
+        private:
     JNIEnv* env = nullptr;
     jobject jni_instance_globalRef = nullptr;
     jclass jni_class_globalRef = nullptr;
@@ -101,9 +103,8 @@ private:
     std::vector<jobject> global_jobject_mfu_refs;
     std::vector<jobject> global_jobject_nal_refs;
 
-    bool    is_enabled_demod_pcap_capture = false;
-    string  demod_pcap_capture_filename = "";
-    FILE*   demod_pcap_capture_fp = nullptr;
+    bool                            is_enabled_demod_pcap_capture = false;
+    atsc3_pcap_writer_context_t*    atsc3_pcap_writer_context = nullptr;
 
 public:
     JavaVM* mJavaVM = nullptr;    // Java VM, if we don't have a pinned thread context for dispatch

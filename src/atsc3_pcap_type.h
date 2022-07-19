@@ -58,8 +58,16 @@ bytes	Name
 extern "C" {
 #endif
 
-#define ATSC3_PCAP_GLOBAL_HEADER_SIZE_BYTES 24
-//global header length: 24 bytes
+#define ATSC3_PCAP_GLOBAL_HEADER_SIZE_BYTES 			24
+#define ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER 			0xA1B2C3D4
+#define ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION 0xD4C3B2A1
+#define ATSC3_PCAP_GLOBAL_HEADER_MAJOR_VERSION_NUMBER	2
+#define ATSC3_PCAP_GLOBAL_HEADER_MINOR_VERSION_NUMBER	4
+#define ATSC3_PCAP_GLOBAL_HEADER_SNAPLEN				65535
+#define ATSC3_PCAP_GLOBAL_HEADER_NETWORK				1
+
+	//global header length: 24 bytes
+#pragma pack(push, 1)
 typedef struct atsc3_pcap_global_header {
 	uint32_t	magic_number;		//0xa1b2c3d4 (identical byte order), or 0xd4c3b2a1 (swapped)
 	uint16_t	version_major;		//2.4
@@ -72,6 +80,7 @@ typedef struct atsc3_pcap_global_header {
 
 #define ATSC3_PCAP_PACKET_HEADER_SIZE_BYTES 16
 //pcap packet header length: 16 bytes
+
 typedef struct atsc3_pcap_packet_header {
 	uint32_t	ts_sec;				//timestamp seconds
 	uint32_t	ts_usec;			//uSec of when this packet was captured
@@ -88,12 +97,14 @@ typedef struct uint48 {
 //__attribute__((packed));
 
 //pcap ethernet header: 14 bytes
+#define ATSC3_PCAP_PACKET_ETHERNET_HEADER_ETHERNET_TYPE 0x0800
+
 typedef struct atsc3_pcap_packet_ethernet_header {
 	uint48_t 	destination_mac_addr;
 	uint48_t 	source_mac_addr;
 	uint16_t	ethernet_type;
 
-} atsc3_pcap_ethernet_header_t;
+} atsc3_pcap_packet_ethernet_header_t;
 
 #define ATSC3_PCAP_ETH_HEADER_LENGTH 14
 #define ATSC3_PCAP_MIN_GLOBAL_AND_PACKET_HEADER_LENGTH 24+16
@@ -116,6 +127,7 @@ typedef struct atsc3_pcap_replay_context {
 
 	bool							has_read_atsc3_pcap_global_header;
 	atsc3_pcap_global_header_t		atsc3_pcap_global_header;
+	bool							atsc3_pcap_needs_endian_correction; //only if atsc3_pcap_global_header looks like ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION
 
 	uint32_t						pcap_read_packet_count;
 
@@ -133,9 +145,36 @@ typedef struct atsc3_pcap_replay_context {
 	uint32_t						last_packet_ts_usec;
 	uint32_t						current_packet_ts_sec;
 	uint32_t						current_packet_ts_usec;
-
-
 } atsc3_pcap_replay_context_t;
+
+
+typedef struct atsc3_pcap_writer_context {
+	char* 							pcap_file_name;
+
+	FILE* 							pcap_fp;
+
+	uint32_t						pcap_file_pos;
+
+	bool							has_written_atsc3_pcap_global_header;
+	atsc3_pcap_global_header_t		atsc3_pcap_global_header;
+
+	uint32_t						pcap_write_packet_count;
+
+	struct timeval 					first_packet_ts_timeval;
+
+	struct timeval 					current_packet_wallclock_timeval;
+
+	struct {
+		uint32_t					current_packet_ts_sec;
+		uint32_t					current_packet_ts_usec;
+		uint32_t					captured_packet_len;
+		uint32_t					original_packet_len;
+	} current_packet_info;
+
+	atsc3_pcap_packet_ethernet_header_t atsc3_pcap_packet_ethernet_header; //just leave this as null for now, but extra 12 bytes are needed for pcap header length
+} atsc3_pcap_writer_context_t;
+
+#pragma pack(pop)
 
 atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_new();
 
@@ -148,6 +187,13 @@ bool atsc3_pcap_replay_check_file_pos_is_eof(atsc3_pcap_replay_context_t* atsc3_
 
 void atsc3_pcap_replay_free(atsc3_pcap_replay_context_t** atsc3_pcap_replay_context_p);
 
+//jjustman-2022-07-12 - adding pcap_writer context support
+atsc3_pcap_writer_context_t* atsc3_pcap_writer_context_new();
+atsc3_pcap_writer_context_t* atsc3_pcap_writer_open_filename(const char* pcap_filename);
+atsc3_pcap_writer_context_t* atsc3_pcap_writer_iterate_packet(atsc3_pcap_writer_context_t* atsc3_pcap_writer_context, block_t* packet);
+atsc3_pcap_writer_context_t* atsc3_pcap_writer_context_close(atsc3_pcap_writer_context_t* atsc3_pcap_writer_context);
+
+void atsc3_pcap_writer_context_free(atsc3_pcap_writer_context_t** atsc3_pcap_writer_context_p);
 
 #if defined (__cplusplus)
 }

@@ -46,8 +46,8 @@ public class Atsc3NdkApplicationBridge extends Atsc3BridgeNdkStaticJniLoader
     public native AndroidSystemProperties atsc3_slt_alc_get_system_properties();      //clear ALC additional service listeners
 
     //jjustman-2022-07-11
-    public native Boolean atsc3_get_demod_pcap_capture();
-    public native void atsc3_set_demod_pcap_capture(Boolean enabled);
+    public native boolean atsc3_get_demod_pcap_capture();
+    public native void atsc3_set_demod_pcap_capture(boolean enabled);
 
     public Atsc3NdkApplicationBridge(IAtsc3NdkApplicationBridgeCallbacks iAtsc3NdkApplicationBridgeCallbacks) {
         mActivity = iAtsc3NdkApplicationBridgeCallbacks;
