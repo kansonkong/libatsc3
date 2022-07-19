@@ -802,6 +802,10 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
     //udp_packet_t* udp_packet = udp_packet_process_from_ptr_raw_ethernet_packet(block_Get(packet), packet->p_size);
     udp_packet_t* udp_packet = udp_packet_process_from_ptr(block_Get(packet), packet->p_size);
 
+    if(Atsc3NdkApplicationBridge_ptr->atsc3_get_demod_pcap_capture()) {
+        atsc3_pcap_writer_iterate_packet(Atsc3NdkApplicationBridge_ptr->atsc3_pcap_writer_context_get(), packet);
+    }
+
     if(!udp_packet) {
         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_bridge_process_packet_phy: after udp_packet_process_from_ptr: unable to extract packet size: %d, i_pos: %d, 0x%02x 0x%02x",
                 packet->p_size,
