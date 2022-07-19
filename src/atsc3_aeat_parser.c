@@ -19,6 +19,7 @@ int atsc3_aeat_table_populate_from_xml(lls_table_t* lls_table, xml_node_t* xml_r
     if(lls_table->aeat_table.aeat_xml_fragment_latest) {
         free(lls_table->aeat_table.aeat_xml_fragment_latest);
     }
+
     lls_table->aeat_table.aeat_xml_fragment_latest = calloc(lls_table->raw_xml.xml_payload_size+1, sizeof(char));
     memcpy(lls_table->aeat_table.aeat_xml_fragment_latest, lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
 
@@ -31,6 +32,14 @@ int atsc3_aeat_table_populate_from_xml(lls_table_t* lls_table, xml_node_t* xml_r
 
 	kvp_collection_t* aeat_attributes_collecton = kvp_collection_parse(aeat_attributes);
 	char* bsid_char = kvp_collection_get(aeat_attributes_collecton, "bsid");
+
+	if(aeat_attributes) {
+		free(aeat_attributes);
+	}
+
+	if(aeat_attributes_collecton) {
+		kvp_collection_free(aeat_attributes_collecton);
+	}
 
     return ret;
 }

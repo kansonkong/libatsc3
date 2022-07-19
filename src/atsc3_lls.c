@@ -607,7 +607,11 @@ void lls_table_free(lls_table_t** lls_table_p) {
         _LLS_TRACE("free: lls_create_table_type_instance: LLS table AEAT not supported yet");
         //jjustman-2019-09-18 - TODO - move this out of a union into *
         //atsc3_aeat_table_free(atsc3_aeat_table_t **atsc3_aeat_table_p)
-    } else if(lls_table->lls_table_id == OnscreenMessageNotification) {
+		//jjustman-2022-07-19 - TODO: fixme
+		if(lls_table->aeat_table.aeat_xml_fragment_latest) {
+			free(lls_table->aeat_table.aeat_xml_fragment_latest);
+		}
+	} else if(lls_table->lls_table_id == OnscreenMessageNotification) {
         _LLS_TRACE("free: lls_create_table_type_instance: LLS table OnscreenMessageNotification not supported yet");
 	}
 
