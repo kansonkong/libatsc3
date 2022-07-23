@@ -82,13 +82,17 @@ void mmtp_process_sls_from_payload(udp_packet_t *udp_packet, mmtp_signalling_pac
 
 	mmt_signalling_message_dump(mmtp_signalling_packet);
 }
-
+int processed_count = 0;
 void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
 	mmtp_packet_header_t* mmtp_packet_header = NULL;
 	
 	udp_packet_t* udp_packet = process_packet_from_pcap(user, pkthdr, packet);
 	if(!udp_packet) {
 		return;
+	}
+
+	if(processed_count++ > 10000) {
+		exit(0);
 	}
 
 	//drop mdNS
@@ -133,6 +137,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 					//dispatch our wired callbacks
 					mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet, mmtp_signalling_packet, atsc3_mmt_mfu_context);
+
+					mmtp_signalling_packet_free(&mmtp_signalling_packet);
 				}
 			} else {
 				__INFO("mmt_signalling_message_parse_packet: TODO: inline mmtp_si fragment reassembly for si_fragmentation_indicator: %d", mmtp_signalling_packet->si_fragmentation_indicator );			
