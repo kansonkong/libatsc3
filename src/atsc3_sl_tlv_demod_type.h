@@ -85,7 +85,8 @@ typedef struct atsc3_sl_tlv_payload {
     block_t*    alp_payload;                //extracted ALP payload buffer data
 	
 	//only set if __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ is true
-	atsc3_alp_packet_t* atsc3_alp_packet; 	//extract the atsc3_alp_packet in the TLV_payload_parser
+	//jjustman-2022-07-23 - don't keep a ref to our transient inline alp parser call
+	// atsc3_alp_packet_t* atsc3_alp_packet; 	//extract the atsc3_alp_packet in the TLV_payload_parser
 	
 } atsc3_sl_tlv_payload_t;
 

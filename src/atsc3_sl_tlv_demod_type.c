@@ -364,14 +364,13 @@ restart_parsing:
                 atsc3_sl_tlv_payload_metrics->total_tlv_packets_with_failed_extracted_alp_count++;
                 __SL_TLV_DEMOD_ERROR("FAILED ALP EXTRACTION: plp: %d, at buf: %p, tlv_alp_len: %d", atsc3_sl_tlv_payload->plp_number, buf, atsc3_sl_tlv_payload->alp_packet_size);
             } else {
-                atsc3_sl_tlv_payload->atsc3_alp_packet = atsc3_alp_packet;
 
                 alp_payload_end = block_Get(atsc3_sl_tlv_payload_unparsed_block);
                 //jjustman-2021-05-04 - gross...type promotion against pointer arithmetic https://www.eskimo.com/~scs/cclass/int/sx4cb.html
                 atsc3_sl_tlv_payload->alp_packet_size = alp_payload_end - alp_payload_start;
 
                 __SL_TLV_DEMOD_TRACE("atsc3_sl_tlv_payload: %p, atsc3_sl_tlv_payload->atsc3_alp_packet: %p, alp_payload_start: %p, alp_payload_end: %p, setting atsc3_sl_tlv_payload->alp_packet_size to: %d",
-                                     atsc3_sl_tlv_payload, atsc3_sl_tlv_payload->atsc3_alp_packet,
+                                     atsc3_sl_tlv_payload, atsc3_alp_packet,
                                      alp_payload_start, alp_payload_end,
                                      atsc3_sl_tlv_payload->alp_packet_size);
 
@@ -440,6 +439,8 @@ restart_parsing:
                         }
                     }
                 }
+				//jjustman-2022-07-23 - free our transient alp packet handle
+				atsc3_alp_packet_free(&atsc3_alp_packet);
             }
         } else {
             //jjustman-2021-05-04 - trust SL demod ALP parsing
@@ -510,9 +511,10 @@ void atsc3_sl_tlv_payload_free(atsc3_sl_tlv_payload_t** atsc3_sl_tlv_payload_p) 
         atsc3_sl_tlv_payload_t* atsc3_sl_tlv_payload = *atsc3_sl_tlv_payload_p;
         if(atsc3_sl_tlv_payload) {
             block_Destroy(&atsc3_sl_tlv_payload->alp_payload);
-            if(atsc3_sl_tlv_payload->atsc3_alp_packet) {
-                atsc3_alp_packet_free(&atsc3_sl_tlv_payload->atsc3_alp_packet);
-            }
+			//jjustman-2022-07-23 - don't keep a transient ref to our atsc3_alp_packet here...
+//            if(atsc3_sl_tlv_payload->atsc3_alp_packet) {
+//                atsc3_alp_packet_free(&atsc3_sl_tlv_payload->atsc3_alp_packet);
+//            }
             free(atsc3_sl_tlv_payload);
             atsc3_sl_tlv_payload = NULL;
         }
