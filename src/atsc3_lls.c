@@ -417,11 +417,11 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
 	if(lls_table_new->lls_table_id == CertificationData) {
 		//persist this CDT information as needed
 		if(!lls_slt_monitor->lls_latest_certification_data_table) {
-			_LLS_INFO("Adding new CertificationData table reference: %s", lls_table_new->certification_data.raw_certification_data_xml_fragment);
+			_LLS_INFO("Adding new CertificationData table reference: %s", lls_table_new->certification_data.raw_certification_data_xml_fragment->p_buffer);
 			lls_slt_monitor->lls_latest_certification_data_table = lls_table_new;
 		} else if(lls_slt_monitor->lls_latest_certification_data_table->lls_group_id == lls_table_new->lls_group_id &&
 				  lls_slt_monitor->lls_latest_certification_data_table->lls_table_version != lls_table_new->lls_table_version) {
-			_LLS_INFO("Updating new CertificationData table reference: %s", lls_table_new->certification_data.raw_certification_data_xml_fragment);
+			_LLS_INFO("Updating new CertificationData table reference: %s", lls_table_new->certification_data.raw_certification_data_xml_fragment->p_buffer);
 
 			lls_table_free(&lls_slt_monitor->lls_latest_certification_data_table);
 			lls_slt_monitor->lls_latest_certification_data_table = lls_table_new;
@@ -846,8 +846,6 @@ int atsc3_lls_build_certificationdata_table(lls_table_t* lls_table, xml_node_t* 
 
 			int toBeSignedData_child_node_count = xml_node_children(certificationData_child_node);
 
-			dump_xml_string(certificationData_child_node);
-
 			for(int j=0; j < toBeSignedData_child_node_count; j++) {
 				xml_node_t* child_row_node = xml_node_child(certificationData_child_node, j);
 				xml_string_t* child_row_node_xml_string = xml_node_name(child_row_node);
@@ -857,7 +855,7 @@ int atsc3_lls_build_certificationdata_table(lls_table_t* lls_table, xml_node_t* 
 					uint8_t* child_certificate_data_string = xml_string_clone(child_certificate_data);
 
 					atsc3_certification_data_to_be_signed_data_certificates_t* atsc3_certification_data_to_be_signed_data_certificates = atsc3_certification_data_to_be_signed_data_certificates_new();
-					atsc3_certification_data_to_be_signed_data_certificates->base64_payload = block_Promote(child_certificate_data_string);
+					atsc3_certification_data_to_be_signed_data_certificates->base64_payload = block_Promote((const char *)child_certificate_data_string);
 
 					atsc3_certification_data_to_be_signed_data_add_atsc3_certification_data_to_be_signed_data_certificates(&atsc3_certification_data->atsc3_certification_data_to_be_signed_data, atsc3_certification_data_to_be_signed_data_certificates);
 

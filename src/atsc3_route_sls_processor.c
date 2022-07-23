@@ -146,9 +146,9 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 					atsc3_smime_validation_context->certificate_payload = block_Alloc(0);
 					for(int i=0; i < lls_sls_alc_monitor->atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count; i++) {
 						atsc3_certification_data_to_be_signed_data_certificates_t* atsc3_certification_data_to_be_signed_data_certificates = lls_sls_alc_monitor->atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i];
-						block_Write(atsc3_smime_validation_context->certificate_payload, ATSC3_SMIME_UTILS_BEGIN_CERTIFICATE, strlen(ATSC3_SMIME_UTILS_BEGIN_CERTIFICATE));
+						block_Write(atsc3_smime_validation_context->certificate_payload, (const uint8_t*) ATSC3_SMIME_UTILS_BEGIN_CERTIFICATE, strlen(ATSC3_SMIME_UTILS_BEGIN_CERTIFICATE));
 						block_Append(atsc3_smime_validation_context->certificate_payload, atsc3_certification_data_to_be_signed_data_certificates->base64_payload);
-						block_Write(atsc3_smime_validation_context->certificate_payload, ATSC3_SMIME_UTILS_END_CERTIFICATE, strlen(ATSC3_SMIME_UTILS_END_CERTIFICATE));
+						block_Write(atsc3_smime_validation_context->certificate_payload, (const uint8_t*) ATSC3_SMIME_UTILS_END_CERTIFICATE, strlen(ATSC3_SMIME_UTILS_END_CERTIFICATE));
 
 					}
 					block_Rewind(atsc3_smime_validation_context->certificate_payload);
@@ -727,7 +727,7 @@ atsc3_route_dash_metadata_t* atsc3_route_sls_extract_cenc_pssh_metadata_if_avail
 				//xml_cenc_namespace_tag, chomp off the xmlns:
 				int matching_key_len = strlen(matching_key);
 				if(matching_key_len > 6) {
-					xml_cenc_namespace_tag = block_Duplicate_from_ptr(matching_key + 6, matching_key_len - 6);
+					xml_cenc_namespace_tag = block_Duplicate_from_ptr((uint8_t*)matching_key + 6, matching_key_len - 6);
 				}
 			}
 
@@ -735,7 +735,7 @@ atsc3_route_dash_metadata_t* atsc3_route_sls_extract_cenc_pssh_metadata_if_avail
 				//xml_dasif_namesapce_tag
 				int matching_key_len = strlen(matching_key);
 				if(matching_key_len > 6) {
-					xml_dashif_namesapce_tag = block_Duplicate_from_ptr(matching_key + 6, matching_key_len - 6);
+					xml_dashif_namesapce_tag = block_Duplicate_from_ptr((uint8_t*)matching_key + 6, matching_key_len - 6);
 				}
 			}
 
@@ -894,7 +894,7 @@ bool atsc3_route_sls_extract_cenc_pssh_metadata_walk_child(atsc3_route_dash_meta
 							uint8_t* cenc_pssh_value_string = xml_string_clone(cenc_pssh_value);
 
 							atsc3_route_dash_cenc_pssh_element_t* atsc3_route_dash_cenc_pssh_element = atsc3_route_dash_cenc_pssh_element_new();
-							atsc3_route_dash_cenc_pssh_element->raw_pssh_box_from_mpd = block_Promote(cenc_pssh_value_string);
+							atsc3_route_dash_cenc_pssh_element->raw_pssh_box_from_mpd = block_Promote((const char*)cenc_pssh_value_string);
 
 							//jjustman-2022-06-06 - TODO: extract out concatenated pssh boxes here as needed...
 
@@ -907,7 +907,7 @@ bool atsc3_route_sls_extract_cenc_pssh_metadata_walk_child(atsc3_route_dash_meta
 							uint8_t* dashif_laurl_value_string = xml_string_clone(dashif_laurl_value);
 
 							atsc3_route_dashif_laurl_t* atsc3_route_dashif_laurl = atsc3_route_dashif_laurl_new();
-							atsc3_route_dashif_laurl->license_server_url = block_Promote(dashif_laurl_value_string);
+							atsc3_route_dashif_laurl->license_server_url = block_Promote((const char*)dashif_laurl_value_string);
 
 							uint8_t* xml_attributes = xml_attributes_clone_node(contentprotection_node_child);
 							_ATSC3_ROUTE_SLS_PROCESSOR_DEBUG("dashif attributes: %s", xml_attributes);
