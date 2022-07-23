@@ -250,7 +250,7 @@ void atsc3_alp_packet_dump(atsc3_alp_packet_t* atsc3_alp_packet);
 void atsc3_alp_packet_free(atsc3_alp_packet_t** atsc3_alp_packet_p);
 void atsc3_alp_packet_free_alp_payload(atsc3_alp_packet_t* atsc3_alp_packet);
 void atsc3_link_mapping_table_free(atsc3_link_mapping_table_t** atsc3_link_mapping_table_p);
-
+void atsc3_link_mapping_table_free_atsc3_link_mapping_table_plp_internal(atsc3_link_mapping_table_t* atsc3_link_mapping_table);
 
 #define _ATSC3_ALP_TYPES_ERROR(...)   __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define _ATSC3_ALP_TYPES_WARN(...)    __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);

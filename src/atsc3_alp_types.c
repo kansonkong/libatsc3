@@ -76,13 +76,39 @@ void atsc3_alp_packet_free_alp_payload(atsc3_alp_packet_t* atsc3_alp_packet) {
 		}
 	}
 }
+//jjustman-2022-07-23 - todo - reimpl using atsc3_link_mapping_table_multicast_free
+void atsc3_link_mapping_table_free_atsc3_link_mapping_table_plp_internal(atsc3_link_mapping_table_t* atsc3_link_mapping_table) {
+	if(atsc3_link_mapping_table) {
+		for (int i = 0; i < atsc3_link_mapping_table->atsc3_link_mapping_table_plp_v.count; i++) {
+			atsc3_link_mapping_table_plp_t *atsc3_link_mapping_table_plp = atsc3_link_mapping_table->atsc3_link_mapping_table_plp_v.data[i];
+
+			for (int j = 0; j < atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.count; j++) {
+				atsc3_link_mapping_table_multicast_t *atsc3_link_mapping_table_multicast = atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.data[j];
+				if (atsc3_link_mapping_table_multicast) {
+					freesafe(atsc3_link_mapping_table_multicast);
+				}
+				atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.data[j] = NULL;
+			}
+
+			freesafe(atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.data);
+			atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.count = 0;
+			atsc3_link_mapping_table_plp->atsc3_link_mapping_table_multicast_v.size = 0;
+
+			freesafe(atsc3_link_mapping_table_plp);
+		}
+
+		freesafe(atsc3_link_mapping_table->atsc3_link_mapping_table_plp_v.data);
+		atsc3_link_mapping_table->atsc3_link_mapping_table_plp_v.count = 0;
+		atsc3_link_mapping_table->atsc3_link_mapping_table_plp_v.size = 0;
+	}
+}
 
 void atsc3_link_mapping_table_free(atsc3_link_mapping_table_t** atsc3_link_mapping_table_p) {
     if(atsc3_link_mapping_table_p) {
         atsc3_link_mapping_table_t* atsc3_link_mapping_table = *atsc3_link_mapping_table_p;
         if(atsc3_link_mapping_table) {
             //chain destructors
-            atsc3_link_mapping_table_free_atsc3_link_mapping_table_plp(atsc3_link_mapping_table);
+			atsc3_link_mapping_table_free_atsc3_link_mapping_table_plp_internal(atsc3_link_mapping_table);
             free(atsc3_link_mapping_table);
             atsc3_link_mapping_table = NULL;
         }
