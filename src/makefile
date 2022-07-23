@@ -32,6 +32,41 @@
 #
 # env ASAN_OPTIONS=detect_container_overflow=0
 
+#
+#ifeq ($(OS),Windows_NT)
+#    CCFLAGS += -D WIN32
+#    ifeq ($(PROCESSOR_ARCHITEW6432),AMD64)
+#        CCFLAGS += -D AMD64
+#    else
+#        ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+#            CCFLAGS += -D AMD64
+#        endif
+#        ifeq ($(PROCESSOR_ARCHITECTURE),x86)
+#            CCFLAGS += -D IA32
+#        endif
+#    endif
+#else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        HOST = "linux"
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        HOST = "osx"
+    endif
+    UNAME_P := $(shell uname -p)
+    ifeq ($(UNAME_P),x86_64)
+        CCFLAGS += -D AMD64
+    endif
+    ifneq ($(filter %86,$(UNAME_P)),)
+        CCFLAGS += -D IA32
+    endif
+    ifneq ($(filter arm%,$(UNAME_P)),)
+        CCFLAGS += -D ARM
+    endif
+#endif
+
+$(info host is ${HOST})
+
 CC=cc
 CXX=g++
 
@@ -55,18 +90,8 @@ LOCAL_LD_LIBS_OPENSSL=-L ../openssl/build_ssl/lib -lcrypto -lssl
 #jjustman-2020-08-17 - sorry, from OSX...
 SRT_PLATFORM_BUILD_DEFS=-DHAI_ENABLE_SRT=1 -DHAI_PATCH=1 -DHAVE_INET_PTON=1 -DOSX=1 -DSRT_ENABLE_APP_READER -DSRT_ENABLE_CLOSE_SYNCH -DSRT_ENABLE_ENCRYPTION -DSRT_ENABLE_VERBOSE_LOCK -DSRT_VERSION=\"1.4.1\" -DUSE_OPENSSL=1 -D_GNU_SOURCE
 
-#jjustman-2020-08-17 - sorry, from OSX - fixme..
-#		-L /usr/local/opt/openssl@1.1/lib \
-#		/Users/jjustman/Desktop/libatsc3/srt/build/lib/libsrt.a \
-#		-lssl -lcrypto \
-
-#LOCAL_LD_LIBS_SRT_PATH=-L ../srt/build/lib -L /usr/local/opt/openssl@1.1/lib 
-#LOCAL_LD_LIBS_SRT=-lsrt -lssl -lcrypto
-# libsrt.a
-
-LOCAL_LD_LIBS_SRT_PATH=-L ../srt/build/lib -L /usr/local/opt/openssl@1.1/lib 
+LOCAL_LD_LIBS_SRT_PATH=-L ../srt/build/lib -L ../openssl/build_ssl/lib
 LOCAL_LD_LIBS_SRT=../srt/build/lib/libsrt.a -lssl -lcrypto
-
 
 all: 	intermediate_lls \
 		intermediate_lls_asan \
@@ -121,18 +146,24 @@ clean:
 	-rm -f test/atsc3_route_dash_mpd_patch_test
 	-rm -f listener_tests/atsc3_mmt_context_callback_driver_test
 	-rm -f listener_tests/atsc3_alc_listener_test
+	-rm -f listener_tests/atsc3_alc_listener_test_noasan
 	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
 	-rm -f listener_tests/atsc3_lls_listener_test
+	-rm -f listener_tests/atsc3_lls_listener_test_noasan
 	-rm -f listener_tests/atsc3_mmt_listener_test
+	-rm -f listener_tests/atsc3_mmt_listener_test_noasan
 	-rm -f listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets
 	-rm -f listener_tests/atsc3_mmt_sls_listener_test
+	-rm -f listener_tests/atsc3_mmt_sls_listener_test_noasan
 	-rm -f listener_tests/atsc3_stltp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan	
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test
+	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test
-	-rm -f a324_tests/a324_dstp_lls_aeat_emission_test	
+	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan
+	-rm -f a324_tests/a324_dstp_lls_aeat_emission_test
 	-rm -f phy_tests/pcap_demuxed_virtual_phy_test
 	-rm -f phy_tests/pcap_demuxed_virtual_phy_test_noasan
 	-rm -f phy_tests/pcap_stltp_virtual_phy_test
@@ -141,6 +172,7 @@ clean:
 	-rm -f phy_tests/srt_stltp_virtual_phy_test_noasan	
 	-rm -f tools/atsc3_alc_listener_mde_writer
 	-rm -f tools/atsc3_alc_listener_mde_writer_asan
+	-rm -f tools/atsc3_alc_listener_mde_writer_noasan
 	-rm -f tools/atsc3_alc_listener_mde_writer_malloc_debug
 	-rm -f tools/atsc3_alc_listener_mde_writer_from_stltp_pcap
 	-rm -f tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan
@@ -264,17 +296,23 @@ unit_tests: test/atsc3_lmt_test \
 libmicrohttpd_tests: test/atsc3_libmicrohttpd_test
 
 listener_tests: listener_tests/atsc3_alc_listener_test \
+				listener_tests/atsc3_alc_listener_test_noasan \
 				listener_tests/atsc3_alc_listener_test_valgrind \
 				listener_tests/atsc3_lls_listener_test \
+				listener_tests/atsc3_lls_listener_test_noasan \
 				listener_tests/atsc3_mmt_listener_test \
+				listener_tests/atsc3_mmt_listener_test_noasan \
 				listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets \
 				listener_tests/atsc3_mmt_sls_listener_test  \
+				listener_tests/atsc3_mmt_sls_listener_test_noasan  \
 				listener_tests/atsc3_stltp_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test \
+				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test \
+				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan
 
 a324_tests: a324_tests/a324_dstp_lls_aeat_emission_test
 
@@ -1509,6 +1547,17 @@ listener_tests/atsc3_lls_listener_test: listener_tests/atsc3_lls_listener_test.c
 		-o listener_tests/atsc3_lls_listener_test
 
 
+# low level signal listener testing
+listener_tests/atsc3_lls_listener_test_noasan: listener_tests/atsc3_lls_listener_test.cpp libatsc3.o
+	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG) listener_tests/atsc3_lls_listener_test.cpp libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_lls_listener_test_noasan
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_lls_listener_test_noasan
+endif
+
 # stltp listener test
 listener_tests/atsc3_stltp_listener_test: listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o
 	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_stltp_listener_test.cpp libatsc3.o \
@@ -1544,6 +1593,17 @@ listener_tests/atsc3_mmt_sls_listener_test: listener_tests/atsc3_mmt_sls_listene
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_sls_listener_test
 
+
+listener_tests/atsc3_mmt_sls_listener_test_noasan: listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o
+	$(CXX) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_sls_listener_test_noasan
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_sls_listener_test_noasan
+endif
+
 # simple MMT listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 listener_tests/atsc3_mmt_listener_test: listener_tests/atsc3_mmt_listener_test.cpp libatsc3.o
 	$(CXX)  $(ASAN) -D __ISOBMFF_LIB=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_listener_test.cpp \
@@ -1551,6 +1611,17 @@ listener_tests/atsc3_mmt_listener_test: listener_tests/atsc3_mmt_listener_test.c
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_listener_test
+
+listener_tests/atsc3_mmt_listener_test_noasan: listener_tests/atsc3_mmt_listener_test.cpp libatsc3.o
+	$(CXX) -D __ISOBMFF_LIB=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_listener_test.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_listener_test_noasan
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_listener_test_noasan
+endif
 		
 # simple MMT listener that dumps all mmt packets to mpu/ files for tracing
 listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets: listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets.cpp libatsc3.o
@@ -1568,9 +1639,22 @@ listener_tests/atsc3_alc_listener_test: listener_tests/atsc3_alc_listener_test.c
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_alc_listener_test
 
+
+# simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
+listener_tests/atsc3_alc_listener_test_noasan: listener_tests/atsc3_alc_listener_test.cpp libatsc3.o
+	$(CXX) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_alc_listener_test.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_alc_listener_test_noasan
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_alc_listener_test_noasan
+endif
+
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 listener_tests/atsc3_alc_listener_test_valgrind: listener_tests/atsc3_alc_listener_test.cpp libatsc3.o
-	$(CXX)  $(ASAN) $(INCLUDE_PATHS) -D _TEST_RUN_VALGRIND_OSX_=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_alc_listener_test.cpp \
+	$(CXX) $(ASAN) $(INCLUDE_PATHS) -D _TEST_RUN_VALGRIND_OSX_=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_alc_listener_test.cpp \
 		libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
@@ -1587,6 +1671,18 @@ listener_tests/atsc3_mmt_context_mfu_depacketizer_test: listener_tests/atsc3_mmt
 		-o listener_tests/atsc3_mmt_context_mfu_depacketizer_test
 
 
+listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan: listener_tests/atsc3_mmt_context_mfu_depacketizer_test.cpp \
+		libatsc3.o
+	$(CXX) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_mfu_depacketizer_test.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan
+endif
+
 # stpp context depacketizer/callback testing
 
 listener_tests/atsc3_mmt_context_stpp_depacketizer_test: listener_tests/atsc3_mmt_context_stpp_depacketizer_test.cpp \
@@ -1596,6 +1692,21 @@ listener_tests/atsc3_mmt_context_stpp_depacketizer_test: listener_tests/atsc3_mm
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_mmt_context_stpp_depacketizer_test
+
+
+
+listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan: listener_tests/atsc3_mmt_context_stpp_depacketizer_test.cpp \
+		libatsc3.o
+	$(CXX) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_stpp_depacketizer_test.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan
+endif
+
 
 # this one has some ncurses inclusion to support 		
 # -D _TEST_RUN_VALGRIND_OSX_=true to disable pthread_create on osx due to issues with lldb startup bug
