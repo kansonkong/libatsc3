@@ -117,6 +117,11 @@ void mpi_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
 void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload);
 
+void mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump(mmt_atsc3_message_content_type_video_stream_properties_descriptor_t* mmt_atsc3_message_content_type_video_stream_properties_descriptor);
+void mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor);
+void mmt_atsc3_message_content_type_caption_asset_descriptor_dump(mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_message_content_type_caption_asset_descriptor);
+
+void mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL);
 
 /**
  * Internal MMT-SI processing methods
@@ -137,14 +142,16 @@ uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* m
 }
 #endif
 
-#define __MMSM_ERROR(...)   		__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
-#define __MMSM_ERROR_23008_1(...)  	if(_MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED) { __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);}
+#define __MMSM_ERROR(...)   			__LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define __MMSM_ERROR_23008_1(...)  		if(_MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED) 		{ __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);}
 
-#define __MMSM_WARN(...)   			__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
-#define __MMSM_INFO(...)   			if(_MMT_SIGNALLING_MESSAGE_INFO_ENABLED)  { __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
+#define __MMSM_WARN(...)   				__LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define __MMSM_INFO(...)   				if(_MMT_SIGNALLING_MESSAGE_INFO_ENABLED)  				{ __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__); }
     
-#define __MMSM_DEBUG(...)   		if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) { __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
-#define __MMSM_TRACE(...)   		if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) { __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+#define __MMSM_DEBUG(...)   			if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED)				{ __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__); }
+#define __MMSM_TRACE(...)   			if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) 				{ __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
+
+#define __MMTSM_DESCRIPTOR_TRACE(...)  	if(_MMT_SIGNALLING_MESSAGE_DESCRIPTOR_TRACE_ENABLED) 	{ __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__); }
 
 
 #endif /* ATSC3_MMT_SIGNALLING_MESSAGE_H */

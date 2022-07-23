@@ -47,7 +47,7 @@ restart_parsing:
 
     //our TLV header must be at least 188 bytes to parse
     if(buf_end - buf_start < 188) {
-    	__SL_TLV_DEMOD_WARN("atsc3_sl_tlv_payload_parse_from_block_t: remaining payload length is less than TLV 188 bytes: %d", (buf_end - buf_start));
+    	__SL_TLV_DEMOD_WARN("atsc3_sl_tlv_payload_parse_from_block_t: remaining payload length is less than TLV 188 bytes: %ld", (buf_end - buf_start));
     	return NULL;
     }
 

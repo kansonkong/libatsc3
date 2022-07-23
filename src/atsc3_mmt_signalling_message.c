@@ -11,6 +11,8 @@ int _MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED = 0;
 int _MMT_SIGNALLING_MESSAGE_INFO_ENABLED = 1;
 int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
 int _MMT_SIGNALLING_MESSAGE_TRACE_ENABLED = 0;
+
+int _MMT_SIGNALLING_MESSAGE_DESCRIPTOR_TRACE_ENABLED = 0;
 //next level deeper of debugging is
 //#define _MMT_SIGNALLING_MESSAGE_DUMP_HEX_PAYLOAD
 
@@ -1075,7 +1077,7 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 											uint32_t sei_nut_alloc_size = 8 * (mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_length_minus1[e] + 1);
 											__MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR: SEI: %d, block_Read_uint8_varlen size for SEI_NUT_data is size: %d", e, sei_nut_alloc_size);
 																					
-											mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data = block_Read_uint8_varlen(src, sei_nut_alloc_size);
+											mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data[e] = block_Read_uint8_varlen(src, sei_nut_alloc_size);
 										}
 									} else {
 										mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.reserved_7_tf = block_Read_uint8_bitlen(src, 7);
@@ -1551,199 +1553,28 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 	if(mmt_atsc3_message_payload->mmt_atsc3_held_message) {
         __MMSM_DEBUG("mmt_atsc3_held_message: HELD message:\n%s", mmt_atsc3_message_payload->mmt_atsc3_held_message->held_message->p_buffer);
 	}
-	
-	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
-	if(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor) {
-	 __MMSM_DEBUG("mmt_atsc3_message_payload: mmt_atsc3_message_content_type_caption_asset_descriptor: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor,
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.descriptor_tag,
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.descriptor_length,
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.number_of_assets);
 
-		 for(int i=0; i < mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.number_of_assets; i++) {
-			 mmt_atsc3_message_content_type_caption_asset_descriptor_asset_t* mmt_atsc3_message_content_type_caption_asset_descriptor_asset = mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.data[i];
-			 __MMSM_DEBUG(" asset idx: %d, asset len: %d, assset: %s", i, mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id_length,
-						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id_length > 0 ? (char*)mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id : "(null)");
-
-			 __MMSM_DEBUG(" asset idx: %d, language_length: %d, language: %s", i, mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length,
-						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length > 0 ? (char*)mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language : "(null)");
-
-			 
-			 __MMSM_DEBUG(" 	role: %d, aspect_ratio: %d, easy_reader: %d, profile: %d, flag_3d_support: %d",
-						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->role,
-						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->aspect_ratio,
-						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->easy_reader,
-						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->profile,
-						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->flag_3d_support);
-		 }
-	}
-	
-	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR
-	if(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor) {
-	 __MMSM_DEBUG("mmt_atsc3_message_payload: mmt_atsc3_message_content_type_audio_stream_properties_descriptor: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor,
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.descriptor_tag,
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.descriptor_length,
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.number_of_assets);
-
-		 for(int i=0; i < mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.number_of_assets; i++) {
-			 mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset = mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.data[i];
-			 __MMSM_DEBUG(" asset idx: %d, asset len: %d, assset: %s", i, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id_length,
-						  mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id_length > 0 ? (char*)mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id : "(null)");
-//			jjustman-2021-09-13 - todo - iterate over num_presentations
-//			 __MMSM_DEBUG(" asset idx: %d, language_length: %d, language: %s", i, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->language_header.language_length,
-//						  mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset-> language_header.language_length > 0 ? (char*)mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->language_header.language : "(null)");
-//
-//
-//			 __MMSM_DEBUG(" 	role: %d, aspect_ratio: %d, easy_reader: %d, profile: %d, flag_3d_support: %d",
-//						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->role,
-//						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->aspect_ratio,
-//						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->easy_reader,
-//						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->profile,
-//						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->flag_3d_support);
-		 }
-	}
-						
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR
 	if(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_video_stream_properties_descriptor) {
-	 __MMSM_DEBUG("mmt_atsc3_message_payload: mmt_atsc3_message_content_type_video_stream_properties_descriptor: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_video_stream_properties_descriptor,
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.descriptor_tag,
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.descriptor_length,
-			 mmt_atsc3_message_payload->mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.number_of_assets);
+		mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_video_stream_properties_descriptor);
+	}
 
-		 for(int i=0; i < mmt_atsc3_message_payload->mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.number_of_assets; i++) {
-			 mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset = mmt_atsc3_message_payload->mmt_atsc3_message_content_type_video_stream_properties_descriptor->mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_v.data[i];
-			 __MMSM_DEBUG(" asset idx: %d, asset len: %d, assset: %s", i, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id_length,
-						  mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id_length > 0 ? (char*)mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id : "(null)");
-//
-//			 __MMSM_DEBUG(" asset idx: %d, language_length: %d, language: %s", i, mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length,
-//						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length > 0 ? (char*)mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language : "(null)");
-//
-//
-//			 __MMSM_DEBUG(" 	role: %d, aspect_ratio: %d, easy_reader: %d, profile: %d, flag_3d_support: %d",
-//						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->role,
-//						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->aspect_ratio,
-//						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->easy_reader,
-//						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->profile,
-//						  mmt_atsc3_message_content_type_caption_asset_descriptor_asset->flag_3d_support);
-		 }
+	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR
+	if(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor) {
+		mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor);
+	}
+
+	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
+	if(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor) {
+		mmt_atsc3_message_content_type_caption_asset_descriptor_dump(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor);
 	}
 
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL
 	if(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL) {
-		__MMSM_DEBUG("mmt_atsc3_message_payload: mmt_atsc3_message_content_type_security_properties_descriptor_LAURL: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
-				mmt_atsc3_message_payload->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL,
-				mmt_atsc3_message_payload->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->descriptor_header.descriptor_tag,
-				mmt_atsc3_message_payload->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->descriptor_header.descriptor_length,
-				mmt_atsc3_message_payload->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->descriptor_header.number_of_assets);
-
-		for(int i=0; i < mmt_atsc3_message_payload->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_v.count; i++) {
-			mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset = mmt_atsc3_message_payload->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_v.data[i];
-			__MMSM_DEBUG(" asset idx: %d, asset len: %d, assset: %s", i, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->asset_header.asset_id_length,
-					mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->asset_header.asset_id_length > 0 ? (char*)mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->asset_header.asset_id : "(null)");
-
-			__MMSM_DEBUG(" 	scheme_code_present: %d, default_KID_present: %d, license_info_present: %d",
-					mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->scheme_code_present,
-					mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_present,
-					mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->license_info_present);
-
-			if(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->scheme_code_present) {
-				__MMSM_DEBUG(" 	scheme_code: %s", mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->scheme_code);
-			}
-
-			if(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_present) {
-				__MMSM_DEBUG(" 	default_KID_length: %d, default_KID:",
-						mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length);
-				if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
-					printf(" ");
-					for(int hex=0; hex < mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length ; hex++) {
-						printf("%02x", mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID[hex]);
-					}
-					printf("\n");
-				}
-
-			}
-
-			if(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->license_info_present) {
-				__MMSM_DEBUG(" 	num_of_license_info: %d", mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->number_of_license_info);
-
-				for(int j=0; j < mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->number_of_license_info; j++) {
-					mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info = mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info_v.data[j];
-					__MMSM_DEBUG("    idx: %d, ptr: %p, license_type: %d, LA_URL_length: %d, LA_URL:\n%s",
-							j, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info,
-							mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->license_type,
-							mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->LA_URL_length,
-							mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->LA_URL_length > 0 ? (char*)mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->LA_URL : "(null)");
-
-
-				}
-			}
-
-			mmt_si_security_properties_descriptor_t* mmt_si_security_properties_descriptor = &mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->mmt_si_security_properties_descriptor;
-			__MMSM_DEBUG("    mm_si_security_properties_descriptor header: tag: 0x%04x, len: %d, security_system_count: %d, system_provider_url_flag: %d",
-					mmt_si_security_properties_descriptor->descriptor_header.descriptor_tag,
-					mmt_si_security_properties_descriptor->descriptor_header.descriptor_length,
-					mmt_si_security_properties_descriptor->security_system_count,
-					mmt_si_security_properties_descriptor->system_provider_url_flag);
-
-			if(mmt_si_security_properties_descriptor->system_provider_url_flag) {
-				__MMSM_DEBUG(" 	system_provider_url_flag_length: %d, system_provider_url:\n%s",
-						mmt_si_security_properties_descriptor->system_provider_url_flag,
-						mmt_si_security_properties_descriptor->system_provider_url_flag > 0 ? (char*)mmt_si_security_properties_descriptor->system_provider_url : "(null)");
-
-			}
-
-			for(int j=0; j < mmt_si_security_properties_descriptor->security_system_count; j++) {
-				mmt_si_security_properties_descriptor_system_t* mmt_si_security_properties_descriptor_system = mmt_si_security_properties_descriptor->mmt_si_security_properties_descriptor_system_v.data[j];
-				__MMSM_DEBUG("    mmt_si_security_properties_descriptor_system: idx: %d, ptr: %p, kid_count: %d, system_id:",
-						j, mmt_si_security_properties_descriptor_system,
-						mmt_si_security_properties_descriptor_system->kid_count);
-
-                if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
-                    printf(" ");
-                    for (int hex = 0; hex < 16; hex++) {
-                        printf("%02x", mmt_si_security_properties_descriptor_system->system_id[hex]);
-                    }
-
-                    printf("\n");
-                }
-
-				for(int k=0; k < mmt_si_security_properties_descriptor_system->kid_count; k++) {
-
-					mmt_si_security_properties_descriptor_kid_t* mmt_si_security_properties_descriptor_kid = mmt_si_security_properties_descriptor_system->mmt_si_security_properties_descriptor_kid_v.data[k];
-					__MMSM_DEBUG("         kid: idx: %d, ptr: %p, key:", k, mmt_si_security_properties_descriptor_kid);
-
-					if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
-						printf(" ");
-						for(int hex=0; hex < 16; hex++) {
-							printf("%02x", mmt_si_security_properties_descriptor_kid->kid[hex]);
-						}
-						printf("\n");
-					}
-
-				}
-
-
-
-				__MMSM_DEBUG("         data_size: %d, data:", mmt_si_security_properties_descriptor_system->data_size);
-
-				if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) {
-					printf(" ");
-					for(int hex=0; hex < mmt_si_security_properties_descriptor_system->data_size; hex++) {
-						printf("%02x", mmt_si_security_properties_descriptor_system->data[hex]);
-					}
-					printf("\n");
-				}
-
-			}
-
-
-		}
-
+		mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL);
 	}
-
 }
+
 
 
 uint8_t* si_message_not_supported(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
@@ -2033,5 +1864,407 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 	}
 
 }
+
+void mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump(mmt_atsc3_message_content_type_video_stream_properties_descriptor_t* mmt_atsc3_message_content_type_video_stream_properties_descriptor) {
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump ------------ START");
+
+	__MMSM_DEBUG("mmt_atsc3_message_payload: mmt_atsc3_message_content_type_video_stream_properties_descriptor: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
+				 mmt_atsc3_message_content_type_video_stream_properties_descriptor,
+				 mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.descriptor_tag,
+				 mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.descriptor_length,
+				 mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.number_of_assets);
+
+	for(int i=0; i < mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.number_of_assets; i++) {
+		mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset = mmt_atsc3_message_content_type_video_stream_properties_descriptor->mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_v.data[i];
+		__MMTSM_DESCRIPTOR_TRACE("\tasset_idx\t%d\tasset_len\t%d\tassset\t%s", i, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id_length,
+					 mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id_length > 0 ? (char*)mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header.asset_id : "(null)");
+
+		__MMTSM_DESCRIPTOR_TRACE("codec_code\t%c%c%c%c",  mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->codec_code[0],
+									  mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->codec_code[1],
+									  mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->codec_code[2],
+									  mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->codec_code[3]);
+
+		__MMTSM_DESCRIPTOR_TRACE("temporal_scalability_present\t%d",mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_present);
+		__MMTSM_DESCRIPTOR_TRACE("scalability_info_present\t%d",mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->scalability_info_present);
+		__MMTSM_DESCRIPTOR_TRACE("multiview_info_present\t%d",mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info_present);
+		__MMTSM_DESCRIPTOR_TRACE("res_cf_bd_info_present\t%d",mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info_present);
+		__MMTSM_DESCRIPTOR_TRACE("pr_info_present\t%d",mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info_present);
+		__MMTSM_DESCRIPTOR_TRACE("br_info_present\t%d",mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info_present);
+		__MMTSM_DESCRIPTOR_TRACE("color_info_present\t%d",mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info_present);
+		__MMTSM_DESCRIPTOR_TRACE("reserved_1\t%d\t(expected reserved==1)",mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->reserved_1);
+
+		if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_present) {
+			__MMTSM_DESCRIPTOR_TRACE("temporal_scalability_info.max_sub_layers_instream\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.max_sub_layers_instream);
+			__MMTSM_DESCRIPTOR_TRACE("temporal_scalability_info.sub_layer_profile_tier_level_info_present\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.sub_layer_profile_tier_level_info_present);
+			__MMTSM_DESCRIPTOR_TRACE("temporal_scalability_info.temporal_filter_present\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.temporal_filter_present);
+
+			__MMTSM_DESCRIPTOR_TRACE("temporal_scalability_info.tid_max\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.tid_max);
+			__MMTSM_DESCRIPTOR_TRACE("temporal_scalability_info.tid_min\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.tid_min);
+
+			if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.temporal_filter_present) {
+				__MMTSM_DESCRIPTOR_TRACE("temporal_scalability_info.tfweight\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.tfweight);
+			} else {
+				__MMTSM_DESCRIPTOR_TRACE("temporal_scalability_info.reserved2\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.reserved2);
+			}
+		}
+
+		if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->scalability_info_present) {
+			__MMTSM_DESCRIPTOR_TRACE("scalability_info.asset_layer_id\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->scalability_info.asset_layer_id);
+			__MMTSM_DESCRIPTOR_TRACE("scalability_info.reserved2 \t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->scalability_info.reserved2);
+		}
+
+
+		if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info_present) {
+			__MMTSM_DESCRIPTOR_TRACE("multiview_info.view_nuh_layer_id \t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.view_nuh_layer_id);
+			__MMTSM_DESCRIPTOR_TRACE("multiview_info.view_pos\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.view_pos);
+			__MMTSM_DESCRIPTOR_TRACE("multiview_info.reserved_4\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.reserved_4);
+
+			__MMTSM_DESCRIPTOR_TRACE("multiview_info.min_disp_with_offset\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.min_disp_with_offset);
+			__MMTSM_DESCRIPTOR_TRACE("multiview_info.max_disp_range\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.max_disp_range);
+			__MMTSM_DESCRIPTOR_TRACE("multiview_info.reserved_2\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->multiview_info.reserved_2);
+		}
+
+		if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info_present) {
+			//res_cf_bd_prop_info
+			__MMTSM_DESCRIPTOR_TRACE("res_cf_bd_info.pic_width_in_luma_samples\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.pic_width_in_luma_samples);
+			__MMTSM_DESCRIPTOR_TRACE("res_cf_bd_info.pic_height_in_luma_samples\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.pic_height_in_luma_samples);
+			__MMTSM_DESCRIPTOR_TRACE("res_cf_bd_info.chroma_format_idc\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.chroma_format_idc);
+
+
+			if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.chroma_format_idc == 3) {
+				__MMTSM_DESCRIPTOR_TRACE("res_cf_bd_info.separate_colour_plane_flag\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.separate_colour_plane_flag);
+				__MMTSM_DESCRIPTOR_TRACE("res_cf_bd_info.reserved_3\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.reserved_3);
+			} else {
+				//reserved:4
+				__MMTSM_DESCRIPTOR_TRACE("res_cf_bd_info.reserved_4\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.reserved_4);
+			}
+
+			__MMTSM_DESCRIPTOR_TRACE("res_cf_bd_info.video_still_present\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.video_still_present);
+			__MMTSM_DESCRIPTOR_TRACE("res_cf_bd_info.video_24hr_pic_present\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.video_24hr_pic_present);
+
+			__MMTSM_DESCRIPTOR_TRACE("res_cf_bd_info.bit_depth_luma_minus8\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.bit_depth_luma_minus8);
+			__MMTSM_DESCRIPTOR_TRACE("res_cf_bd_info.bit_depth_chroma_minus8\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->res_cf_bd_info.bit_depth_chroma_minus8);
+		}
+
+
+		if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info_present) {
+			//pr_info(...)
+			if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.sub_layer_profile_tier_level_info_present) {
+				__MMTSM_DESCRIPTOR_TRACE("temporal_scalability_info.sub_layer_profile_tier_level_info_present\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.sub_layer_profile_tier_level_info_present);
+
+				//pr_info(max_sub_layers_instream-1)
+				for(int p=0; p < mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.max_sub_layers_instream-1; p++) {
+					__MMTSM_DESCRIPTOR_TRACE("pr_info.picture_rate_code[%d]\t0x%02x", p, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info.picture_rate_code[p]);
+					__MMTSM_DESCRIPTOR_TRACE("pr_info.average_picture_rate[%d]\t0x%02x", p, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info.average_picture_rate[p]);
+				}
+			} else {
+				__MMTSM_DESCRIPTOR_TRACE("pr_info.picture_rate_code[0]\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info.picture_rate_code[0]);
+				__MMTSM_DESCRIPTOR_TRACE("pr_info.average_picture_rate[0]\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->pr_info.average_picture_rate[0]);
+			}
+		}
+
+		if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info_present) {
+			//br_info(...)
+			if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.sub_layer_profile_tier_level_info_present) {
+				for(int p=0; p < mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->temporal_scalability_info.max_sub_layers_instream-1; p++) {
+					__MMTSM_DESCRIPTOR_TRACE("br_info.picture_rate_code[%d]\t0x%02x", p, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info.average_bitrate[p]);
+					__MMTSM_DESCRIPTOR_TRACE("br_info.maximum_bitrate[%d]\t0x%02x", p, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info.maximum_bitrate[p]);
+				}
+			} else {
+				__MMTSM_DESCRIPTOR_TRACE("br_info.picture_rate_code[0]\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info.average_bitrate[0]);
+				__MMTSM_DESCRIPTOR_TRACE("br_info.average_picture_rate[0]\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->br_info.maximum_bitrate[0]);
+			}
+		}
+
+
+		if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info_present) {
+			//color_info()
+			__MMTSM_DESCRIPTOR_TRACE("color_info.colour_primaries\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.colour_primaries);
+			__MMTSM_DESCRIPTOR_TRACE("color_info.transfer_characteristics\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.transfer_characteristics);
+			__MMTSM_DESCRIPTOR_TRACE("color_info.matrix_coeffs\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.matrix_coeffs);
+
+			if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.colour_primaries >= 9) {
+				__MMTSM_DESCRIPTOR_TRACE("color_info.cg_compatibility\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.cg_compatibility);
+				__MMTSM_DESCRIPTOR_TRACE("color_info.reserved_7_cp\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.reserved_7_cp);
+			}
+
+			if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.transfer_characteristics >= 16) {
+				__MMTSM_DESCRIPTOR_TRACE("color_info.eotf_info_present\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info_present);
+
+				if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info_present) {
+					__MMTSM_DESCRIPTOR_TRACE("color_info.eotf_info_len_minus1\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info_len_minus1);
+
+					__MMTSM_DESCRIPTOR_TRACE("color_info.eotf_info.num_SEIs_minus1\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.num_SEIs_minus1 );
+					for(int e=0; e < mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.num_SEIs_minus1 ; e++) {
+						//jjustman-2022-07-22 - todo - fix me for full eotf dump data
+						__MMTSM_DESCRIPTOR_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR: SEI: %d, block_Read_uint8_varlen size for SEI_NUT_data is size: %d",
+												 e,
+												 mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_length_minus1[e]);
+						for(int j=0; j < mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_length_minus1[e]; j++) {
+							__MMTSM_DESCRIPTOR_TRACE("0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data[e][j]);
+						}
+
+					}
+				} else {
+					__MMTSM_DESCRIPTOR_TRACE("color_info.reserved_7_tf\t0x%02x", mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.reserved_7_tf);
+				}
+			}
+		}
+
+		//jjustman-2022-07-22 - todo: dump remainder of h265 varlen data
+	}
+
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump ------------ END");
+
+}
+
+
+
+void mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor) {
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump ------------ START");
+
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump: mmt_atsc3_message_content_type_audio_stream_properties_descriptor: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
+				 mmt_atsc3_message_content_type_audio_stream_properties_descriptor,
+				 mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.descriptor_tag,
+				 mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.descriptor_length,
+				 mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.number_of_assets);
+
+	for(int i=0; i < mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.number_of_assets; i++) {
+		mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset = mmt_atsc3_message_content_type_audio_stream_properties_descriptor->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.data[i];
+		__MMTSM_DESCRIPTOR_TRACE("asset_idx\t%d\tasset_len\t%d\tassset\t%s", i, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id_length,
+					 mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id_length > 0 ? (char*)mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id : "(null)");
+
+
+		__MMTSM_DESCRIPTOR_TRACE("codec_code\t%c%c%c%c",
+								 mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->codec_code[0],
+								 mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->codec_code[1],
+								 mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->codec_code[2],
+								 mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->codec_code[3]);
+
+		__MMTSM_DESCRIPTOR_TRACE("num_presentations\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->num_presentations);
+		__MMTSM_DESCRIPTOR_TRACE("multi_stream_info_present\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->multi_stream_info_present);
+		__MMTSM_DESCRIPTOR_TRACE("emergency_info_time_present\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->emergency_info_time_present);
+		__MMTSM_DESCRIPTOR_TRACE("reserved_6\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->reserved_6);
+
+
+		for (int j=0; j < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->num_presentations; j++) {
+			mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation = mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_v.data[j];
+			__MMTSM_DESCRIPTOR_TRACE("presentation_idx\t%d\tpresentation_id\t0x%02x", j, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->presentation_id);
+
+			__MMTSM_DESCRIPTOR_TRACE("interactivity_enabled\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->interactivity_enabled);
+			__MMTSM_DESCRIPTOR_TRACE("profile_channel_config_present\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->profile_channel_config_present);
+			__MMTSM_DESCRIPTOR_TRACE("profile_long\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->profile_long);
+			__MMTSM_DESCRIPTOR_TRACE("channel_config_long\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->channel_config_long);
+			__MMTSM_DESCRIPTOR_TRACE("audio_rendering_info_present\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->audio_rendering_info_present);
+			__MMTSM_DESCRIPTOR_TRACE("language_present\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->language_present);
+			__MMTSM_DESCRIPTOR_TRACE("accessibility_role_present\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->accessibility_role_present);
+			__MMTSM_DESCRIPTOR_TRACE("label_present\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_present);
+
+			//profile channel config present
+			if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->profile_channel_config_present) {
+				//profile level indication
+				if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->profile_long) {
+					__MMTSM_DESCRIPTOR_TRACE("profile_level_indication.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_long_ac4.bitstream_version\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->profile_level_indication.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_long_ac4.bitstream_version);
+					__MMTSM_DESCRIPTOR_TRACE("profile_level_indication.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_long_ac4.presentation_version\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->profile_level_indication.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_long_ac4.presentation_version);
+					__MMTSM_DESCRIPTOR_TRACE("profile_level_indication.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_long_ac4.mdcompat \t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->profile_level_indication.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_long_ac4.mdcompat );
+					__MMTSM_DESCRIPTOR_TRACE("profile_level_indication.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_long_ac4.reserved_6\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_present);
+				} else {
+					__MMTSM_DESCRIPTOR_TRACE("profile_level_indication.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_mpeg_h.flags\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->profile_level_indication.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_profile_level_indication_mpeg_h.flags);
+				}
+
+				//audio channel config
+				if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->channel_config_long) {
+					__MMTSM_DESCRIPTOR_TRACE("mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->audio_channel_config.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_long_ac4.flags[0,1,2]\t0x%02x\t0x%02x\t0x%02x",
+											mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->audio_channel_config.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_long_ac4.flags[0],
+											mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->audio_channel_config.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_long_ac4.flags[1],
+											mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->audio_channel_config.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_long_ac4.flags[2]);
+				} else {
+					__MMTSM_DESCRIPTOR_TRACE("audio_channel_config.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_mpeg_h.channel_configuration\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->audio_channel_config.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_mpeg_h.channel_configuration);
+					__MMTSM_DESCRIPTOR_TRACE("audio_channel_config.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_mpeg_h.reserved_2\t0x%02x", mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->audio_channel_config.mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_audio_channel_config_mpeg_h.reserved_2);
+				}
+			}
+
+			//audio rendering info present
+			if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->audio_rendering_info_present) {
+				__MMTSM_DESCRIPTOR_TRACE("audio_rendering_indication\t0x%02x",mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->audio_rendering_indication);
+			}
+
+			//langauge present
+			if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->language_present) {
+
+				for(int k=0; k < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->num_languages_minus1 + 1; k++) {
+					mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language = mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_v.data[k];
+					__MMTSM_DESCRIPTOR_TRACE("language\tlanguage_present\t%d\t0x%02x\t%s", k,
+											 mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id[0],
+											 mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language );
+				}
+			}
+
+			//accessibility_role_present
+			if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->accessibility_role_present) {
+//				for(int k=0; k < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->num_languages_minus1 + 1; k++) {
+//					mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->accessibility[k] = block_Read_uint8(src);
+//				}
+
+				//jjustman-2022-07-22 - todo - dump full accessibility [] size
+				__MMTSM_DESCRIPTOR_TRACE("accessibility\t%s",mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->accessibility);
+				__MMTSM_DESCRIPTOR_TRACE("role\t0x%02x",mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->role);
+
+			}
+
+			//label present
+			if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_present) {
+				__MMTSM_DESCRIPTOR_TRACE("label_data_byte\t%s",mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_data_byte);
+			}
+
+			//multi_stream_info_present
+			if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->multi_stream_info_present) {
+				for(int m=0; m < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->presentation_aux_stream_info.num_presentation_aux_streams; m++) {
+					__MMTSM_DESCRIPTOR_TRACE("presentation_aux_stream_info.aux_stream_id\t%d\t0x%02x", m, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->presentation_aux_stream_info.aux_stream_id[m]);
+				}
+			}
+		}
+	}
+
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump ------------ END");
+}
+
+void mmt_atsc3_message_content_type_caption_asset_descriptor_dump(mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_message_content_type_caption_asset_descriptor) {
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_caption_asset_descriptor_dump ------------ START");
+
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_caption_asset_descriptor_dump: mmt_atsc3_message_content_type_caption_asset_descriptor: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
+				 mmt_atsc3_message_content_type_caption_asset_descriptor,
+				 mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.descriptor_tag,
+				 mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.descriptor_length,
+				 mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.number_of_assets);
+
+	for(int i=0; i < mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.number_of_assets; i++) {
+		mmt_atsc3_message_content_type_caption_asset_descriptor_asset_t* mmt_atsc3_message_content_type_caption_asset_descriptor_asset = mmt_atsc3_message_content_type_caption_asset_descriptor->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.data[i];
+		__MMTSM_DESCRIPTOR_TRACE("asset_idx\t%d\tasset_len\t%d\tassset\t%s", i, mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id_length,
+					 mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id_length > 0 ? (char*)mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header.asset_id : "(null)");
+
+		__MMTSM_DESCRIPTOR_TRACE("language\t%s", mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language_length > 0 ? (char*)mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language : "(null)");
+
+		__MMTSM_DESCRIPTOR_TRACE("role\t0x%02x", mmt_atsc3_message_content_type_caption_asset_descriptor_asset->role);
+		__MMTSM_DESCRIPTOR_TRACE("aspect_ratio\t0x%02x", mmt_atsc3_message_content_type_caption_asset_descriptor_asset->aspect_ratio);
+		__MMTSM_DESCRIPTOR_TRACE("easy_reader\t0x%02x", mmt_atsc3_message_content_type_caption_asset_descriptor_asset->easy_reader);
+		__MMTSM_DESCRIPTOR_TRACE("profile\t0x%02x", mmt_atsc3_message_content_type_caption_asset_descriptor_asset->profile);
+		__MMTSM_DESCRIPTOR_TRACE("flag_3d_support\t0x%02x", mmt_atsc3_message_content_type_caption_asset_descriptor_asset->flag_3d_support);
+		__MMTSM_DESCRIPTOR_TRACE("reserved\t0x%02x", mmt_atsc3_message_content_type_caption_asset_descriptor_asset->reserved);
+	}
+
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_caption_asset_descriptor_dump ------------ END");
+
+}
+
+void mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL) {
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump ------------ START");
+
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump: mmt_atsc3_message_content_type_security_properties_descriptor_LAURL: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
+				 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL,
+				 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->descriptor_header.descriptor_tag,
+				 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->descriptor_header.descriptor_length,
+				 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->descriptor_header.number_of_assets);
+
+	for(int i=0; i < mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_v.count; i++) {
+		mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset = mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_v.data[i];
+		__MMSM_DEBUG(" asset idx: %d, asset len: %d, assset: %s", i, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->asset_header.asset_id_length,
+					 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->asset_header.asset_id_length > 0 ? (char*)mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->asset_header.asset_id : "(null)");
+
+		__MMSM_DEBUG(" 	scheme_code_present: %d, default_KID_present: %d, license_info_present: %d",
+					 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->scheme_code_present,
+					 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_present,
+					 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->license_info_present);
+
+		if(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->scheme_code_present) {
+			__MMSM_DEBUG(" 	scheme_code: %s", mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->scheme_code);
+		}
+
+		if(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_present) {
+			__MMSM_DEBUG(" 	default_KID_length: %d, default_KID:",
+						 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length);
+			if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
+				printf(" ");
+				for(int hex=0; hex < mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID_length ; hex++) {
+					printf("%02x", mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->default_KID[hex]);
+				}
+				printf("\n");
+			}
+
+		}
+
+		if(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->license_info_present) {
+			__MMSM_DEBUG(" 	num_of_license_info: %d", mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->number_of_license_info);
+
+			for(int j=0; j < mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->number_of_license_info; j++) {
+				mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info = mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info_v.data[j];
+				__MMSM_DEBUG("    idx: %d, ptr: %p, license_type: %d, LA_URL_length: %d, LA_URL:\n%s",
+							 j, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info,
+							 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->license_type,
+							 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->LA_URL_length,
+							 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->LA_URL_length > 0 ? (char*)mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->LA_URL : "(null)");
+
+
+			}
+		}
+
+		mmt_si_security_properties_descriptor_t* mmt_si_security_properties_descriptor = &mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->mmt_si_security_properties_descriptor;
+		__MMSM_DEBUG("    mm_si_security_properties_descriptor header: tag: 0x%04x, len: %d, security_system_count: %d, system_provider_url_flag: %d",
+					 mmt_si_security_properties_descriptor->descriptor_header.descriptor_tag,
+					 mmt_si_security_properties_descriptor->descriptor_header.descriptor_length,
+					 mmt_si_security_properties_descriptor->security_system_count,
+					 mmt_si_security_properties_descriptor->system_provider_url_flag);
+
+		if(mmt_si_security_properties_descriptor->system_provider_url_flag) {
+			__MMSM_DEBUG(" 	system_provider_url_flag_length: %d, system_provider_url:\n%s",
+						 mmt_si_security_properties_descriptor->system_provider_url_flag,
+						 mmt_si_security_properties_descriptor->system_provider_url_flag > 0 ? (char*)mmt_si_security_properties_descriptor->system_provider_url : "(null)");
+
+		}
+
+		for(int j=0; j < mmt_si_security_properties_descriptor->security_system_count; j++) {
+			mmt_si_security_properties_descriptor_system_t* mmt_si_security_properties_descriptor_system = mmt_si_security_properties_descriptor->mmt_si_security_properties_descriptor_system_v.data[j];
+			__MMSM_DEBUG("    mmt_si_security_properties_descriptor_system: idx: %d, ptr: %p, kid_count: %d, system_id:",
+						 j, mmt_si_security_properties_descriptor_system,
+						 mmt_si_security_properties_descriptor_system->kid_count);
+
+			if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
+				printf(" ");
+				for (int hex = 0; hex < 16; hex++) {
+					printf("%02x", mmt_si_security_properties_descriptor_system->system_id[hex]);
+				}
+
+				printf("\n");
+			}
+
+			for(int k=0; k < mmt_si_security_properties_descriptor_system->kid_count; k++) {
+
+				mmt_si_security_properties_descriptor_kid_t* mmt_si_security_properties_descriptor_kid = mmt_si_security_properties_descriptor_system->mmt_si_security_properties_descriptor_kid_v.data[k];
+				__MMSM_DEBUG("         kid: idx: %d, ptr: %p, key:", k, mmt_si_security_properties_descriptor_kid);
+
+				if(_MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED) {
+					printf(" ");
+					for(int hex=0; hex < 16; hex++) {
+						printf("%02x", mmt_si_security_properties_descriptor_kid->kid[hex]);
+					}
+					printf("\n");
+				}
+
+			}
+			__MMSM_DEBUG("         data_size: %d, data:", mmt_si_security_properties_descriptor_system->data_size);
+
+			if(_MMT_SIGNALLING_MESSAGE_TRACE_ENABLED) {
+				printf(" ");
+				for(int hex=0; hex < mmt_si_security_properties_descriptor_system->data_size; hex++) {
+					printf("%02x", mmt_si_security_properties_descriptor_system->data[hex]);
+				}
+				printf("\n");
+			}
+		}
+	}
+
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump ------------ END");
+}
+
 
 
