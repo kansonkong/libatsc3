@@ -234,7 +234,7 @@ int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
             condition_lock.unlock();
         }
 
-        _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun: atsc3_stltp_depacketizer_from_blockt: to_dispatch_queue size is: %d", to_dispatch_queue.size());
+        _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun: atsc3_stltp_depacketizer_from_blockt: to_dispatch_queue size is: %ld", to_dispatch_queue.size());
         while(to_dispatch_queue.size()) {
             block_t* phy_payload_to_process = to_dispatch_queue.front();
 
@@ -251,7 +251,7 @@ int SRTRxSTLTPVirtualPHY::srtConsumerThreadRun() {
             to_dispatch_queue.pop();
         }
 
-        _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun: to_purge_queue size is: %d", to_purge_queue.size());
+        _SRTRXSTLTP_VIRTUAL_PHY_DEBUG("SRTRxSTLTPVirtualPHY::srtConsumerThreadRun: to_purge_queue size is: %ld", to_purge_queue.size());
 
         while(to_purge_queue.size()) {
             block_t *phy_payload_to_purge = to_purge_queue.front();

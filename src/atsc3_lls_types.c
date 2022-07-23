@@ -438,7 +438,7 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 					    long atsc3_route_object_persisted_duration = now - atsc3_route_object->recovery_complete_timestamp;
 						if(atsc3_route_object_persisted_duration > (_ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_RECOVERY_COMPLETE_PURGE_SECONDS * 1000)) {
 							should_free_and_unlink = true;
-							_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: route_object: %p, recovery completed, should_free_and_unlink: true, persisted on-disk duration: %d, recovery_complete_timestamp: %.4f (delta: %.4f), tsi: %d, toi: %d, object_length: %d, final_object_recovery_filename_for_eviction: %s",
+							_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: route_object: %p, recovery completed, should_free_and_unlink: true, persisted on-disk duration: %ld, recovery_complete_timestamp: %.4f (delta: %.4f), tsi: %d, toi: %d, object_length: %d, final_object_recovery_filename_for_eviction: %s",
 									atsc3_route_object,
 									atsc3_route_object_persisted_duration,
 									atsc3_route_object->recovery_complete_timestamp / 1000.0,
@@ -466,7 +466,7 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 							if(!atsc3_route_object->object_length || computed_payload_received_size < atsc3_route_object->object_length) {
 								should_free_and_unlink = true;
 
-								_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: route_object: %p, given_up exceeded, should_free_and_unlink: true, given up duration: %d, given up timestamp: %.4f (delta: %.4f), tsi: %d, toi: %d, object_length: %d, computed_payload_received_size: %d, lct_packets_received: %d, expected: %d",
+								_ATSC3_LLS_TYPES_INFO("atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects: route_object: %p, given_up exceeded, should_free_and_unlink: true, given up duration: %ld, given up timestamp: %.4f (delta: %.4f), tsi: %d, toi: %d, object_length: %d, computed_payload_received_size: %d, lct_packets_received: %d, expected: %d",
 										atsc3_route_object,
                                         atsc3_route_object_given_up_duration,
 										atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received->most_recent_received_timestamp / 1000.0,
