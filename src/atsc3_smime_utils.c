@@ -205,7 +205,7 @@ atsc3_smime_validation_context_t* atsc3_smime_validation_context_certificate_pay
 	} else {
 		_ATSC3_SMIME_UTILS_WARN("atsc3_smime_validation_context_certificate_payload_parse_from_file_with_root_fallback: no signing_certificate_filename provided, using root fallback cert!");
 		atsc3_smime_validation_context->certificate_payload = block_Alloc(strlen(ATSC3_SMIME_UTILS_CDT_A3SA_ROOT_2020_CERT) + 1);
-		block_Write(atsc3_smime_validation_context->certificate_payload, ATSC3_SMIME_UTILS_CDT_A3SA_ROOT_2020_CERT, strlen(ATSC3_SMIME_UTILS_CDT_A3SA_ROOT_2020_CERT));
+		block_Write(atsc3_smime_validation_context->certificate_payload, (const uint8_t*)ATSC3_SMIME_UTILS_CDT_A3SA_ROOT_2020_CERT, strlen(ATSC3_SMIME_UTILS_CDT_A3SA_ROOT_2020_CERT));
 	}
 		
 	

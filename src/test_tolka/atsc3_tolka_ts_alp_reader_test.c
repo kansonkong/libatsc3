@@ -215,7 +215,7 @@ int main(int argc, char* argv[] ) {
                                                           atsc3_tolka_ts_tlv_alp_replay_context->atsc3_tolka_ts_tlv_alp_packet_instance.tlv_header_size);
 
             } else {
-                _ATSC3_TOLKA_TS_TLV_ALP_READER_TEST_WARN("ts_tlv_payload_is_sync_start_flag, pos: %d is not 0x47! val: 0x%02h", atsc3_tolka_ts_tlv_alp_replay_context->ts_file_pos, atsc3_tolka_ts_tlv_alp_replay_context->current_ts_header_bytes[0]);
+                _ATSC3_TOLKA_TS_TLV_ALP_READER_TEST_WARN("ts_tlv_payload_is_sync_start_flag, pos: %d is not 0x47! val: 0x%02x", atsc3_tolka_ts_tlv_alp_replay_context->ts_file_pos, atsc3_tolka_ts_tlv_alp_replay_context->current_ts_header_bytes[0]);
             }
             
 
