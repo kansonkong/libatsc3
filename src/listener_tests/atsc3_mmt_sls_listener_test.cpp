@@ -90,10 +90,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	if(!udp_packet) {
 		return;
 	}
-
-	if(processed_count++ > 10000) {
-		exit(0);
-	}
+//
+//	if(processed_count++ > 10000) {
+//		exit(0);
+//	}
 
 	//drop mdNS
 	if(udp_packet->udp_flow.dst_ip_addr == UDP_FILTER_MDNS_IP_ADDRESS && udp_packet->udp_flow.dst_port == UDP_FILTER_MDNS_PORT) {
