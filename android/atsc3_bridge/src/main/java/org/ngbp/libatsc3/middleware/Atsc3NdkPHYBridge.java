@@ -100,8 +100,8 @@ public class Atsc3NdkPHYBridge extends Atsc3BridgeNdkStaticJniLoader {
     }
 
     int atsc3_l1d_time_information_callback(byte l1B_time_info_flag, long l1D_time_sec, int l1D_time_msec, int l1D_time_usec, int l1D_time_nsec) {
-       // L1D_timePhyInformation l1d_timePhyInformation = new L1D_timePhyInformation(l1B_time_info_flag, l1D_time_sec, l1D_time_msec, l1D_time_usec, l1D_time_nsec);
-      //  mActivity.pushL1d_TimeInfo(l1d_timePhyInformation);
+        L1D_timePhyInformation l1d_timePhyInformation = new L1D_timePhyInformation(l1B_time_info_flag, l1D_time_sec, l1D_time_msec, l1D_time_usec, l1D_time_nsec);
+        mActivity.pushL1d_TimeInfo(l1d_timePhyInformation);
         return 0;
     }
 }

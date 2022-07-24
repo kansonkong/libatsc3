@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <inttypes.h>
 
 #ifndef ATSC3_SL_TLV_DEMOD_TYPE_H_
 #define ATSC3_SL_TLV_DEMOD_TYPE_H_
