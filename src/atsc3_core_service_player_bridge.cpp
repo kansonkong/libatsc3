@@ -456,13 +456,13 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: plps_to_check contains 0 entries?! forcing plp[0]: 0");
         plps_to_listen.push_back(0);
     } else if(plps_to_listen.size() == 1) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %d entries: plp[0]: %d", plps_to_listen.size(), plps_to_listen[0]);
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %lu entries: plp[0]: %d", plps_to_listen.size(), plps_to_listen[0]);
     } else if(plps_to_listen.size() == 2) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %d entries: plp[0]: %d, plp[1]: %d", plps_to_listen.size(), plps_to_listen[0], plps_to_listen[1]);
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %lu entries: plp[0]: %d, plp[1]: %d", plps_to_listen.size(), plps_to_listen[0], plps_to_listen[1]);
     } else if(plps_to_listen.size() == 3) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %d entries: plp[0]: %d, plp[1]: %d, plp[2]: %d", plps_to_listen.size(), plps_to_listen[0], plps_to_listen[1], plps_to_listen[2]);
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %lu entries: plp[0]: %d, plp[1]: %d, plp[2]: %d", plps_to_listen.size(), plps_to_listen[0], plps_to_listen[1], plps_to_listen[2]);
     } else if(plps_to_listen.size() == 4) {
-        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %d entries: plp[0]: %d, plp[1]: %d, plp[2]: %d, plp[3]: %d", plps_to_listen.size(), plps_to_listen[0], plps_to_listen[1], plps_to_listen[2], plps_to_listen[3]);
+        __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_INFO("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: final plps_to_listen is: %lu entries: plp[0]: %d, plp[1]: %d, plp[2]: %d, plp[3]: %d", plps_to_listen.size(), plps_to_listen[0], plps_to_listen[1], plps_to_listen[2], plps_to_listen[3]);
     }
 
     return plps_to_listen;

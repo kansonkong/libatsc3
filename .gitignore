@@ -1,3 +1,6 @@
+**/*.log
+.DS_Store
+**/*.dSYM
 /.project
 /.DS_Store
 *~
