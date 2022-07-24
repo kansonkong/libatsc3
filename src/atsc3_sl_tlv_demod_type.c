@@ -12,8 +12,8 @@ int _SL_TLV_DEMOD_TRACE_ENABLED = 0;
 int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 1;
 //int __ATSC3_SL_TLV_USE_INLINE_ALP_PARSER_CALL__ = 0;
 
-//jjustman-2021-11-03 - extract l1d_timeinfo based upon HEX F/W version
-int __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 0;
+//jjustman-2021-11-03 - extract l1d_timeinfo for all slsdk-1.x impls
+int __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
 
 //impl for default metrics collection
 atsc3_sl_tlv_payload_metrics_t __GLOBAL_DEFAULT_SL_TLV_PAYLOAD_METRICS;
@@ -592,10 +592,10 @@ void atsc3_sl_tlv_payload_metrics_dump(atsc3_sl_tlv_payload_metrics_t* atsc3_sl_
 	__SL_TLV_DEMOD_INFO("---ALP Payload Metrics---");
 	
 	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_ip_packets_count:	%d", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_ip_packets_count);
-	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_ip_packets_bytes_read:	%llu", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_ip_packets_bytes_read);
+	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_ip_packets_bytes_read:	%"PRId64, atsc3_sl_tlv_payload_metrics->total_alp_packet_type_ip_packets_bytes_read);
 	
 	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_link_layer_signalling_packets_count:	%d", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_link_layer_signalling_packets_count);
-	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_link_layer_signalling_bytes_read:	%llu", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_link_layer_signalling_bytes_read);
+	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_link_layer_signalling_bytes_read:	%"PRId64, atsc3_sl_tlv_payload_metrics->total_alp_packet_type_link_layer_signalling_bytes_read);
 //	
 //	//USUALLY not present in most ATSC 3.0 use-cases
 //	__SL_TLV_DEMOD_INFO(" total_alp_packet_type_packet_compressed_ip_packet_count:	%d", atsc3_sl_tlv_payload_metrics->total_alp_packet_type_packet_compressed_ip_packet_count);
