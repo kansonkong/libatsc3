@@ -330,27 +330,22 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
 
         if(markone_evt_version == 1) {
             res = configPlatformParams_aa_markone();
-            __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
         } else if(markone_evt_version == 2) {
             res = configPlatformParams_bb_markone();
-            __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
         }
 
 
     } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH) {
         //configure as aa FX3
         res = configPlatformParams_aa_fx3();
-        __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
 
     } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH_3) {
         //configure as bb FX3
         res = configPlatformParams_kailash_3_bb_fx3();
-        __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
 
     } else if (device_type == SL_DEVICE_TYPE_FX3_YOGA) {
         //configure as bb FX3
         res = configPlatformParams_yoga_bb_fx3();
-        __ATSC3_SL_TLV_EXTRACT_L1D_TIME_INFO__ = 1;
     }
 
     _SAANKHYA_PHY_ANDROID_DEBUG("configPlatformParams_autodetect::return res: %d", res);
@@ -977,11 +972,18 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     printf("SaankhyaPHYAndroid::tune: Frequency: %d, PLP: %d", freqKHz, plpid);
     //jjustman-2022-06-03 - hack!
 
+#ifdef __JJ_CALIBRATION_ENABLED
+    freqKHz = 575;
+    usleep(10000000);
+
+
+#endif
 #ifndef __JJ_CALIBRATION_ENABLED
 
     SL_DemodStop(slUnit);
     usleep(1000000);
 #endif
+
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
     if (tres != 0)
     {
@@ -1732,10 +1734,13 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_markone() {
 
 //jjustman-2022-06-29 - for 9501c690 BB
 
-    tunerIQDcOffSet.iOffSet = 10;
+//    tunerIQDcOffSet.iOffSet = 10;
+//    tunerIQDcOffSet.qOffSet = 12;
+
+//jjustman-2022-07-12 - for 9501c690 BB @ 575mhz
+
+    tunerIQDcOffSet.iOffSet = 9;
     tunerIQDcOffSet.qOffSet = 12;
-
-
 
 
     return res;
@@ -2801,16 +2806,25 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
         continue;
 
 sl_i2c_tuner_mutex_unlock:
+
+        //jjustman-2022-07-24 - recovery "workaround" for demod
+        SL_DemodStop(slUnit);
+        usleep(1000000);
+
+        SL_DemodStart(slUnit);
+        usleep(1000000);
+
         SL_I2C_command_mutex_tuner_status_io.unlock();
 
         if(global_sl_result_error_flag != SL_OK || global_sl_i2c_result_error_flag != SL_I2C_OK || dres != SL_OK || sl_res != SL_OK || tres != SL_TUNER_OK) {
             if(atsc3_ndk_phy_bridge_get_instance()) {
-                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::tunerStatusThread() - ERROR: command failed: global_sl_res: %d, global_sl_i2c_res: %d, dres: %d, sl_res, tres: %d",
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_notify_phy_error("SaankhyaPHYAndroid::tunerStatusThread() - ERROR: command failed - Stopping/Starting Demod - global_sl_res: %d, global_sl_i2c_res: %d, dres: %d, sl_res, tres: %d",
                         global_sl_result_error_flag, global_sl_i2c_result_error_flag,
                         dres, sl_res, tres);
             }
-        }
 
+
+        }
     }
 
     this->releasePinnedStatusThreadAsNeeded();
