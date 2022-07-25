@@ -62,7 +62,7 @@ uint64_t compute_relative_ntp32_pts(uint64_t first_pts, uint16_t mmtp_timestamp_
 
 	uint64_t pts = REBASE_PTS_OFFSET + (mmtp_timestamp_s * uS) + mmtp_timestamp_microseconds - first_pts;
 
-//	printf("%d:compute_relative_ntp32_pts: pts is: %llu\n", __LINE__, pts);
+//	printf("%d:compute_relative_ntp32_pts: pts is: %"PRIu64"\n", __LINE__, pts);
 
 	return pts;
 }
@@ -75,11 +75,11 @@ int64_t rebase_now_with_ntp32(uint16_t mmtp_timestamp_s, uint16_t mmtp_timestamp
 
 	//convert to timespec with rolled over bias
 	uint64_t quantized = REBASE_PTS_OFFSET + ((((ts.tv_sec / 65535)) * 65535) * uS) + ((ts.tv_nsec) / 1000ULL) ; // convert tv_sec & tv_usec to millisecond
-	//printf("%d:now_t: %llu, quantized: %llu, mmtp_timestamp_s: %d, \n", __LINE__, now_t, quantized, mmtp_timestamp_s);
+	//printf("%d:now_t: %"PRIu64", quantized: %"PRIu64", mmtp_timestamp_s: %d, \n", __LINE__, now_t, quantized, mmtp_timestamp_s);
 
 	uint64_t pts = quantized + (mmtp_timestamp_s * uS) + mmtp_timestamp_microseconds;
 
-	//printf("%d:utc_now_t is: %llu, rebase_now_with_ntp32: re-quantized is %llu, computed jitter is: %llu \n", __LINE__, now_t, pts, (pts - now_t));
+	//printf("%d:utc_now_t is: %"PRIu64", rebase_now_with_ntp32: re-quantized is %"PRIu64", computed jitter is: %"PRIu64" \n", __LINE__, now_t, pts, (pts - now_t));
 
 	return pts;
 }

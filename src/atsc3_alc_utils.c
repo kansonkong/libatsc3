@@ -1146,7 +1146,7 @@ void __alc_prepend_fragment_with_init_box(char* file_name, atsc3_alc_packet_t* a
 			read_bytes = fragment_input_stat.st_size - (block_size * write_count);
 			has_eof = true;
 		}
-		__ALC_UTILS_TRACE("read bytes: %llu", read_bytes);
+		__ALC_UTILS_TRACE("read bytes: %"PRIu64, read_bytes);
 
 		int write_size = fwrite(m4v_payload, read_bytes, 1, fm4v_output_file);
 		if(has_eof) {

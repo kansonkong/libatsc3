@@ -553,7 +553,7 @@ void atsc3_sl_tlv_payload_metrics_dump(atsc3_sl_tlv_payload_metrics_t* atsc3_sl_
 	
 	__SL_TLV_DEMOD_INFO("---TLV Dump Metrics---");
 
-	__SL_TLV_DEMOD_INFO(" total_tlv_bytes_read:	%llu", atsc3_sl_tlv_payload_metrics->total_tlv_bytes_read);
+	__SL_TLV_DEMOD_INFO(" total_tlv_bytes_read:	%"PRIu64, atsc3_sl_tlv_payload_metrics->total_tlv_bytes_read);
 	__SL_TLV_DEMOD_INFO(" total_tlv_packets_parsed_count:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_packets_parsed_count);
 
 	__SL_TLV_DEMOD_INFO(" total_tlv_header_alp_size_bytes_read:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_header_alp_size_bytes_read);
@@ -567,7 +567,7 @@ void atsc3_sl_tlv_payload_metrics_dump(atsc3_sl_tlv_payload_metrics_t* atsc3_sl_
 
 	__SL_TLV_DEMOD_INFO(" total_tlv_packets_without_matching_magic_is_null_value_count:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_packets_without_matching_magic_is_null_value_count);
 
-	__SL_TLV_DEMOD_INFO(" total_tlv_bytes_discarded_due_to_magic_mismatch_count:	%llu", atsc3_sl_tlv_payload_metrics->total_tlv_bytes_discarded_due_to_magic_mismatch_count);
+	__SL_TLV_DEMOD_INFO(" total_tlv_bytes_discarded_due_to_magic_mismatch_count:	%"PRIu64, atsc3_sl_tlv_payload_metrics->total_tlv_bytes_discarded_due_to_magic_mismatch_count);
 	
 	__SL_TLV_DEMOD_INFO(" total_tlv_packets_without_matching_magic_recovered_in_block_count:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_packets_without_matching_magic_recovered_in_block_count);
 	__SL_TLV_DEMOD_INFO(" total_tlv_bytes_discarded_without_matching_magic_recovered_in_block_count:	%d", atsc3_sl_tlv_payload_metrics->total_tlv_bytes_discarded_without_matching_magic_recovered_in_block_count);
