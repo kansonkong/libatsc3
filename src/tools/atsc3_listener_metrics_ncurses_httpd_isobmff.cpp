@@ -109,7 +109,7 @@ extern atsc3_global_statistics_t* atsc3_global_statistics;
 
 static ssize_t http_output_response_from_player_pipe_reader_callback (void *cls, uint64_t pos, char *buf, size_t max)
 {
-	__INFO("http_output_response_from_player_pipe_reader_callback: enter: pos: %llu, buf: %p, max_size: %lu", pos, buf, max);
+	__INFO("http_output_response_from_player_pipe_reader_callback: enter: pos: %"PRIu64", buf: %p, max_size: %lu", pos, buf, max);
 	if(!lls_slt_monitor->lls_sls_mmt_monitor) {
 			__WARN("http_output_response_from_player_pipe_reader_callback: not lls_sls_mmt_monitor yet");
 			//sleep so we don't spinlock too fast

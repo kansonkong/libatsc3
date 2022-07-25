@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <inttypes.h>
+
 
 #include "../atsc3_utils.h"
 #include "../atsc3_logging_externs.h"
@@ -424,7 +426,7 @@ int parse_hevc_nal_mp4toannexb_test_ffmpeg(const char* filename, bool expect_avc
 
         uint8_t* mfu_payload = (uint8_t*) calloc(mfu_payload_size, sizeof(uint8_t));
         fread(mfu_payload, mfu_payload_size, 1, fp);
-        _ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("parse_hevc_nal_mp4toannexb_test_ffmpeg: MFU sample: %s, original size: %llu", filename, mfu_payload_size);
+        _ATSC3_HEVC_NAL_EXTRACTOR_TEST_INFO("parse_hevc_nal_mp4toannexb_test_ffmpeg: MFU sample: %s, original size: %"PRIu64, filename, mfu_payload_size);
 
         block_t* mfu_payload_block = block_Duplicate_from_ptr(mfu_payload, mfu_payload_size);
         block_Rewind(mfu_payload_block);
