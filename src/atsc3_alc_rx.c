@@ -364,8 +364,8 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 
 				  header_pos+=4;
 				  exthdrlen-=4;
-				  ALC_RX_TRACE("Reading FTI TSI: transfer len: %llu", transfer_len);
-				  ALC_RX_TRACE("ALC: tsi: %u, toi: %u, transfer_len: %llu, def_lct_hdr->hdr_len: %d, exthdrlen: %d, header_pos:%d, het: %d, hel: %d", def_lct_hdr->tsi, def_lct_hdr->toi, transfer_len, def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
+				  ALC_RX_TRACE("Reading FTI TSI: transfer len: %"PRIu64"", transfer_len);
+				  ALC_RX_TRACE("ALC: tsi: %u, toi: %u, transfer_len: %"PRIu64", def_lct_hdr->hdr_len: %d, exthdrlen: %d, header_pos:%d, het: %d, hel: %d", def_lct_hdr->tsi, def_lct_hdr->toi, transfer_len, def_lct_hdr->hdr_len, exthdrlen, header_pos, het, hel);
 
 				  word = __readuint32(data, header_pos);
 				  header_pos+=4;
@@ -498,7 +498,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
   				  transfer_len = (word & 0x00FFFFFF);
   				  transfer_len_set = true;
 
-                  ALC_RX_DEBUG("EXT_TOL (24 bit), tsi: %u, toi: %u,  het is: %d, hel is: %d, exthdrlen: %d, toi transfer len: %llu", def_lct_hdr->tsi, def_lct_hdr->toi, het,  hel, exthdrlen, transfer_len);
+                  ALC_RX_DEBUG("EXT_TOL (24 bit), tsi: %u, toi: %u,  het is: %d, hel is: %d, exthdrlen: %d, toi transfer len: %"PRIu64"", def_lct_hdr->tsi, def_lct_hdr->toi, het,  hel, exthdrlen, transfer_len);
 
                   //no additional read performed here, continue the loop
                   break;
@@ -528,7 +528,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 
 				  header_pos += 4;
 				  exthdrlen-=4;
-				  ALC_RX_DEBUG("EXT_TOL (48 bit), tsi: %u, toi: %u,  het is: %d, hel is: %d, exthdrlen: %d, toi transfer len: %llu", def_lct_hdr->tsi, def_lct_hdr->toi, het,  hel, exthdrlen, transfer_len);
+				  ALC_RX_DEBUG("EXT_TOL (48 bit), tsi: %u, toi: %u,  het is: %d, hel is: %d, exthdrlen: %d, toi transfer len: %"PRIu64"", def_lct_hdr->tsi, def_lct_hdr->toi, het,  hel, exthdrlen, transfer_len);
 
 				  break;
 
@@ -622,7 +622,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
         //final check to see if we should "force" this object closed, raptorq fec doesn't send a close_object flag...
         //transfer len should be set on the alc session for this toi, not just on the lct packet...
         if(alc_packet->transfer_len  > 0 && alc_packet->transfer_len  == (alc_packet->alc_len + alc_packet->esi)) {
-            ALC_RX_TRACE("ALC: tsi: %u, toi: %u, FLUTE: setting close_object_flag because transfer len: (%llu) == alc_packet->alc_len (%u) + alc_packet->esi (%u)",
+            ALC_RX_TRACE("ALC: tsi: %u, toi: %u, FLUTE: setting close_object_flag because transfer len: (%"PRIu64") == alc_packet->alc_len (%u) + alc_packet->esi (%u)",
                          alc_packet->def_lct_hdr->tsi,
                          alc_packet->def_lct_hdr->toi,
                          alc_packet->transfer_len,
@@ -631,7 +631,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 
         	alc_packet->close_object_flag = true;
         }
-        ALC_RX_TRACE("ALC: tsi: %u, toi: %u, FEC Encoding ID: %i, sbn: %u, esi: %u, transfer_len: %llu, alc_len+esi: %u",
+        ALC_RX_TRACE("ALC: tsi: %u, toi: %u, FEC Encoding ID: %i, sbn: %u, esi: %u, transfer_len: %"PRIu64", alc_len+esi: %u",
          		alc_packet->def_lct_hdr->tsi,
    				alc_packet->def_lct_hdr->toi,
         		alc_packet->fec_encoding_id,
@@ -648,7 +648,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 
         //jdj-2019-05-29 - hack for missing close_object flag on a single ALC payload toi
         if(alc_packet->transfer_len > 0 && alc_packet->transfer_len == (alc_packet->alc_len + alc_packet->start_offset)) {
-        	ALC_RX_TRACE("ALC: tsi: %u, toi: %u, FLUTE: setting close_object_flag because transfer len: (%llu) == alc_packet->alc_len (%u) + alc_packet->start_offset (%u)",
+        	ALC_RX_TRACE("ALC: tsi: %u, toi: %u, FLUTE: setting close_object_flag because transfer len: (%"PRIu64") == alc_packet->alc_len (%u) + alc_packet->start_offset (%u)",
             		alc_packet->def_lct_hdr->tsi,
 					alc_packet->def_lct_hdr->toi,
 					alc_packet->transfer_len,
@@ -663,7 +663,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 	memcpy(alc_packet->alc_payload, &data[header_pos], alc_packet->alc_len);
 
 	//header_pos: %u,
-	ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, fec_encoding_id: %u, SBN: %u, esi: %u, packet length: %u, start_offset: %u, transfer_len: %llu, codepoint: %u, close_session: %u, close_object: %u, ext_route_presentation_ntp_timestamp: %llu",
+	ALC_RX_DEBUG("ALC: tsi: %u, toi: %u, fec_encoding_id: %u, SBN: %u, esi: %u, packet length: %u, start_offset: %u, transfer_len: %"PRIu64", codepoint: %u, close_session: %u, close_object: %u, ext_route_presentation_ntp_timestamp: %"PRIu64"",
 			alc_packet->def_lct_hdr->tsi,
 			alc_packet->def_lct_hdr->toi,
 			alc_packet->fec_encoding_id,
@@ -677,7 +677,7 @@ int alc_rx_analyze_packet_a331_compliant(char *data, int len, atsc3_alc_packet_t
 			alc_packet->close_object_flag,
 			alc_packet->ext_route_presentation_ntp_timestamp);
 
-	ALC_RX_TRACE_TAB("ALC\ttsi\t%u\ttoi\t%u\tfec_encoding_id\t%u\tSBN\t%u\tesi\t%u\tpacket_length\t%u\tstart_offset\t%u\ttransfer_len\t%llu\tcodepoint\t%u\tclose_session\t%u\tclose_object\t%u\text_route_presentation_ntp_timestamp\t%llu",
+	ALC_RX_TRACE_TAB("ALC\ttsi\t%u\ttoi\t%u\tfec_encoding_id\t%u\tSBN\t%u\tesi\t%u\tpacket_length\t%u\tstart_offset\t%u\ttransfer_len\t%"PRIu64"\tcodepoint\t%u\tclose_session\t%u\tclose_object\t%u\text_route_presentation_ntp_timestamp\t%"PRIu64"",
 				alc_packet->def_lct_hdr->tsi,
 				alc_packet->def_lct_hdr->toi,
 				alc_packet->fec_encoding_id,

@@ -324,7 +324,7 @@ void ISOBMFF_track_joiner_monitor_output_buffer_parse_and_build_joined_mmt_rebui
 		uint64_t mpu_presentation_time_final_uS =  mpu_presentation_time_s + mpu_presentation_time_ms;
 
 		tfdt_atom_mdhd_timescale = new AP4_TfdtAtom(1, mpu_presentation_time_final_uS);
-		__ISOBMFF_JOINER_INFO("ISOBMFF_rebuild_moof_from_sample_data - setting mpu_presentation_time to: %llu", mpu_presentation_time_final_uS);
+		__ISOBMFF_JOINER_INFO("ISOBMFF_rebuild_moof_from_sample_data - setting mpu_presentation_time to: %"PRIu64, mpu_presentation_time_final_uS);
 
 	} else {
 		__ISOBMFF_JOINER_INFO("WARN: ISOBMFF_rebuild_moof_from_sample_data - mpu_presentation_time is NOT SET!");
@@ -1541,6 +1541,6 @@ void printBoxType(AP4_Atom* atom) {
     AP4_FormatFourCharsPrintable(name, m_Type);
 
     name[4] = '\0';
-    __ISOBMFF_JOINER_DEBUG("printBoxType: atom type: %s, size: %llu", name, atom->GetSize());
+    __ISOBMFF_JOINER_DEBUG("printBoxType: atom type: %s, size: %"PRIu64, name, atom->GetSize());
 }
 

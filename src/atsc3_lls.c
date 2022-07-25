@@ -191,13 +191,16 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
                            base_table->signed_multi_table.signature->p_buffer);
             }
         } else {
-            _LLS_ERROR("_lls_ceate_base_table_raw: SignedMultiTable: error finalizing signedMultiTable, base_table: %p, remaining bytes for signature: %d",
+            _LLS_ERROR("_lls_create_base_table_raw: SignedMultiTable: error finalizing signedMultiTable, base_table: %p, remaining bytes for signature: %d",
                     base_table,
                     block_Remaining_size(signed_multi_table_block));
             freeclean((void**)&base_table);
 			_LLS_ERROR("before block_Destroy(signed_multi_table_block) base_table as: %p", base_table);
-			block_Destroy(&signed_multi_table_block);
         }
+
+		if(signed_multi_table_block) {
+			block_Destroy(&signed_multi_table_block);
+		}
         _LLS_DEBUG("returning base_table as: %p", base_table);
 	} else {
         uint8_t *temp_gzip_payload = (uint8_t*)calloc(remaining_payload_size, sizeof(uint8_t));
