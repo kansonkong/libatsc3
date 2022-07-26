@@ -69,7 +69,7 @@ void atsc3_mmt_signalling_information_on_stpp_essence_packet_id_dump(atsc3_mmt_m
 }
 
 void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_dump(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
-	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_dump: stpp mp_table packet_id: %u, stpp_packet_id_under_test: %u, mpu_sequence_number: %d, mpu_presentation_time_ntp64: %llu, mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
+	__MMT_CONTEXT_MPU_DEBUG("atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_dump: stpp mp_table packet_id: %u, stpp_packet_id_under_test: %u, mpu_sequence_number: %d, mpu_presentation_time_ntp64: %"PRIu64", mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
 				stpp_packet_id,
 				atsc3_mmt_context_stpp_packet_id_for_testing,
 				mpu_sequence_number,

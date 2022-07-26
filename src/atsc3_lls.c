@@ -191,13 +191,16 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
                            base_table->signed_multi_table.signature->p_buffer);
             }
         } else {
-            _LLS_ERROR("_lls_ceate_base_table_raw: SignedMultiTable: error finalizing signedMultiTable, base_table: %p, remaining bytes for signature: %d",
+            _LLS_ERROR("_lls_create_base_table_raw: SignedMultiTable: error finalizing signedMultiTable, base_table: %p, remaining bytes for signature: %d",
                     base_table,
                     block_Remaining_size(signed_multi_table_block));
             freeclean((void**)&base_table);
 			_LLS_ERROR("before block_Destroy(signed_multi_table_block) base_table as: %p", base_table);
-			block_Destroy(&signed_multi_table_block);
         }
+
+		if(signed_multi_table_block) {
+			block_Destroy(&signed_multi_table_block);
+		}
         _LLS_DEBUG("returning base_table as: %p", base_table);
 	} else {
         uint8_t *temp_gzip_payload = (uint8_t*)calloc(remaining_payload_size, sizeof(uint8_t));
@@ -270,6 +273,11 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* 
 	            atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
                 atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor, atsc3_signed_multi_table_lls_payload->lls_table);
 	        }
+
+			if(lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count == 0) {
+				lls_table_free(&lls_table);
+
+			}
 	    } else {
             atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor, lls_table);
 	    }
@@ -597,8 +605,6 @@ void lls_table_free(lls_table_t** lls_table_p) {
         if(lls_table->slt_table.bsid)
 			free(lls_table->slt_table.bsid);
         lls_table->slt_table.bsid = NULL;
-        
-
 	} else if(lls_table->lls_table_id == RRT) {
         _LLS_TRACE("free: lls_create_table_type_instance: LLS table RRT not supported yet");
 	} else if(lls_table->lls_table_id == SystemTime) {
@@ -613,6 +619,60 @@ void lls_table_free(lls_table_t** lls_table_p) {
 		}
 	} else if(lls_table->lls_table_id == OnscreenMessageNotification) {
         _LLS_TRACE("free: lls_create_table_type_instance: LLS table OnscreenMessageNotification not supported yet");
+	} else if(lls_table->lls_table_id == CertificationData) {
+
+		for(int i=0; i < lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count; i++) {
+			atsc3_certification_data_to_be_signed_data_certificates_t* atsc3_certification_data_to_be_signed_data_certificates_to_free = lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i];
+			if(atsc3_certification_data_to_be_signed_data_certificates_to_free) {
+				block_Destroy(&atsc3_certification_data_to_be_signed_data_certificates_to_free->base64_payload);
+				freeclean((void**)&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i]);
+			}
+		}
+
+		freeclean((void**)&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data);
+		lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count = 0;
+		lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.size = 0;
+
+		block_Destroy(&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.oscp_refresh_daytimeduration);
+		block_Destroy(&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.current_cert_subject_key_identifer);
+
+		if(lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_cert_replacement) {
+			block_Destroy(&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_cert_replacement->next_cert_from_datetime);
+			block_Destroy(&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_cert_replacement->current_cert_until_datetime);
+			block_Destroy(&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_cert_replacement->next_cert_subject_key_identifier);
+		}
+
+		for(int i=0; i < lls_table->certification_data.atsc3_certification_data_oscp_response_v.count; i++) {
+			atsc3_certification_data_oscp_response_t* atsc3_certification_data_oscp_response_to_free = lls_table->certification_data.atsc3_certification_data_oscp_response_v.data[i];
+			if(atsc3_certification_data_oscp_response_to_free) {
+				block_Destroy(&atsc3_certification_data_oscp_response_to_free->base64_payload);
+				freeclean((void**)&lls_table->certification_data.atsc3_certification_data_oscp_response_v.data[i]);
+			}
+		}
+
+		freeclean((void**)&lls_table->certification_data.atsc3_certification_data_oscp_response_v.data);
+		lls_table->certification_data.atsc3_certification_data_oscp_response_v.count = 0;
+		lls_table->certification_data.atsc3_certification_data_oscp_response_v.size = 0;
+
+		block_Destroy(&lls_table->certification_data.raw_certification_data_xml_fragment);
+		block_Destroy(&lls_table->certification_data.cms_signed_data);
+
+	} else if(lls_table->lls_table_id == SignedMultiTable) {
+			//free our inner tables as needed
+		for(int i=0; i < lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
+			atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
+			if(atsc3_signed_multi_table_lls_payload) {
+				lls_table_free(&atsc3_signed_multi_table_lls_payload->lls_table);
+				freesafe((void**)&lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i]);
+			}
+		}
+
+		freeclean(&lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data);
+		lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count = 0;
+		lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.size = 0;
+
+		block_Destroy(&lls_table->signed_multi_table.signature);
+		block_Destroy(&lls_table->signed_multi_table.raw_signed_multi_table_for_signature);
 	}
 
     if(lls_table->raw_xml.xml_payload_compressed) {

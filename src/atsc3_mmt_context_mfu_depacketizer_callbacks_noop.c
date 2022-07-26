@@ -57,7 +57,7 @@ void atsc3_mmt_signalling_information_on_stpp_essence_packet_id_noop(atsc3_mmt_m
 //audio packet id extraction with mpu_sequence and mpu_presentation_time
 void atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t audio_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     //noop;
-    __MMT_CONTEXT_MPU_DEBUG("callback_noop: atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_noop: audio_packet_id: %u, mpu_sequence_number: %u, mpu_presentation_time_ntp64: %llu, mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
+    __MMT_CONTEXT_MPU_DEBUG("callback_noop: atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_descriptor_noop: audio_packet_id: %u, mpu_sequence_number: %u, mpu_presentation_time_ntp64: %"PRIu64", mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
                             audio_packet_id,
                             mpu_sequence_number,
                             mpu_presentation_time_ntp64,
@@ -68,7 +68,7 @@ void atsc3_mmt_signalling_information_on_audio_packet_id_with_mpu_timestamp_desc
 //video packet_id extraction with mpu_sequence and mpu_presentation_time
 void atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t video_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     //noop;
-    __MMT_CONTEXT_MPU_DEBUG("callback_noop: atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_noop: video_packet_id: %u, mpu_sequence_number: %u, mpu_presentation_time_ntp64: %llu, mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
+    __MMT_CONTEXT_MPU_DEBUG("callback_noop: atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_descriptor_noop: video_packet_id: %u, mpu_sequence_number: %u, mpu_presentation_time_ntp64: %"PRIu64", mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
                             video_packet_id,
                             mpu_sequence_number,
                             mpu_presentation_time_ntp64,
@@ -79,7 +79,7 @@ void atsc3_mmt_signalling_information_on_video_packet_id_with_mpu_timestamp_desc
 //stpp packet_id extraction with mpu_sequence and mpu_presentation_time
 void atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, uint16_t stpp_packet_id, uint32_t mpu_sequence_number, uint64_t mpu_presentation_time_ntp64, uint32_t mpu_presentation_time_seconds, uint32_t mpu_presentation_time_microseconds) {
     //noop;
-    __MMT_CONTEXT_MPU_DEBUG("callback_noop: atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_noop: stpp_packet_id: %u, mpu_sequence_number: %u, mpu_presentation_time_ntp64: %llu, mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
+    __MMT_CONTEXT_MPU_DEBUG("callback_noop: atsc3_mmt_signalling_information_on_stpp_packet_id_with_mpu_timestamp_descriptor_noop: stpp_packet_id: %u, mpu_sequence_number: %u, mpu_presentation_time_ntp64: %"PRIu64", mpu_presentation_time_seconds: %u, mpu_presentation_time_microseconds: %u",
                             stpp_packet_id,
                             mpu_sequence_number,
                             mpu_presentation_time_ntp64,
