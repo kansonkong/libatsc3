@@ -49,7 +49,7 @@ using namespace std;
 
 //jjustman-2022-01-04 - TODO: this should be FX3_SILISA  -> SL_SILISA_DONGLE
 
-#define SL_DEVICE_TYPE_FX3_KAILASH_3  3
+#define SL_DEVICE_TYPE_FX3_SILISA     3
 #define SL_DEVICE_TYPE_FX3_YOGA       4
 
 //justman-2021-10-24 - hack!
@@ -166,7 +166,7 @@ protected:
 private:
 
     //sanjay
-    bool kailash_3_rssi = false;
+    bool sl_silisa_rssi = false;
 
     //jjustman-2021-10-24 - super-hacky workaround for preboot firmware d/l and proper device type open on re-enumeration call for now..
     static int Last_download_bootloader_firmware_device_id;
@@ -258,7 +258,7 @@ private:
 
     SL_ConfigResult_t configPlatformParams_aa_fx3();
     SL_ConfigResult_t configPlatformParams_aa_markone();
-    SL_ConfigResult_t configPlatformParams_kailash_3_bb_fx3();
+    SL_ConfigResult_t configPlatformParams_silisa_bb_fx3();
     SL_ConfigResult_t configPlatformParams_yoga_bb_fx3();
     SL_ConfigResult_t configPlatformParams_bb_markone();
 
