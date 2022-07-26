@@ -371,8 +371,11 @@ void mmt_atsc3_message_content_type_video_stream_properties_descriptor_free(mmt_
 					mmt_atsc3_message_content_type_asset_header_free_asset_id(&mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->asset_header);
 				}
 
-				if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data) {
-					freeclean((void**)&mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data);
+
+				for(int j=0; j <= ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_SEI_NUT_DATA_CONTAINER_LEN_MAX; j++) {
+					if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data[j]) {
+						freeclean((void**)&mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data[j]);
+					}
 				}
 
 				freesafe(mmt_atsc3_message_content_type_video_stream_properties_descriptor->mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_v.data[i]);
