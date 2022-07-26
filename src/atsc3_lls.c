@@ -624,14 +624,14 @@ void lls_table_free(lls_table_t** lls_table_p) {
 		for(int i=0; i < lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count; i++) {
 			atsc3_certification_data_to_be_signed_data_certificates_t* atsc3_certification_data_to_be_signed_data_certificates_to_free = lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i];
 			if(atsc3_certification_data_to_be_signed_data_certificates_to_free) {
-				block_Destroy(atsc3_certification_data_to_be_signed_data_certificates_to_free->base64_payload);
-				lls_table_free(&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i]);
+				block_Destroy(&atsc3_certification_data_to_be_signed_data_certificates_to_free->base64_payload);
+				freeclean((void**)&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i]);
 			}
 		}
 
-		freeclean(&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data);
-		lls_table->certification_data.atsc3_certification_data_oscp_response_v.count = 0;
-		lls_table->certification_data.atsc3_certification_data_oscp_response_v.size = 0;
+		freeclean((void**)&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data);
+		lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count = 0;
+		lls_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.size = 0;
 
 		block_Destroy(&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.oscp_refresh_daytimeduration);
 		block_Destroy(&lls_table->certification_data.atsc3_certification_data_to_be_signed_data.current_cert_subject_key_identifer);
@@ -645,26 +645,25 @@ void lls_table_free(lls_table_t** lls_table_p) {
 		for(int i=0; i < lls_table->certification_data.atsc3_certification_data_oscp_response_v.count; i++) {
 			atsc3_certification_data_oscp_response_t* atsc3_certification_data_oscp_response_to_free = lls_table->certification_data.atsc3_certification_data_oscp_response_v.data[i];
 			if(atsc3_certification_data_oscp_response_to_free) {
-				block_Destroy(atsc3_certification_data_oscp_response_to_free->base64_payload);
-				lls_table_free(&lls_table->certification_data.atsc3_certification_data_oscp_response_v.data[i]);
+				block_Destroy(&atsc3_certification_data_oscp_response_to_free->base64_payload);
+				freeclean((void**)&lls_table->certification_data.atsc3_certification_data_oscp_response_v.data[i]);
 			}
 		}
 
-		freeclean(&lls_table->certification_data.atsc3_certification_data_oscp_response_v.data);
+		freeclean((void**)&lls_table->certification_data.atsc3_certification_data_oscp_response_v.data);
 		lls_table->certification_data.atsc3_certification_data_oscp_response_v.count = 0;
 		lls_table->certification_data.atsc3_certification_data_oscp_response_v.size = 0;
 
-
-
-		block_Destroy(lls_table->certification_data.raw_certification_data_xml_fragment);
-		block_Destroy(lls_table->certification_data.cms_signed_data);
+		block_Destroy(&lls_table->certification_data.raw_certification_data_xml_fragment);
+		block_Destroy(&lls_table->certification_data.cms_signed_data);
 
 	} else if(lls_table->lls_table_id == SignedMultiTable) {
 			//free our inner tables as needed
 		for(int i=0; i < lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
-			lls_table_t* lls_table_to_free = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
-			if(lls_table_to_free) {
-				lls_table_free(&lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i]);
+			atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
+			if(atsc3_signed_multi_table_lls_payload) {
+				lls_table_free(&atsc3_signed_multi_table_lls_payload->lls_table);
+				freesafe((void**)&lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i]);
 			}
 		}
 
