@@ -667,7 +667,7 @@ void lls_table_free(lls_table_t** lls_table_p) {
 			}
 		}
 
-		freeclean(&lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data);
+		freeclean((void**)&lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data);
 		lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count = 0;
 		lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.size = 0;
 
