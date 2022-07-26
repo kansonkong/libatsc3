@@ -83,7 +83,7 @@ public class L1D_timePhyInformation {
 
         double deltaValue =  (ntpTimestampInMs/1000.0) - L1D_unix_ts_calculated;
 
-        if(Math.abs(deltaValue) > 0.25) {
+        if(Math.abs(deltaValue) > 0.5) {
             deltaSpanOpen = "<span style=\"background-color:#aa0000\">";
             deltaSpanClosed = "</span>";
         } else {
