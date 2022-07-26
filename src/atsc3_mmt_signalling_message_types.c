@@ -372,7 +372,7 @@ void mmt_atsc3_message_content_type_video_stream_properties_descriptor_free(mmt_
 				}
 
 				if(mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data) {
-					freeclean(&mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data);
+					freeclean((void**)&mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset->color_info.eotf_info.SEI_NUT_data);
 				}
 
 				freesafe(mmt_atsc3_message_content_type_video_stream_properties_descriptor->mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_v.data[i]);
@@ -412,23 +412,23 @@ void mmt_atsc3_message_content_type_audio_stream_properties_descriptor_free(mmt_
 					//clear mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language
 					for(int k=0; k < mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_v.count; k++) {
 						mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language = mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language_v.data[k];
-						freeclean(&mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language);
+						freeclean((void**)&mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_language->language);
 					}
 
 					if(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_data_byte) {
-						freeclean(&mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_data_byte);
+						freeclean((void**)&mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation->label_data_byte);
 					}
 					mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_free(&mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_v.data[j]);
 				}
 
-				freeclean(&mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_v.data);
+				freeclean((void**)&mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_v.data);
 				mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_v.count = 0;
 				mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_presentation_v.size = 0;
 
-				freeclean(&mmt_atsc3_message_content_type_audio_stream_properties_descriptor->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.data[i]);
+				freeclean((void**)&mmt_atsc3_message_content_type_audio_stream_properties_descriptor->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.data[i]);
 			}
 
-			freeclean(&mmt_atsc3_message_content_type_audio_stream_properties_descriptor->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.data);
+			freeclean((void**)&mmt_atsc3_message_content_type_audio_stream_properties_descriptor->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.data);
 			mmt_atsc3_message_content_type_audio_stream_properties_descriptor->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.count = 0;
 			mmt_atsc3_message_content_type_audio_stream_properties_descriptor->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.size = 0;
 
@@ -510,16 +510,16 @@ void mmt_atsc3_message_content_type_caption_asset_descriptor_free(mmt_atsc3_mess
 				if (mmt_atsc3_message_content_type_caption_asset_descriptor_asset) {
 					mmt_atsc3_message_content_type_asset_header_free_asset_id(&mmt_atsc3_message_content_type_caption_asset_descriptor_asset->asset_header);
 					if(mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language) {
-						freeclean(&mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language);
+						freeclean((void**)&mmt_atsc3_message_content_type_caption_asset_descriptor_asset->language_header.language);
 					}
 				}
 
-				freeclean(&mmt_atsc3_message_content_type_caption_asset_descriptor->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.data[i]);
+				freeclean((void**)&mmt_atsc3_message_content_type_caption_asset_descriptor->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.data[i]);
 			}
-			freeclean(&mmt_atsc3_message_content_type_caption_asset_descriptor->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.data);
+			freeclean((void**)&mmt_atsc3_message_content_type_caption_asset_descriptor->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.data);
 			mmt_atsc3_message_content_type_caption_asset_descriptor->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.count = 0;
 			mmt_atsc3_message_content_type_caption_asset_descriptor->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.size = 0;
-			freeclean(&mmt_atsc3_message_content_type_caption_asset_descriptor);
+			freeclean((void**)&mmt_atsc3_message_content_type_caption_asset_descriptor);
 		}
 
 		mmt_atsc3_message_content_type_caption_asset_descriptor_p = NULL;
