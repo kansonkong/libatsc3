@@ -577,7 +577,7 @@ void phy_rx_udp_packet_process_callback(uint8_t plp_num, block_t* packet) {
     udp_packet_t* udp_packet = udp_packet_process_from_ptr(block_Get(packet), packet->p_size);
 
     if((rx_udp_invocation_count % 1000) == 0) {
-		_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_DEBUG("PLP: %d, packet number: %llu, packet: %p, len: %d, udp_packet: %p",
+		_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_DEBUG("PLP: %d, packet number: %" PRIu64 ", packet: %p, len: %d, udp_packet: %p",
 					plp_num, rx_udp_invocation_count++, packet, packet->p_size, udp_packet);
     }
 

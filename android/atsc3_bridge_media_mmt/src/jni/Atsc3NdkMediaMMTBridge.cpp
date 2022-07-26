@@ -349,7 +349,9 @@ void Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord(uint16_
 
 
     _NDK_MEDIA_MMT_BRIDGE_INFO("Atsc3NdkMediaMMTBridge::atsc3_onInitAudioDecoderConfigurationRecord: with service_id: %d, packet_id: %d, mpu_sequence_number: %d, atsc3_audio_decoder_configuration_record: %p, asset_type: %.4s, channel_count: %d",
-                               service_id, packet_id, mpu_sequence_number, atsc3_audio_decoder_configuration_record, &atsc3_audio_decoder_configuration_record->asset_type, atsc3_audio_decoder_configuration_record->channel_count);
+                               service_id, packet_id, mpu_sequence_number, atsc3_audio_decoder_configuration_record,
+                               (char*)&atsc3_audio_decoder_configuration_record->asset_type,
+                               atsc3_audio_decoder_configuration_record->channel_count);
 
     jniEnv->Get()->CallIntMethod(jni_instance_globalRef, atsc3_OnInitAudioDecoderConfigurationRecord, packet_id, (int64_t)mpu_sequence_number, jobj);
 

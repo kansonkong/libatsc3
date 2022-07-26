@@ -82,8 +82,7 @@
 extern "C" {
 #endif
 
-
-int is_big_endian(void);
+#define is_bigendian()  'ABCD' != 0x41424344
 
 long long timediff(struct timeval t1, struct timeval t0);
 double gt();
