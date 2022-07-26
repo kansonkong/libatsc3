@@ -289,6 +289,7 @@ unit_tests: test/atsc3_lmt_test \
 			test/atsc3_pcap_replay_test \
 			test/atsc3_route_dash_mpd_patch_test \
 			test/atsc3_smime_validation_test \
+			test/atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test \
 			listener_tests/atsc3_mmt_context_callback_driver_test
 
 # 			test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7 \
@@ -1529,6 +1530,15 @@ test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 							$(LOCAL_LD_LIBS_OPENSSL) \
 							$(LOCAL_LD_LIBS) \
 							-o test/atsc3_smime_validation_test
+							
+							
+														 
+														 
+test/atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test: test/atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test.c
+	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test.c  \
+		atsc3_utils.c \
+	-o test/atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test
+
 
 ### integration tests
 ### TODO: move these into target makefile in listener_test/folder
