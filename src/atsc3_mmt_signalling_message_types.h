@@ -207,7 +207,7 @@ typedef struct mmt_atsc3_message_content_type_application_event_information_a337
 } mmt_atsc3_message_content_type_application_event_information_a337_t;
 
 
-
+#define ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_SEI_NUT_DATA_CONTAINER_LEN_MAX 255
 typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset {
 	mmt_atsc3_message_content_type_asset_header_t 	asset_header;
 
@@ -330,8 +330,8 @@ typedef struct mmt_atsc3_message_content_type_video_stream_properties_descriptor
 						uint16_t	eotf_info_len_minus1:15;
 						struct {
 							uint8_t		num_SEIs_minus1;
-							uint16_t	SEI_NUT_length_minus1[255];
-							uint8_t*	SEI_NUT_data[255];  //alloc to uint8_t, len: 8*(SEI_NUT_length_minus1[ i ]+1)
+							uint16_t	SEI_NUT_length_minus1[ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_SEI_NUT_DATA_CONTAINER_LEN_MAX];
+							uint8_t*	SEI_NUT_data[ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_SEI_NUT_DATA_CONTAINER_LEN_MAX];  //alloc to uint8_t, len: 8*(SEI_NUT_length_minus1[ i ]+1)
 							///eotf_info()
 						} eotf_info;
 					//}
