@@ -132,12 +132,12 @@ int main(int argc, char* argv[] ) {
     _STLTP_PARSER_DUMP_ENABLED = 1;
     _ATSC3_ALP_TYPES_DUMP_ENABLED = 1;
 
-	if(argc == 2) {
+	if(argc >= 2) {
 		filename = argv[1];
-	}  else if(argc==4) {
+	}
+        
+    if(argc==4) {
 
-    	//listen to a selected flow
-		filename = argv[1];
 		stltp_dst_ip = argv[2];
 		stltp_dst_port = argv[3];
 	} else {
