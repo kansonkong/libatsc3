@@ -492,7 +492,7 @@ SL_Result_t TolkaPHYAndroid::SL3000_atsc3_init(Endeavour  *Endeavour_s, SL_Tuner
 
     sPlfConfig->chipType = SL_CHIP_3000;
     sPlfConfig->chipRev = SL_CHIP_REV_BB;
-    sPlfConfig->boardType = SL_EVB_3000;//SL_KAILASH_DONGLE_3;// SL_EVB_3000;
+    sPlfConfig->boardType = SL_EVB_3000;//SL_SILISA_DONGLE;// SL_EVB_3000;
     sPlfConfig->tunerType = (SL_TunerType_t)TUNER_R855;//TUNER_NXP; hack
     sPlfConfig->demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
     sPlfConfig->demodOutputIf = SL_DEMOD_OUTPUTIF_TS;
@@ -1642,7 +1642,7 @@ static void logPlfConfiguration(SL_PlatFormConfigParams_t cfgInfo)
             break;
 
         case SL_SILISA_DONGLE:
-            SL_Printf("\n Board Type             : SL_KAILASH_DONGLE_3");
+            SL_Printf("\n Board Type             : SL_SILISA_DONGLE");
             break;
 #if 0
             case SL_BORQS_EVT:
@@ -1755,7 +1755,7 @@ SL_I2cResult_t SL_I2cWrite_tolka(unsigned char i2cAddr, unsigned int wLen, unsig
         return SL_I2C_ERR_TRANSFER_FAILED;
     }
     //retVal = (SL_I2cResult_t)IT9300_ExtI2C_write(endeavour_sl3000, 0, endeavour_sl3000_i2cBus, (Byte)(i2cAddr<<1), (Byte)wLen, data, False);
-    usleep(10000); //jjustman-2022-05-24 - super hack???
+    usleep(6000); //jjustman-2022-05-24 - super hack???
 
     error = IT9300_ExtI2C_write(&TolkaPHYAndroid::Endeavour_s, 0, TOLKA_USB_sl3000_i2cBus, (Byte)(i2cAddr << 1), (Byte)wLen, data, False);
     if (!error)
@@ -1787,7 +1787,7 @@ SL_I2cResult_t SL_I2cRead_tolka(unsigned char i2cAddr, unsigned int rLen, unsign
 #endif
 
 
-    usleep(10000); //jjustman-2022-05-24 - super hack???
+    usleep(5000); //jjustman-2022-05-24 - super hack???
 
     error = IT9300_ExtI2C_read(&TolkaPHYAndroid::Endeavour_s, 0, TOLKA_USB_sl3000_i2cBus, (Byte)((i2cAddr<<1)+1), rLen, data);
     if (!error)
@@ -2448,7 +2448,7 @@ int TolkaPHYAndroid::statusThread()
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].snr1000 = snr_plp[3];
 
 //        //sanjay
-//        if (kailash_3_rssi == true) {
+//        if (sl_silisa_rssi == true) {
 //            atsc3_ndk_phy_client_rf_metrics.rssi_1000 = ((tunerInfo.signalStrength * 1000) -
 //                                                         (256000));
 //        } else {
@@ -2800,7 +2800,7 @@ SL_Result_t TolkaPHYAndroid::SL3000_atsc1_init(Endeavour  *endeavour, SL_TunerCo
 
     sPlfConfig->chipType = SL_CHIP_3000;
     sPlfConfig->chipRev = SL_CHIP_REV_BB;
-    sPlfConfig->boardType = SL_EVB_3000;//SL_KAILASH_DONGLE_3;// SL_EVB_3000;
+    sPlfConfig->boardType = SL_EVB_3000;//SL_SILISA_DONGLE;// SL_EVB_3000;
     sPlfConfig->tunerType = (SL_TunerType_t)TUNER_R855;//TUNER_NXP;
     sPlfConfig->demodControlIf = SL_DEMOD_CMD_CONTROL_IF_I2C;
     sPlfConfig->demodOutputIf = SL_DEMOD_OUTPUTIF_TS;

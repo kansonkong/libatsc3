@@ -170,10 +170,10 @@ int AirwavzPHYAndroid::deinit()
     return 0;
 }
 
-int AirwavzPHYAndroid::open(int fd, string device_path)
+int AirwavzPHYAndroid::open(int fd, int device_type, string device_path)
 {
     int     ret = 0;
-    int     drv_verbosity = 6;      // suggest a value of 2 (0 - 9 legal) to set debug output level;
+    int     drv_verbosity = 4;      // suggest a value of 2 (0 - 9 legal) to set debug output level;
 
     _AIRWAVZ_PHY_ANDROID_DEBUG("AirwavzPHYAndroid::open, this: %p,  with fd: %d, device_path: %s", this, fd, device_path.c_str());
     ret = RedZoneCaptureOpen(&hRedZoneCapture);
@@ -187,6 +187,8 @@ int AirwavzPHYAndroid::open(int fd, string device_path)
     ret = RedZoneCaptureSetProp(hRedZoneCapture, RedZoneLoggingVerboseMode, &drv_verbosity, sizeof(drv_verbosity));
     _AIRWAVZ_PHY_ANDROID_DEBUG("RedZoneCaptureSetProp: RedZoneLoggingVerboseMode returned %d\n", ret);
 
+    usleep(1000000);
+    _AIRWAVZ_PHY_ANDROID_INFO("before RedZoneCaptureInitSysDevice");
     ret = RedZoneCaptureInitSysDevice(hRedZoneCapture, fd );
     if (ret != RZR_SUCCESS)
     {
@@ -194,12 +196,8 @@ int AirwavzPHYAndroid::open(int fd, string device_path)
         return -2;
     }
 
-    RedZoneOperatingMode opmode = OperatingModeATSC3;
-    atsc3RedZoneParserCallbackData.device_mode = opmode;
-    atsc3RedZoneParserCallbackData.airwavzPHYAndroid_instance = this;
-
-    ret = RedZoneCaptureSetProp(hRedZoneCapture, RedZoneOperatingModeProp, &opmode, sizeof(opmode));
-    _AIRWAVZ_PHY_ANDROID_DEBUG("RedZoneCaptureSetProp: RedZoneOperatingModePropMode returned %d\n", ret);
+    usleep(1000000);
+    _AIRWAVZ_PHY_ANDROID_INFO("before RZRBasebandParserOpen");
 
     ret = RZRBasebandParserOpen(&hBasebandParser);
     if(ret) {
@@ -223,13 +221,25 @@ int AirwavzPHYAndroid::open(int fd, string device_path)
         return -7;
     }
 
+    RedZoneOperatingMode opmode = OperatingModeATSC3;
+    atsc3RedZoneParserCallbackData.device_mode = opmode;
+    atsc3RedZoneParserCallbackData.airwavzPHYAndroid_instance = this;
+
+    usleep(1000000);
+    _AIRWAVZ_PHY_ANDROID_INFO("before RedZoneCaptureSetProp(hRedZoneCapture, RedZoneOperatingModeProp, &opmode");
+
+    ret = RedZoneCaptureSetProp(hRedZoneCapture, RedZoneOperatingModeProp, &opmode, sizeof(opmode));
+    _AIRWAVZ_PHY_ANDROID_DEBUG("RedZoneCaptureSetProp: RedZoneOperatingModePropMode returned %d\n", ret);
+
+    usleep(1000000);
+    _AIRWAVZ_PHY_ANDROID_INFO("before RedZoneCaptureStart(hRedZoneCapture);");
+
     ret = RedZoneCaptureStart(hRedZoneCapture);
     if (ret) {
         _AIRWAVZ_PHY_ANDROID_ERROR("Failed to start RedZoneCapture, ret: %d", ret);
         return -31337;
     }
     hRedZoneCapture_started = true;
-
 
     if(processThreadHandle.joinable()) {
         processThreadShouldRun = false;
@@ -258,6 +268,10 @@ int AirwavzPHYAndroid::open(int fd, string device_path)
     return ret;
 }
 
+/*
+ *
+ * jjustman-2022-07-29 - todo: discard any inflight alp packets and flush airwavz_phy_rx_data_buffer_queue
+ */
 int AirwavzPHYAndroid::tune(int freqKHz, int plpId)
 {
     int ret = 0;
@@ -450,10 +464,14 @@ int AirwavzPHYAndroid::processThread() {
     return 0;
 }
 
+#define AIRWAVZ_STATUS_THREAD_UPDATE_INTERVAL_USLEEP_DURATION 1000000
+#define AIRWAVZ_STATUS_THREAD_GET_PROP_USLEEP_DURATION 10000
 
 int AirwavzPHYAndroid::statusThread()
 {
     int ret = 0;
+    uint64_t last_l1dTimeNs_value = 0;
+
     _AIRWAVZ_PHY_ANDROID_INFO("AirwavzPHYAndroid::statusThread started, this: %p", this);
 
     this->pinStatusThreadAsNeeded();
@@ -461,65 +479,100 @@ int AirwavzPHYAndroid::statusThread()
 
     //jjustman-2020-09-23 - if we have a high bitrate (e.g. 20Mbps), frequent polling of tuning/demod status will cause stream glitches
     while(this->statusThreadShouldRun) {
-        usleep(1000000);
+        usleep(AIRWAVZ_STATUS_THREAD_UPDATE_INTERVAL_USLEEP_DURATION);
 
         if(this->is_tuned) {
             if (atsc3_ndk_phy_bridge_get_instance()) {
 
-                unsigned char lock;
-                int SNR, RSSi;
+                atsc3_ndk_phy_client_rf_metrics_t atsc3_ndk_phy_client_rf_metrics = { '0' };
 
-                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneMasterLockProp, &lock, sizeof(lock));
-                usleep(250000);
 
-                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneSNRProp, &SNR, sizeof(SNR));
-                usleep(250000);
-
-                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneRSSIProp, &RSSi, sizeof(RSSi));
-                usleep(250000);
-
-                //RedZoneMasterLockProp
                 uint8_t master_lock_prop;
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneMasterLockProp, &master_lock_prop, sizeof(master_lock_prop));
-                usleep(250000);
+                atsc3_ndk_phy_client_rf_metrics.tuner_lock = master_lock_prop;
+                usleep(AIRWAVZ_STATUS_THREAD_GET_PROP_USLEEP_DURATION);
 
-                //RedZonePLPSelectionProp
+                int32_t snr_100;
+                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneSNRProp, &snr_100, sizeof(snr_100)); //< signal-to-noise ratio in dB * 100 (read only, type: int32_t)
+                atsc3_ndk_phy_client_rf_metrics.snr1000_global = snr_100 * 10;
+                usleep(AIRWAVZ_STATUS_THREAD_GET_PROP_USLEEP_DURATION);
+
+                int32_t rssi_100;
+                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneRSSIProp, &rssi_100, sizeof(rssi_100));
+                atsc3_ndk_phy_client_rf_metrics.rssi_1000 = rssi_100 * - 1;
+                usleep(AIRWAVZ_STATUS_THREAD_GET_PROP_USLEEP_DURATION);
+
+                RedZoneBootstrapInfo bootstrapInfoProp = { };
+                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneBootstrapInfoProp, &bootstrapInfoProp, sizeof(bootstrapInfoProp));
+                atsc3_ndk_phy_client_rf_metrics.bootstrap_system_bw = bootstrapInfoProp.system_bw;
+                atsc3_ndk_phy_client_rf_metrics.bootstrap_ea_wakeup = bootstrapInfoProp.ea_wake_up;
+                usleep(AIRWAVZ_STATUS_THREAD_GET_PROP_USLEEP_DURATION);
+
+                RedZoneL1BasicInfo l1BasicInfo = { };
+                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneL1BasicInfoProp, &l1BasicInfo, sizeof(l1BasicInfo));
+
+                RedZoneL1DetailInfo l1DetailInfo = { };
+                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneL1DetailInfoProp, &l1DetailInfo, sizeof(l1DetailInfo));
+
+                //jjustman-2022-07-30 - todo - fix me if we have a direct callback?
+
+                if(l1BasicInfo.time_info_present) {
+                    uint64_t l1dTimeNs_value = l1DetailInfo.time_sec + (l1DetailInfo.time_msec * 1000) + (l1DetailInfo.time_usec * 1000000) + (l1DetailInfo.time_nsec * 1000000000) ;
+                    if (l1dTimeNs_value != last_l1dTimeNs_value && atsc3_ndk_phy_bridge_get_instance()) {
+                        atsc3_ndk_phy_bridge_get_instance()->atsc3_update_l1d_time_information(l1BasicInfo.time_info_present, l1DetailInfo.time_sec, l1DetailInfo.time_msec, l1DetailInfo.time_usec, l1DetailInfo.time_nsec);
+                    }
+                    last_l1dTimeNs_value = l1dTimeNs_value;
+                }
+
                 RedZonePLPSet plpSet;
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZonePLPSelectionProp, &plpSet, sizeof(plpSet));
-                usleep(250000);
-
-                //RedZoneL1BasicInfoProp
-                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneL1BasicInfoProp, &RSSi, sizeof(RSSi));
-
-                RedZonePLPSpecificInfo plpSpecificInfo;
-                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZonePLPSpecificInfoProp, &plpSpecificInfo, sizeof(plpSpecificInfo));
-                usleep(250000);
+                usleep(AIRWAVZ_STATUS_THREAD_GET_PROP_USLEEP_DURATION);
 
                 RedZonePLPStatusInfo plpStatusInfo;
                 ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZonePLPStatusInfoProp, &plpStatusInfo, sizeof(plpStatusInfo));
-                usleep(250000);
+                usleep(AIRWAVZ_STATUS_THREAD_GET_PROP_USLEEP_DURATION);
 
-                //RedZoneLLSValidBitmaskProp
-                uint64_t llsValid;
-                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneLLSValidBitmaskProp, &llsValid, sizeof(llsValid));
-                usleep(250000);
+                for(int i = 0; i < 4; i ++ ) {
+                    uint8_t plp_id = 255;
+                    if(i == 0) {
+                        plp_id = plpSet.plp0_id;
+                    } else if(i == 1) {
+                        plp_id = plpSet.plp1_id;
+                     } else if(i == 2) {
+                        plp_id = plpSet.plp2_id;
+                    } else if(i == 3) {
+                        plp_id = plpSet.plp3_id;
+                    }
 
-                atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats(
-                        master_lock_prop,                  // tunerInfo.status == 1,
-                        RSSi * -1,               // tunerInfo.signalStrength,
-                        plpStatusInfo.Quality[0],                  // modcod_valid
-                        0,                  // plp fec type
-                        plpSpecificInfo.mod,                  // plp mod
-                        plpSpecificInfo.cod,                  // plp cod
-                        RSSi * 10,          // RFLevel1000
-                        SNR * 10,           // SNR1000
-                        plpStatusInfo.Pre_LDPC_BER[0],                  // ber pre ldpc
-                        plpStatusInfo.Pre_BCH_BER[0],                  // ber pre bch
-                        plpStatusInfo.Post_BCH_FER[0],             // ber pre bch
-                        plpStatusInfo.Lock[0],               // demod lock
-                        1,                  // cpu status
-                        llsValid & 0x1,                  // plp lls?
-                        llsValid & 0xFF);
+                    RedZonePLPSpecificInfo3 plpSpecificInfo = { .index = 255, plp_id = plp_id };
+
+                    ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZonePLPSpecificInfoProp, &plpSpecificInfo, sizeof(plpSpecificInfo));
+                    if(true) { //|| (ret == RZR_Success) {
+                        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_id = plp_id;
+
+                        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_fec_type = plpSpecificInfo.fec_type;
+                        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_mod = plpSpecificInfo.mod;
+                        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_cod = plpSpecificInfo.cod;
+
+                        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].modcod_valid = plpStatusInfo.Lock[i];
+
+                        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].ber_pre_ldpc = plpStatusInfo.Pre_LDPC_BER[i];
+                        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].ber_pre_bch  = plpStatusInfo.Pre_BCH_BER[i];
+                        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].fer_post_bch = plpStatusInfo.Post_BCH_FER[i];
+
+                        atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].snr1000 = plpStatusInfo.Quality[i] * -1000;
+                    }
+                    usleep(AIRWAVZ_STATUS_THREAD_GET_PROP_USLEEP_DURATION);
+                }
+
+//jjustman-2022-07-30 - todo
+//
+//                //RedZoneLLSValidBitmaskProp
+//                uint64_t llsValid;
+//                ret = RedZoneCaptureGetProp(hRedZoneCapture, RedZoneLLSValidBitmaskProp, &llsValid, sizeof(llsValid));
+//                usleep(AIRWAVZ_STATUS_THREAD_GET_PROP_USLEEP_DURATION);
+
+                atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_stats_from_atsc3_ndk_phy_client_rf_metrics_t(&atsc3_ndk_phy_client_rf_metrics);
 
                 atsc3_ndk_phy_bridge_get_instance()->atsc3_update_rf_bw_stats(alp_completed_packets_parsed, alp_total_bytes, alp_total_LMTs_recv);
             }
@@ -659,7 +712,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_AirwavzPHYAndroid_deinit(JNIEnv *e
 //}
 
 extern "C" JNIEXPORT jint JNICALL
-Java_org_ngbp_libatsc3_middleware_android_phy_AirwavzPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jstring device_path_jstring) {
+Java_org_ngbp_libatsc3_middleware_android_phy_AirwavzPHYAndroid_open(JNIEnv *env, jobject thiz, jint fd, jint device_type, jstring device_path_jstring) {
     lock_guard<mutex> airwavz_phy_android_cctor_mutex_local(AirwavzPHYAndroid::CS_global_mutex);
 
     _AIRWAVZ_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_AirwavzPHYAndroid_open: fd: %d", fd);
@@ -671,7 +724,7 @@ Java_org_ngbp_libatsc3_middleware_android_phy_AirwavzPHYAndroid_open(JNIEnv *env
     } else {
         const char* device_path_weak = env->GetStringUTFChars(device_path_jstring, 0);
         string device_path(device_path_weak);
-        res = airwavzPHYAndroid->open(fd, device_path);
+        res = airwavzPHYAndroid->open(fd, device_type, device_path);
         env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
         if(res) {
             _AIRWAVZ_PHY_ANDROID_WARN("Java_org_ngbp_libatsc3_middleware_android_phy_AirwavzPHYAndroid_open: returned: %d, calling deinit()!", res);
