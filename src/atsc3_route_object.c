@@ -392,7 +392,7 @@ int atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector(ats
 
 	for(int i=0; i < atsc3_route_object->atsc3_route_object_lct_packet_received_v.count; i++) {
 		atsc3_route_object_lct_packet_received = atsc3_route_object->atsc3_route_object_lct_packet_received_v.data[i];
-		if(atsc3_route_object_lct_packet_received->use_start_offset && atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist) {
+		if(atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist) {
 			block_Destroy(&atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
 		}
 	}
