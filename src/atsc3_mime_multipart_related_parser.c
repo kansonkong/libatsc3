@@ -248,7 +248,8 @@ atsc3_mime_multipart_related_instance_t* atsc3_mime_multipart_related_parser(FIL
 		//jjustman-2020-08-04 - xcode leak detector is complanining about ->payload leaking somewhere..todo -
 		atsc3_mime_multipart_related_payload = atsc3_mime_multipart_related_payload_new();
 		atsc3_mime_multipart_related_payload->payload = block_Alloc(0);  //jjustman-2020-08-04 - TODO - better payload guestimate size for this item?
-		block_Resize_Prealloc_Soft(atsc3_mime_multipart_related_payload->payload, 1024000); //jjustman-2021-12-09 - hack for first block resize re-allocation
+        //jjustman-2022-07-30 - use a prealloc size of 8k for now...
+		block_Resize_Prealloc_Soft(atsc3_mime_multipart_related_payload->payload, 8192); //jjustman-2021-12-09 - hack for first block resize re-allocation
 		
 		/**
 		 * try and parse out header attributes first, e.g.:
