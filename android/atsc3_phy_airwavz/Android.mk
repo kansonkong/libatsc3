@@ -11,6 +11,38 @@ LOCAL_PATH := $(MY_LOCAL_PATH)
 include $(CLEAR_VARS)
 # ---------------------------
 
+
+
+## --------------------------
+# build libusb_android
+## --------------------------
+LOCAL_PATH := $(MY_LOCAL_PATH)
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := libusb1.0
+
+LOCAL_SRC_FILES += \
+	$(LOCAL_PATH)/../../libusb_android/libusb/core.c \
+	$(LOCAL_PATH)/../../libusb_android/libusb/descriptor.c \
+	$(LOCAL_PATH)/../../libusb_android/libusb/hotplug.c \
+	$(LOCAL_PATH)/../../libusb_android/libusb/io.c \
+	$(LOCAL_PATH)/../../libusb_android/libusb/sync.c \
+	$(LOCAL_PATH)/../../libusb_android/libusb/strerror.c \
+	$(LOCAL_PATH)/../../libusb_android/libusb/os/linux_usbfs.c \
+	$(LOCAL_PATH)/../../libusb_android/libusb/os/poll_posix.c \
+	$(LOCAL_PATH)/../../libusb_android/libusb/os/threads_posix.c \
+	$(LOCAL_PATH)/../../libusb_android/libusb/os/linux_netlink.c
+
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../libusb_android/libusb
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../libusb_android/android
+
+LOCAL_CFLAGS += -D__ANDROID__ -Dlinux
+
+#jjustman-2020-08-19 - fixup for invalid soname in .so
+LOCAL_LDLIBS += -ldl -lc++_shared -llog -landroid
+
+include $(BUILD_SHARED_LIBRARY)
+
 # ---------------------------
 # Airwavz.tv RedZone Receiver SDK
 # prebuilt libraries
@@ -52,23 +84,23 @@ LOCAL_MODULE:= $(LIB_NAME)
 LOCAL_SRC_FILES := 	$(LOCAL_PATH)/../../airwavz_redzone_sdk/lib/android/$(TARGET_ARCH_ABI)/$(LIB_NAME).so
 include $(PREBUILT_SHARED_LIBRARY)
 # ---------------------------
-
-# ---------------------------
-include $(CLEAR_VARS)
-LIB_NAME:= libusb1.0
-LOCAL_MODULE:= $(LIB_NAME)
-LOCAL_SRC_FILES := 	$(LOCAL_PATH)/../../airwavz_redzone_sdk/lib/android/$(TARGET_ARCH_ABI)/$(LIB_NAME).so
-include $(PREBUILT_SHARED_LIBRARY)
-# ---------------------------
-
-
-# ---------------------------
-include $(CLEAR_VARS)
-LIB_NAME:= libstdc++
-LOCAL_MODULE:= $(LIB_NAME)
-LOCAL_SRC_FILES := 	$(LOCAL_PATH)/../../airwavz_redzone_sdk/lib/android/$(TARGET_ARCH_ABI)/$(LIB_NAME).so
-include $(PREBUILT_SHARED_LIBRARY)
-# ---------------------------
+#
+# # ---------------------------
+# include $(CLEAR_VARS)
+# LIB_NAME:= libusb1.0
+# LOCAL_MODULE:= $(LIB_NAME)
+# LOCAL_SRC_FILES := 	$(LOCAL_PATH)/../../airwavz_redzone_sdk/lib/android/$(TARGET_ARCH_ABI)/$(LIB_NAME).so
+# include $(PREBUILT_SHARED_LIBRARY)
+# # ---------------------------
+#
+#
+# # ---------------------------
+# include $(CLEAR_VARS)
+# LIB_NAME:= libstdc++
+# LOCAL_MODULE:= $(LIB_NAME)
+# LOCAL_SRC_FILES := 	$(LOCAL_PATH)/../../airwavz_redzone_sdk/lib/android/$(TARGET_ARCH_ABI)/$(LIB_NAME).so
+# include $(PREBUILT_SHARED_LIBRARY)
+# # ---------------------------
 
 # ---------------------------
 include $(CLEAR_VARS)
@@ -108,9 +140,11 @@ LIBATSC3_PHY_AIRWAVZ_CPP := \
 LOCAL_SRC_FILES += \
     $(LIBATSC3_PHY_AIRWAVZ_CPP:$(LOCAL_PATH)/%=%)
 
-LOCAL_CFLAGS += -std=c++14 -g -O0 -fpack-struct=8 \
-				-D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
-                -D__MOCK_PCAP_REPLAY__ -D__LIBATSC3_ANDROID__ \
+# -O0 -fpack-struct=8
+#  -std=c++14
+# -fpack-struct=4
+LOCAL_CFLAGS +=	-D__DISABLE_LIBPCAP__ -D__DISABLE_ISOBMFF_LINKAGE__ -D__DISABLE_NCURSES__ \
+                -D__LIBATSC3_ANDROID__ \
                 -D__ANDROID__ -Dlinux
 #
 #LOCAL_LDLIBS += -ldl -lc++_shared -lstdc++  -llog -landroid -lz \
@@ -122,16 +156,20 @@ LOCAL_CFLAGS += -std=c++14 -g -O0 -fpack-struct=8 \
 ## 				-fPIE -fPIC
 
 LOCAL_LDLIBS += -ldl -llog -landroid -lz \
-				-latsc3_core -latsc3_bridge
+				-latsc3_core -latsc3_bridge \
+				-fPIE -fPIC
 
-				 # -lc++_shared
+# -lc++_shared
 
 LOCAL_LDFLAGS +=-L $(LOCAL_PATH)/../atsc3_bridge/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/ \
 				-L $(LOCAL_PATH)/../atsc3_core/build/intermediates/ndkBuild/debug/obj/local/$(TARGET_ARCH_ABI)/
 
 # redzone_api
 # redzone_c_vdev_api
-LOCAL_SHARED_LIBRARIES += redzone_c_api  redzone_api RedZoneATSC3Parsers usb1.0 stdc++ log
+
+#stdc++
+# usb1.0
+LOCAL_SHARED_LIBRARIES += libusb1.0 redzone_c_api  redzone_api RedZoneATSC3Parsers
 
 LOCAL_PREBUILDS := atsc3_core atsc3_bridge
 

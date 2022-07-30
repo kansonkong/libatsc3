@@ -211,10 +211,6 @@ private:
     SL_Result_t SL3000_atsc1_tune(Endeavour  *endeavour, SL_TunerConfig_t *pTunerCfg, SL_PlatFormConfigParams_t *sPlfConfig);
     void        Monitor_SL3000_ATSC1_Signal(SignalInfo_t *pSigInfo, int freq, R855_Standard_Type RT_Standard);
 
-
-    //sanjay
-    bool kailash_3_rssi = false;
-
     //jjustman-2021-10-24 - super-hacky workaround for preboot firmware d/l and proper device type open on re-enumeration call for now..
     static int Last_download_bootloader_firmware_device_id;
     static int Last_tune_freq;
@@ -298,26 +294,7 @@ private:
     //          if set to true, we should discard the TLV payload in RxDataCallback
     static atomic_bool cb_should_discard;
 
-    //jjustman-2021-03-02 - expanded for runtime implementation support between FX3(aa/bb) and MarkONE,
-    // current configuration logic is invoked from int TolkaPHYAndroid::open(int fd, string device_path)
-//    SL_ConfigResult_t configPlatformParams_autodetect(int device_type, string device_path);
-//
-//    SL_ConfigResult_t configPlatformParams_aa_fx3();
-//    SL_ConfigResult_t configPlatformParams_aa_markone();
-//    SL_ConfigResult_t configPlatformParams_kailash_3_bb_fx3();
-//    SL_ConfigResult_t configPlatformParams_yoga_bb_fx3();
-//    SL_ConfigResult_t configPlatformParams_bb_markone();
-
-//
-//    void printToConsolePlfConfiguration(SL_PlatFormConfigParams_t cfgInfo);
-//    void printToConsoleDemodConfiguration(SL_DemodConfigInfo_t cfgInfo);
-//
-//    void printToConsoleI2cError(const char* methodName, SL_I2cResult_t err);
-//    void printToConsoleTunerError(const char* methodName, SL_TunerResult_t err);
-//    void printToConsoleDemodError(const char* methodName, SL_Result_t err);
-
     void handleCmdIfFailure(void);
-
 
     void processTLVFromCallback();
     char processDataCircularBufferForCallback[TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE];

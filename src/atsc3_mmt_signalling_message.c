@@ -1527,6 +1527,10 @@ uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payl
 
 
 void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload) {
+    mmt_atsc3_message_payload_dump_with_mmtp_packet_header(mmt_signalling_message_header_and_payload, NULL);
+}
+
+void mmt_atsc3_message_payload_dump_with_mmtp_packet_header(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, mmtp_packet_header_t* mmtp_packet_header) {
 
 	mmt_atsc3_message_payload_t* mmt_atsc3_message_payload = &mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload;
 
@@ -1556,22 +1560,22 @@ void mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload_t*
 
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR
 	if(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_video_stream_properties_descriptor) {
-		mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_video_stream_properties_descriptor);
+		mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump_with_mmtp_packet_header(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_video_stream_properties_descriptor, mmtp_packet_header);
 	}
 
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR
 	if(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor) {
-		mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor);
+        mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump_with_mmtp_packet_header(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_audio_stream_properties_descriptor, mmtp_packet_header);
 	}
 
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
 	if(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor) {
-		mmt_atsc3_message_content_type_caption_asset_descriptor_dump(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor);
+		mmt_atsc3_message_content_type_caption_asset_descriptor_dump_with_mmtp_packet_header(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_caption_asset_descriptor, mmtp_packet_header);
 	}
 
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_SECURITY_PROPERTIES_DESCRIPTOR_LAURL
 	if(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL) {
-		mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL);
+		mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump_with_mmtp_packet_header(mmt_atsc3_message_payload->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL, mmtp_packet_header);
 	}
 }
 
@@ -1745,6 +1749,19 @@ void signalling_message_mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packe
 	__MMSM_DEBUG("------------------");
 }
 
+void atsc3_signalling_message_mmtp_packet_header_dump_descriptor_trace(mmtp_packet_header_t* mmtp_packet_header) {
+    __MMTSM_DESCRIPTOR_TRACE("------------------");
+    __MMTSM_DESCRIPTOR_TRACE("MMTP Packet Header: Signalling Message: ptr: %p", mmtp_packet_header);
+    __MMTSM_DESCRIPTOR_TRACE("------------------");
+    __MMTSM_DESCRIPTOR_TRACE("packet version         : %-10d (0x%d%d)",     mmtp_packet_header->mmtp_packet_version, ((mmtp_packet_header->mmtp_packet_version >> 1) & 0x1), mmtp_packet_header->mmtp_packet_version & 0x1);
+    __MMTSM_DESCRIPTOR_TRACE("payload_type           : %-10d (0x%d%d)",     mmtp_packet_header->mmtp_payload_type, ((mmtp_packet_header->mmtp_payload_type >> 1) & 0x1), mmtp_packet_header->mmtp_payload_type & 0x1);
+    __MMTSM_DESCRIPTOR_TRACE("packet_id              : %-10hu (0x%04x)",     mmtp_packet_header->mmtp_packet_id, mmtp_packet_header->mmtp_packet_id);
+    __MMTSM_DESCRIPTOR_TRACE("timestamp              : %-10u (0x%08x)",    mmtp_packet_header->mmtp_timestamp, mmtp_packet_header->mmtp_timestamp);
+    __MMTSM_DESCRIPTOR_TRACE("packet_sequence_number : %-10u (0x%08x)",     mmtp_packet_header->packet_sequence_number,mmtp_packet_header->packet_sequence_number);
+    __MMTSM_DESCRIPTOR_TRACE("packet counter         : %-10u (0x%04x)",     mmtp_packet_header->packet_counter, mmtp_packet_header->packet_counter);
+    __MMTSM_DESCRIPTOR_TRACE("------------------");
+}
+
 void mmt_signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packet) {
 	if(mmtp_signalling_packet->mmtp_payload_type != 0x02) {
 		__MMSM_ERROR("signalling_message_dump, payload_type 0x%x != 0x02", mmtp_signalling_packet->mmtp_payload_type);
@@ -1780,7 +1797,6 @@ void mmt_signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packe
 		__MMSM_DEBUG(" Payload   : %p", 			&mmt_signalling_message_header_and_payload->message_payload);
 		__MMSM_DEBUG("------------------");
 
-
 		if(mmt_signalling_message_header_and_payload->message_header.message_id == PA_message) {
 			pa_message_dump(mmt_signalling_message_header_and_payload);
 		} else if(mmt_signalling_message_header_and_payload->message_header.message_id >= MPI_message_start && mmt_signalling_message_header_and_payload->message_header.message_id <= MPI_message_end) {
@@ -1788,7 +1804,7 @@ void mmt_signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packe
 		} else if(mmt_signalling_message_header_and_payload->message_header.message_id >= MPT_message_start && mmt_signalling_message_header_and_payload->message_header.message_id <= MPT_message_end) {
 			mpt_message_dump(mmt_signalling_message_header_and_payload);
 		} else if(mmt_signalling_message_header_and_payload->message_header.message_id == MMT_ATSC3_MESSAGE_ID) {
-			mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload);
+			mmt_atsc3_message_payload_dump_with_mmtp_packet_header(mmt_signalling_message_header_and_payload, (mmtp_packet_header_t*)mmtp_signalling_packet);
 		}
 	}
 }
@@ -1862,10 +1878,13 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 			}
 		}
 	}
-
 }
 
 void mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump(mmt_atsc3_message_content_type_video_stream_properties_descriptor_t* mmt_atsc3_message_content_type_video_stream_properties_descriptor) {
+    mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump_with_mmtp_packet_header(mmt_atsc3_message_content_type_video_stream_properties_descriptor, NULL);
+}
+
+void mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump_with_mmtp_packet_header(mmt_atsc3_message_content_type_video_stream_properties_descriptor_t* mmt_atsc3_message_content_type_video_stream_properties_descriptor, mmtp_packet_header_t* mmtp_packet_header) {
 	__MMSM_DEBUG("mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump ------------ START");
 
 	__MMSM_DEBUG("mmt_atsc3_message_payload: mmt_atsc3_message_content_type_video_stream_properties_descriptor: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
@@ -1873,6 +1892,10 @@ void mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump(mmt_
 				 mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.descriptor_tag,
 				 mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.descriptor_length,
 				 mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.number_of_assets);
+    
+    if(mmtp_packet_header) {
+        atsc3_signalling_message_mmtp_packet_header_dump_descriptor_trace(mmtp_packet_header);
+    }
 
 	for(int i=0; i < mmt_atsc3_message_content_type_video_stream_properties_descriptor->descriptor_header.number_of_assets; i++) {
 		mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset = mmt_atsc3_message_content_type_video_stream_properties_descriptor->mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset_v.data[i];
@@ -2018,17 +2041,23 @@ void mmt_atsc3_message_content_type_video_stream_properties_descriptor_dump(mmt_
 
 }
 
-
-
 void mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor) {
+        mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump_with_mmtp_packet_header(mmt_atsc3_message_content_type_audio_stream_properties_descriptor, NULL);
+}
+                             
+void mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump_with_mmtp_packet_header(mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor, mmtp_packet_header_t* mmtp_packet_header) {
 	__MMSM_DEBUG("mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump ------------ START");
 
-	__MMSM_DEBUG("mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump: mmt_atsc3_message_content_type_audio_stream_properties_descriptor: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_audio_stream_properties_descriptor: %p, headertag: 0x%04x, len: %d, number_of_assets: %d",
 				 mmt_atsc3_message_content_type_audio_stream_properties_descriptor,
 				 mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.descriptor_tag,
 				 mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.descriptor_length,
 				 mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.number_of_assets);
-
+        
+    if(mmtp_packet_header) {
+        atsc3_signalling_message_mmtp_packet_header_dump_descriptor_trace(mmtp_packet_header);
+    }
+        
 	for(int i=0; i < mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.number_of_assets; i++) {
 		mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset = mmt_atsc3_message_content_type_audio_stream_properties_descriptor->mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_v.data[i];
 		__MMTSM_DESCRIPTOR_TRACE("asset_idx\t%d\tasset_len\t%d\tassset\t%s", i, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset->asset_header.asset_id_length,
@@ -2130,13 +2159,22 @@ void mmt_atsc3_message_content_type_audio_stream_properties_descriptor_dump(mmt_
 }
 
 void mmt_atsc3_message_content_type_caption_asset_descriptor_dump(mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_message_content_type_caption_asset_descriptor) {
+        mmt_atsc3_message_content_type_caption_asset_descriptor_dump_with_mmtp_packet_header(mmt_atsc3_message_content_type_caption_asset_descriptor, NULL);
+}
+
+void mmt_atsc3_message_content_type_caption_asset_descriptor_dump_with_mmtp_packet_header(mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_message_content_type_caption_asset_descriptor, mmtp_packet_header_t* mmtp_packet_header) {
 	__MMSM_DEBUG("mmt_atsc3_message_content_type_caption_asset_descriptor_dump ------------ START");
 
-	__MMSM_DEBUG("mmt_atsc3_message_content_type_caption_asset_descriptor_dump: mmt_atsc3_message_content_type_caption_asset_descriptor: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_caption_asset_descriptor: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
 				 mmt_atsc3_message_content_type_caption_asset_descriptor,
 				 mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.descriptor_tag,
 				 mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.descriptor_length,
 				 mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.number_of_assets);
+
+    if(mmtp_packet_header) {
+        atsc3_signalling_message_mmtp_packet_header_dump_descriptor_trace(mmtp_packet_header);
+    }
+
 
 	for(int i=0; i < mmt_atsc3_message_content_type_caption_asset_descriptor->descriptor_header.number_of_assets; i++) {
 		mmt_atsc3_message_content_type_caption_asset_descriptor_asset_t* mmt_atsc3_message_content_type_caption_asset_descriptor_asset = mmt_atsc3_message_content_type_caption_asset_descriptor->mmt_atsc3_message_content_type_caption_asset_descriptor_asset_v.data[i];
@@ -2154,17 +2192,24 @@ void mmt_atsc3_message_content_type_caption_asset_descriptor_dump(mmt_atsc3_mess
 	}
 
 	__MMSM_DEBUG("mmt_atsc3_message_content_type_caption_asset_descriptor_dump ------------ END");
-
 }
 
 void mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL) {
+    mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump_with_mmtp_packet_header(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL, NULL);
+}
+
+void mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump_with_mmtp_packet_header(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL, mmtp_packet_header_t* mmtp_packet_header) {
 	__MMSM_DEBUG("mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump ------------ START");
 
-	__MMSM_DEBUG("mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump: mmt_atsc3_message_content_type_security_properties_descriptor_LAURL: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
+	__MMSM_DEBUG("mmt_atsc3_message_content_type_security_properties_descriptor_LAURL: %p, header: tag: 0x%04x, len: %d, number_of_assets: %d",
 				 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL,
 				 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->descriptor_header.descriptor_tag,
 				 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->descriptor_header.descriptor_length,
 				 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->descriptor_header.number_of_assets);
+
+    if(mmtp_packet_header) {
+        atsc3_signalling_message_mmtp_packet_header_dump_descriptor_trace(mmtp_packet_header);
+    }
 
 	for(int i=0; i < mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_v.count; i++) {
 		mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_t* mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset = mmt_atsc3_message_content_type_security_properties_descriptor_LAURL->mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_v.data[i];
@@ -2190,7 +2235,6 @@ void mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump(mm
 				}
 				printf("\n");
 			}
-
 		}
 
 		if(mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset->license_info_present) {
@@ -2203,8 +2247,6 @@ void mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump(mm
 							 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->license_type,
 							 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->LA_URL_length,
 							 mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->LA_URL_length > 0 ? (char*)mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_asset_license_info->LA_URL : "(null)");
-
-
 			}
 		}
 
@@ -2219,7 +2261,6 @@ void mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump(mm
 			__MMSM_DEBUG(" 	system_provider_url_flag_length: %d, system_provider_url:\n%s",
 						 mmt_si_security_properties_descriptor->system_provider_url_flag,
 						 mmt_si_security_properties_descriptor->system_provider_url_flag > 0 ? (char*)mmt_si_security_properties_descriptor->system_provider_url : "(null)");
-
 		}
 
 		for(int j=0; j < mmt_si_security_properties_descriptor->security_system_count; j++) {
@@ -2233,7 +2274,6 @@ void mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump(mm
 				for (int hex = 0; hex < 16; hex++) {
 					printf("%02x", mmt_si_security_properties_descriptor_system->system_id[hex]);
 				}
-
 				printf("\n");
 			}
 
@@ -2249,7 +2289,6 @@ void mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump(mm
 					}
 					printf("\n");
 				}
-
 			}
 			__MMSM_DEBUG("         data_size: %d, data:", mmt_si_security_properties_descriptor_system->data_size);
 

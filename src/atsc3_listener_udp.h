@@ -56,8 +56,11 @@ extern "C" {
 
 
 udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char *packet);
+
+udp_packet_t* udp_packet_process_from_raw_ethernet_block_t(block_t* raw_blockt);
 udp_packet_t* udp_packet_process_from_ptr_raw_ethernet_packet(uint8_t* packet, uint32_t packet_length);
 
+udp_packet_t* udp_packet_process_from_block_t(block_t* ip_blockt);
 udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_length);
 
 udp_packet_t* udp_packet_duplicate(udp_packet_t* udp_packet);

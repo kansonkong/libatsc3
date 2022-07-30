@@ -339,9 +339,9 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_autodetect(int device
         //configure as aa FX3
         res = configPlatformParams_aa_fx3();
 
-    } else if (device_type == SL_DEVICE_TYPE_FX3_KAILASH_3) {
+    } else if (device_type == SL_DEVICE_TYPE_FX3_SILISA) {
         //configure as bb FX3
-        res = configPlatformParams_kailash_3_bb_fx3();
+        res = configPlatformParams_silisa_bb_fx3();
 
     } else if (device_type == SL_DEVICE_TYPE_FX3_YOGA) {
         //configure as bb FX3
@@ -622,9 +622,9 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             break;
 
 
-        case SL_KAILASH_DONGLE_3:
+        case SL_SILISA_DONGLE:
 
-            _SAANKHYA_PHY_ANDROID_DEBUG("Configuring as: SL_KAILASH_DONGLE_3");
+            _SAANKHYA_PHY_ANDROID_DEBUG("Configuring as: SL_SILISA_DONGLE");
 
             if (getPlfConfig.tunerType == TUNER_SILABS)
             {
@@ -655,7 +655,7 @@ int SaankhyaPHYAndroid::open(int fd, int device_type, string device_path)
             iqOffSetCorrection.iCoeff2 = 0.0;
             iqOffSetCorrection.qCoeff2 = 0.0;
             //sanjay
-            kailash_3_rssi = true;
+            sl_silisa_rssi = true;
             break;
 
         case SL_YOGA_DONGLE:
@@ -964,7 +964,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
           2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1412:DEBUG:1620170258.7401: Sl Tuner Operation Failed
     */
 
-    if (getPlfConfig.boardType == SL_KAILASH_DONGLE_3) {
+    if (getPlfConfig.boardType == SL_SILISA_DONGLE) {
         _SAANKHYA_PHY_ANDROID_DEBUG("::tune - before SL_DemodStart - sleeping for 500ms to avoid double SL_DemodConfigPlps call(s)");
         usleep(500000);
     }
@@ -1243,7 +1243,7 @@ TEST_ERROR:
             2021-05-04 19:17:38.740 4722-4865/com.nextgenbroadcast.mobile.middleware.sample D/NDK: SaankhyaPHYAndroid.cpp          :1412:DEBUG:1620170258.7401: Sl Tuner Operation Failed
 
 
-        if (getPlfConfig.boardType == SL_KAILASH_DONGLE_3) {
+        if (getPlfConfig.boardType == SL_SILISA_DONGLE) {
             _SAANKHYA_PHY_ANDROID_DEBUG("::tune - before SL_DemodStart - sleeping for 2000 seconds to avoid double SL_DemodConfigPlps call(s)");
             usleep(2000000);
 
@@ -1469,9 +1469,9 @@ int SaankhyaPHYAndroid::download_bootloader_firmware(int fd, int device_type, st
 
     //sanjay
     if (device_type == 3) {
-        kailash_3_rssi = true;
+        sl_silisa_rssi = true;
     } else {
-        kailash_3_rssi = false;
+        sl_silisa_rssi = false;
     }
 
     _SAANKHYA_PHY_ANDROID_DEBUG("download_bootloader_firmware, path: %s, device_type: %d, fd: %d",
@@ -1589,14 +1589,14 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_aa_markone() {
 }
 
 
-//jjustman-2020-09-09 KAILASH_3 dongle specific configuration
-SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_kailash_3_bb_fx3() {
+//jjustman-2020-09-09 silisa dongle specific configuration
+SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_silisa_bb_fx3() {
 
     SL_ConfigResult_t res = SL_CONFIG_OK;
 
     sPlfConfig.chipType = SL_CHIP_3000;
     sPlfConfig.chipRev = SL_CHIP_REV_BB;
-    sPlfConfig.boardType = SL_KAILASH_DONGLE_3;
+    sPlfConfig.boardType = SL_SILISA_DONGLE;
     sPlfConfig.tunerType = TUNER_SILABS;
     sPlfConfig.hostInterfaceType = SL_HostInterfaceType_FX3;
 
@@ -1631,7 +1631,7 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_kailash_3_bb_fx3() {
     return res;
 }
 
-//jjustman-2020-09-09 KAILASH_3 dongle specific configuration
+//jjustman-2020-09-09 yoga dongle specific configuration
 SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_yoga_bb_fx3() {
 
     SL_ConfigResult_t res = SL_CONFIG_OK;
@@ -1829,8 +1829,8 @@ void SaankhyaPHYAndroid::printToConsolePlfConfiguration(SL_PlatFormConfigParams_
             _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE");
             break;
 
-        case SL_KAILASH_DONGLE_3:
-            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_KAILASH_DONGLE_3");
+        case SL_SILISA_DONGLE:
+            _SAANKHYA_PHY_ANDROID_DEBUG("Board Type  : SL_SILISA_DONGLE");
             break;
 
         case SL_YOGA_DONGLE:
@@ -2670,7 +2670,7 @@ printAtsc3PerfDiagnostics(perfDiag, 0);
         atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[3].snr1000 = snr_plp[3];
 
         //sanjay
-        if (kailash_3_rssi == true) {
+        if (sl_silisa_rssi == true) {
             atsc3_ndk_phy_client_rf_metrics.rssi_1000 = ((tunerInfo.signalStrength * 1000) -
                                                          (256000));
         } else {

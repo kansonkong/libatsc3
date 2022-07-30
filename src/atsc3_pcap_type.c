@@ -382,6 +382,8 @@ atsc3_pcap_writer_context_t* atsc3_pcap_writer_context_close(atsc3_pcap_writer_c
 
 		atsc3_pcap_writer_context->pcap_fp = NULL;
 	}
+    
+    return atsc3_pcap_writer_context;
 }
 
 void atsc3_pcap_writer_context_free(atsc3_pcap_writer_context_t** atsc3_pcap_writer_context_p) {

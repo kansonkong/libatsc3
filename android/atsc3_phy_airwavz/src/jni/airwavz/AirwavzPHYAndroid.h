@@ -50,7 +50,7 @@ public:
     virtual int  stop()       override;
     virtual int  deinit()     override;
 
-    virtual int  open(int fd, string device_path)   override;
+    virtual int  open(int fd, int device_type, string device_path) override;
     virtual int  tune(int freqKhz, int single_plp) override;
     virtual int  listen_plps(vector<uint8_t> plps) override;
 
@@ -109,11 +109,11 @@ private:
 
     //Airwavz api specific methods
 
-    RedZoneCaptureHandle_t              hRedZoneCapture;
+    RedZoneCaptureHandle_t              hRedZoneCapture = { 0 };
     bool                                hRedZoneCapture_open = false;
     bool                                hRedZoneCapture_started = false;
 
-    RZRBasebandParserHandle_t           hBasebandParser;
+    RZRBasebandParserHandle_t           hBasebandParser = { 0 };
     bool                                hBasebandParser_open = false;
 
     atsc3RedZoneParserCallbackData_t    atsc3RedZoneParserCallbackData;

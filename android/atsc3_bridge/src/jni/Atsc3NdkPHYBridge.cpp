@@ -250,6 +250,8 @@ void Atsc3NdkPHYBridge::atsc3_update_l1d_time_information(uint8_t l1B_time_info_
                                                      l1D_time_msec,
                                                      l1D_time_usec,
                                                      l1D_time_nsec);
+
+    delete localUnsafeJniEnv;
 }
 
 void Atsc3NdkPHYBridge::setRfPhyStatisticsViewVisible(bool isRfPhyStatisticsVisible) {

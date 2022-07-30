@@ -132,6 +132,16 @@ udp_packet_t* process_packet_from_pcap(u_char *user, const struct pcap_pkthdr *p
     return udp_packet;
 }
 
+udp_packet_t* udp_packet_process_from_raw_ethernet_block_t(block_t* raw_blockt) {
+    if(!raw_blockt) {
+        __LISTENER_UDP_ERROR("udp_packet_process_from_raw_ethernet_block_t: raw_blockt is null!");
+        return NULL;
+    }
+    block_Rewind(raw_blockt);
+    
+    return udp_packet_process_from_ptr_raw_ethernet_packet(block_Get(raw_blockt), block_Remaining_size(raw_blockt));
+}
+
 udp_packet_t* udp_packet_process_from_ptr_raw_ethernet_packet(uint8_t* raw_packet, uint32_t raw_packet_length) {
 
 	int i = 0;
@@ -191,6 +201,16 @@ udp_packet_t* udp_packet_process_from_ptr_raw_ethernet_packet(uint8_t* raw_packe
     block_Rewind(udp_packet->data);
 
 	return udp_packet;
+}
+
+udp_packet_t* udp_packet_process_from_block_t(block_t* ip_blockt) {
+    if(!ip_blockt) {
+        __LISTENER_UDP_ERROR("udp_packet_process_from_block_t: ip_blockt is null!");
+        return NULL;
+    }
+    block_Rewind(ip_blockt);
+    
+    return udp_packet_process_from_ptr(block_Get(ip_blockt), block_Remaining_size(ip_blockt));
 }
 
 //process ip header and copy packet data
