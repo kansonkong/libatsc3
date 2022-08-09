@@ -203,14 +203,14 @@ int main(int argc, char* argv[] ) {
 											
 	_ATSC3_SONY_TS_ALP_READER_TEST_DEBUG("Opening ts: %s, length: %d, context is: %p, is_bigendian: %d", atsc3_sony_ts_alp_replay_context->ts_file_name, atsc3_sony_ts_alp_replay_context->ts_file_len, atsc3_sony_ts_alp_replay_context, is_bigendian());
 
-	char temp_alp_packet_buffer[185] = { 0 };
+	uint8_t temp_alp_packet_buffer[185] = { 0 };
 	int  temp_alp_packet_buffer_read_len = 0;
 	
 	while(atsc3_sony_ts_alp_replay_context->ts_file_pos  < (atsc3_sony_ts_alp_replay_context->ts_file_len - ATSC3_SONY_TS_ALP_SYNC_HEADER_MAX_LEN)) {
 			
 		bool	ts_payload_is_sync = false;
 		
-		uint8_t ts_payload_alp_start   = 0;
+        uint8_t ts_payload_alp_start   = 0;
 		bool 	ts_payload_is_sync_start_flag = false;
 
 		bool 	ts_payload_is_continuation = false;
@@ -431,7 +431,7 @@ update_fpos_and_loop:
         
         long actual_ts_file_pos = ftell(atsc3_sony_ts_alp_replay_context->ts_fp);
         
-        _ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_file_pos: %d, actual ftell pos: %d", atsc3_sony_ts_alp_replay_context->ts_file_pos, actual_ts_file_pos);
+        _ATSC3_SONY_TS_ALP_READER_TEST_INFO("ts_file_pos: %d, actual ftell pos: %ld", atsc3_sony_ts_alp_replay_context->ts_file_pos, actual_ts_file_pos);
 
 
 	}
