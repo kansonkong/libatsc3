@@ -197,7 +197,6 @@ clean:
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics
-	-rm -f test_sony/atsc3_sony_ts_alp_reader_test
 	-rm -f test_sony/atsc3_sony_ts_alp_reader_reflector_test
 	-rm -f test_tolka/atsc3_tolka_ts_alp_reader_test
 
@@ -361,7 +360,6 @@ atsc3_sl_phy: atsc3_sl_tlv_demod_type.o	\
 	test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics
 
 atsc3_sony_phy: \
-	test_sony/atsc3_sony_ts_alp_reader_test \
 	test_sony/atsc3_sony_ts_alp_reader_reflector_test
 
 atsc3_tolka_phy: \
@@ -2080,16 +2078,6 @@ test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test: 	test_sl/atsc3_sl_tlv_parser_
 
 
 # jjustman-2021-12-20 - Sony demod test/tools
-
-test_sony/atsc3_sony_ts_alp_reader_test: 	test_sony/atsc3_sony_ts_alp_reader_test.c \
-											libatsc3.o
-	$(CC) $(CFLAGS) $(DEBUG)  test_sony/atsc3_sony_ts_alp_reader_test.c \
-			libatsc3.o \
-			$(LOCAL_LD_LIBS) \
-			$(LOCAL_LD_LIBS_OPENSSL) \
-	   -o test_sony/atsc3_sony_ts_alp_reader_test
-	   
-	   
 
 test_sony/atsc3_sony_ts_alp_reader_reflector_test:	test_sony/atsc3_sony_ts_alp_reader_reflector_test.c \
 													libatsc3.o
