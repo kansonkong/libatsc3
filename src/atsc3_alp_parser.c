@@ -504,7 +504,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
 								   baseband_packet_payload,
 								   baseband_packet_payload->i_pos,
 								   baseband_packet_payload->p_size);
-                		 return NULL;
+                        goto free_pending_alp_packet_and_return_null;
                 	}
                     binary_payload++;
                 }
@@ -538,7 +538,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
         									   baseband_packet_payload,
         									   baseband_packet_payload->i_pos,
         									   baseband_packet_payload->p_size);
-				 return NULL;
+                goto free_pending_alp_packet_and_return_null;
 			}
             uint8_t si_header[5];
             memcpy(&si_header, binary_payload, 5);
@@ -607,7 +607,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
 			   baseband_packet_payload,
 			   baseband_packet_payload->i_pos,
 			   baseband_packet_payload->p_size);
-		 return NULL;
+        goto free_pending_alp_packet_and_return_null;
 	}
 
 
@@ -621,7 +621,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
         
         //hack to eof
         baseband_packet_payload->i_pos = baseband_packet_payload->p_size;
-        goto cleanup;
+        goto free_pending_alp_packet_and_return_null;
     }
 
     //copy into our alp_header_payload
@@ -654,8 +654,9 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
                       alp_payload_length - alp_payload_bytes_to_write,
                       block_Remaining_size(baseband_packet_payload));
     return alp_packet;
+
     
-cleanup:
+free_pending_alp_packet_and_return_null:
     if(alp_packet) {
         free(alp_packet);
         alp_packet = NULL;

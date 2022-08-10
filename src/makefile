@@ -65,21 +65,33 @@
     endif
 #endif
 
-$(info host is ${HOST})
+
 
 CC=cc
+CC_VERSION = $(shell $(CC) -dumpversion)
+CC_VERSION_MAJOR = $(shell echo $(CC_VERSION) | cut -f1 -d. )
+
 CXX=g++
+
+$(info host is ${HOST}, cc version is: ${CC_VERSION}, major ${CC_VERSION_MAJOR})
 
 LIBATSC3_LOCAL_INCLUDE_PATHS=-I `pwd`
 
 LIBATSC3_LOCAL_3RD_PARTY_INCLUDE_PATHS=-I../android/atsc3_core/libpcre/include -I ../openssl/build_ssl/include -I ../srt -I ../srt/build/include
- 
+
 # jjustman-2021-03-09 - disable -Wc++11-compat-deprecated-writable-strings for linux build
 
 DEBUG=-g
 # DEBUG=-g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
 
-ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
+# jjustman-2022-08-09 - for older cc versions that don't support  ‘-fsanitize-address-use-after-scope’, e.g. cc version is: 5.4.0, major 5
+
+ifeq ($(shell expr $(CC_VERSION_MAJOR) \>= 6), 1)
+	ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0 -fsanitize-address-use-after-scope
+else
+	ASAN=-fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls -O0
+endif
+
 
 LOCAL_LD_LIBS=-L/usr/local/lib -lz -lm -lpthread -lpcap -lpcre2-8 -lstdc++
 LOCAL_LD_LIBS_NCURSES=$(LOCAL_LD_LIBS) -lncurses
@@ -197,7 +209,7 @@ clean:
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics
-	-rm -f test_sony/atsc3_sony_ts_alp_reader_test
+	-rm -f test_sony/atsc3_sony_ts_alp_reader_reflector_test
 	-rm -f test_tolka/atsc3_tolka_ts_alp_reader_test
 
 intermediate_lls: 	atsc3_lls.o \
@@ -360,7 +372,7 @@ atsc3_sl_phy: atsc3_sl_tlv_demod_type.o	\
 	test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics
 
 atsc3_sony_phy: \
-	test_sony/atsc3_sony_ts_alp_reader_test
+	test_sony/atsc3_sony_ts_alp_reader_reflector_test
 
 atsc3_tolka_phy: \
 	test_tolka/atsc3_tolka_ts_alp_reader_test
@@ -1631,7 +1643,7 @@ endif
 # jjustman-2022-07-28 - adding suppport for demuxed pcap
 
 listener_tests/atsc3_mmt_sls_listener_test_from_demuxed_pcap: listener_tests/atsc3_mmt_sls_listener_test_from_demuxed_pcap.cpp libatsc3.o
-	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG) $(LIBATSC3_LOCAL_INCLUDE_PATHS) \
+	$(CXX)  $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) $(LIBATSC3_LOCAL_INCLUDE_PATHS) \
 	listener_tests/atsc3_mmt_sls_listener_test_from_demuxed_pcap.cpp libatsc3.o \
 	$(LOCAL_LD_LIBS_OPENSSL) \
 	$(LOCAL_LD_LIBS) \
@@ -1652,14 +1664,14 @@ endif
 # jjustman-2022-07-28 - adding suppport for stltp pcap
 
 listener_tests/atsc3_mmt_sls_listener_test_from_stltp_pcap: listener_tests/atsc3_mmt_sls_listener_test_from_stltp_pcap.cpp libatsc3.o
-	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG) $(LIBATSC3_LOCAL_INCLUDE_PATHS) \
+	$(CXX)  $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) $(LIBATSC3_LOCAL_INCLUDE_PATHS) \
 	listener_tests/atsc3_mmt_sls_listener_test_from_stltp_pcap.cpp libatsc3.o \
 	$(LOCAL_LD_LIBS_OPENSSL) \
 	$(LOCAL_LD_LIBS) \
 	-o listener_tests/atsc3_mmt_sls_listener_test_from_stltp_pcap
 
 listener_tests/atsc3_mmt_sls_listener_test_from_stltp_pcap_noasan: listener_tests/atsc3_mmt_sls_listener_test_from_stltp_pcap.cpp libatsc3.o
-	$(CXX) $(CFLAGS) $(DEBUG) $(LIBATSC3_LOCAL_INCLUDE_PATHS) \
+	$(CXX) $(CFLAGS) $(DEBUG) $(CXXFLAGS) $(LIBATSC3_LOCAL_INCLUDE_PATHS) \
 	listener_tests/atsc3_mmt_sls_listener_test_from_stltp_pcap.cpp libatsc3.o \
 	$(LOCAL_LD_LIBS_OPENSSL) \
 	$(LOCAL_LD_LIBS) \
@@ -1951,7 +1963,7 @@ tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cp
 
 # STLTP pcap replay and ROUTE / ALC extractor
 tools/atsc3_alc_listener_mde_writer_from_stltp_pcap: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3.o
-	$(CXX) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
+	$(CXX) $(INCLUDE_PATHS) $(CFLAGS) $(CXXFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
 		libatsc3.o \
 		-I../bento/include/ \
 		$(LIBATSC3_LOCAL_INCLUDE_PATHS) \
@@ -1961,7 +1973,7 @@ tools/atsc3_alc_listener_mde_writer_from_stltp_pcap: tools/atsc3_alc_listener_md
 
 # simple ALC/DASH listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
 tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3.o
-	$(CXX) $(INCLUDE_PATHS) $(ASAN) $(CFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
+	$(CXX) $(INCLUDE_PATHS) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
 		libatsc3_asan.o \
 		-I../bento/include/ \
 		$(LIBATSC3_LOCAL_INCLUDE_PATHS) \
@@ -2079,15 +2091,13 @@ test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test: 	test_sl/atsc3_sl_tlv_parser_
 
 # jjustman-2021-12-20 - Sony demod test/tools
 
-test_sony/atsc3_sony_ts_alp_reader_test: 	test_sony/atsc3_sony_ts_alp_reader_test.c \
-											libatsc3.o
-	$(CC) $(CFLAGS) $(DEBUG)  test_sony/atsc3_sony_ts_alp_reader_test.c \
+test_sony/atsc3_sony_ts_alp_reader_reflector_test:	test_sony/atsc3_sony_ts_alp_reader_reflector_test.c \
+													libatsc3.o
+	$(CC) $(CFLAGS) $(DEBUG)  test_sony/atsc3_sony_ts_alp_reader_reflector_test.c \
 			libatsc3.o \
 			$(LOCAL_LD_LIBS) \
 			$(LOCAL_LD_LIBS_OPENSSL) \
-	   -o test_sony/atsc3_sony_ts_alp_reader_test
-	   
-
+	   -o test_sony/atsc3_sony_ts_alp_reader_reflector_test
 
 
 # jjustman-2022-05-23 - tolka test tools
