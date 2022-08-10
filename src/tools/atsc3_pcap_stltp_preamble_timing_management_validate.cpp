@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <atsc3_utils.h>
 #include <atsc3_logging_externs.h>
