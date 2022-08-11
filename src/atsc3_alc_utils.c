@@ -787,7 +787,8 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
             //build our full recovery recovery_file_buffer block_t payload here...
             atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector(atsc3_route_object);
             atsc3_route_object_recovery_file_handle_flush_and_close(atsc3_route_object);
-			
+            atsc3_route_object_free_atsc3_route_object_lct_packet_received(atsc3_route_object);
+
             s_tsid_content_location = alc_packet_dump_to_object_get_s_tsid_filename_with_atsc3_fdt_file_p(udp_flow, alc_packet, lls_sls_alc_monitor, &atsc3_fdt_file_matching);
 			if(atsc3_fdt_file_matching && atsc3_fdt_file_matching->content_type) {
 				s_tsid_content_type = strlcopy(atsc3_fdt_file_matching->content_type);
@@ -896,15 +897,15 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
                                 //jjustman-2020-11-24 - discard our atsc3_route_object so we can try and recover on next carousel, since we were corrupt
 								if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet->def_lct_hdr->tsi))) {
-									atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object);
 									atsc3_sls_alc_flow_remove_atsc3_route_object(matching_sls_alc_flow, atsc3_route_object);
-                                	atsc3_route_object_free(&atsc3_route_object);
 								} else {
 									__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: unable to find matching sls_alc_flow for tsi: %d, leaking atsc3_route_object: %p!",
 													 alc_packet->def_lct_hdr->tsi,
 						 							 atsc3_route_object);
-									atsc3_route_object = NULL;
 								}
+                                atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object);
+                                atsc3_route_object_free(&atsc3_route_object);
+
 
                                 bytesWritten = ATSC3_ALC_UTILS_FAILED_GZIP_EXTRACTION;
                                 goto cleanup;
@@ -938,15 +939,15 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 
                                 //jjustman-2020-11-24 - discard our atsc3_route_object so we can try and recover on next carousel, since we were corrupt
 								if((matching_sls_alc_flow = atsc3_sls_alc_flow_find_entry_tsi(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v, alc_packet->def_lct_hdr->tsi))) {
-									atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object);
 									atsc3_sls_alc_flow_remove_atsc3_route_object(matching_sls_alc_flow, atsc3_route_object);
-									atsc3_route_object_free(&atsc3_route_object);
 								} else {
 									__ALC_UTILS_WARN("atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback: unable to find matching sls_alc_flow for tsi: %d, leaking atsc3_route_object: %p!",
 													 alc_packet->def_lct_hdr->tsi,
 													 atsc3_route_object);
-									atsc3_route_object = NULL;
 								}
+                                atsc3_route_object_reset_and_free_and_unlink_recovery_file_atsc3_route_object_lct_packet_received(atsc3_route_object);
+                                atsc3_route_object_free(&atsc3_route_object);
+
                                 bytesWritten = ATSC3_ALC_UTILS_FAILED_GZIP_EXTRACTION;
                                 goto cleanup;
 							} else {
