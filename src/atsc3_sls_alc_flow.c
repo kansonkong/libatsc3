@@ -22,10 +22,10 @@ void atsc3_sls_alc_flow_typedef_free(atsc3_sls_alc_flow_t** atsc3_sls_alc_flow_p
 		if(atsc3_sls_alc_flow) {
 			if(atsc3_sls_alc_flow->atsc3_route_s_tsid_RS_LS) {
 				atsc3_route_s_tsid_RS_LS_free(&atsc3_sls_alc_flow->atsc3_route_s_tsid_RS_LS);
-			} else {
-				if(atsc3_sls_alc_flow->media_info) {
-					atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_free(&atsc3_sls_alc_flow->media_info);
-				}
+			}
+
+			if(atsc3_sls_alc_flow->media_info) {
+				atsc3_route_s_tsid_RS_LS_SrcFlow_ContentInfo_MediaInfo_free(&atsc3_sls_alc_flow->media_info);
 			}
 			atsc3_sls_alc_flow_free_atsc3_route_object(atsc3_sls_alc_flow);
 
@@ -230,9 +230,6 @@ atsc3_sls_alc_flow_t* atsc3_sls_alc_flow_find_entry_tsi(atsc3_sls_alc_flow_v* at
 	return matching_atsc3_sls_alc_flow;
 }
 
-
-
-
 void atsc3_route_object_set_alc_flow_and_tsi_toi(atsc3_route_object_t* atsc3_route_object, atsc3_sls_alc_flow_t* atsc3_sls_alc_flow, atsc3_alc_packet_t* atsc3_alc_packet) {
 	atsc3_route_object->atsc3_sls_alc_flow = atsc3_sls_alc_flow;
 
@@ -259,6 +256,9 @@ atsc3_route_object_lct_packet_received_t* atsc3_route_object_add_or_update_lct_p
 		} else if(atsc3_route_object_lct_packet_received->use_start_offset) {
 			atsc3_route_object_lct_packet_received_node_to_insert->key = atsc3_route_object_lct_packet_received->start_offset;
 		} else {
+			_ATSC3_SLS_ALC_FLOW_WARN("atsc3_route_object_add_or_update_lct_packet_received: use_sbn_esi and use_start_offset are false!");
+			freeclean((void**)&atsc3_route_object_lct_packet_received_node_to_insert);
+			freeclean((void**)&atsc3_route_object_lct_packet_received);
 			return NULL;
 		}
 
@@ -320,7 +320,8 @@ atsc3_route_object_lct_packet_received_t* atsc3_route_object_find_lct_packet_rec
 	} else if(to_find_atsc3_route_object_lct_packet_received->use_start_offset) {
 		atsc3_route_object_lct_packet_received_node_to_lookup->key = to_find_atsc3_route_object_lct_packet_received->start_offset;
 	} else {
-		return NULL;
+		_ATSC3_SLS_ALC_FLOW_WARN("atsc3_route_object_find_lct_packet_received: use_sbn_esi and use_start_offset are false!");
+		goto cleanup;
 	}
 
 	struct avltree_node* avltree_node = avltree_lookup(&atsc3_route_object_lct_packet_received_node_to_lookup->node, &atsc3_route_object->atsc3_route_object_lct_packet_received_tree);
@@ -336,6 +337,7 @@ atsc3_route_object_lct_packet_received_t* atsc3_route_object_find_lct_packet_rec
         }
 	}
 
+cleanup:
 	freeclean((void**)&to_find_atsc3_route_object_lct_packet_received);
 	freeclean((void**)&atsc3_route_object_lct_packet_received_node_to_lookup);
 
