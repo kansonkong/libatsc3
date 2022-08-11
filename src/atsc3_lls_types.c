@@ -434,6 +434,10 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 
 					bool should_free_and_unlink = false;
 
+					if(!atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received) {
+
+					}
+
 					if(atsc3_route_object->recovery_complete_timestamp) {
 					    long atsc3_route_object_persisted_duration = now - atsc3_route_object->recovery_complete_timestamp;
 						if(atsc3_route_object_persisted_duration > (_ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_RECOVERY_COMPLETE_PURGE_SECONDS * 1000)) {
@@ -447,10 +451,8 @@ void atsc3_lls_sls_alc_monitor_check_all_s_tsid_flows_has_given_up_route_objects
 									atsc3_route_object->toi,
 									atsc3_route_object->object_length,
 									atsc3_route_object->final_object_recovery_filename_for_eviction);
-
 						}
 					}
-
 
 					//has given up flow - _ATSC3_LLS_SLS_ALC_MONITOR_LCT_PACKETS_GIVEN_UP_SECONDS
 					if(!should_free_and_unlink && atsc3_route_object->most_recent_atsc3_route_object_lct_packet_received) {
