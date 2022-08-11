@@ -390,15 +390,20 @@ int atsc3_route_object_persist_recovery_buffer_all_pending_lct_packet_vector(ats
 
 	//step 2 - free our atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist entries
 
+	//jjustman-2022-08-11 - cleanup our _v
 	for(int i=0; i < atsc3_route_object->atsc3_route_object_lct_packet_received_v.count; i++) {
 		atsc3_route_object_lct_packet_received = atsc3_route_object->atsc3_route_object_lct_packet_received_v.data[i];
 		if(atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist) {
 			block_Destroy(&atsc3_route_object_lct_packet_received->pending_alc_payload_to_persist);
 		}
+		freeclean((void**)&atsc3_route_object->atsc3_route_object_lct_packet_received_v.data[i]);
 	}
 
-	return recovery_rebuilt_payload_size;
+	freeclean((void**)&atsc3_route_object->atsc3_route_object_lct_packet_received_v.data);
+	atsc3_route_object->atsc3_route_object_lct_packet_received_v.count = 0;
+	atsc3_route_object->atsc3_route_object_lct_packet_received_v.size = 0;
 
+	return recovery_rebuilt_payload_size;
 }
 
 int64_t atsc3_route_object_recovery_file_buffer_flush_block_to_temporary_object_recovery_filename(atsc3_route_object_t* atsc3_route_object) {
@@ -864,6 +869,7 @@ void atsc3_route_object_reset_and_free_atsc3_route_object_lct_packet_received(at
 
 	freeclean((void**)&atsc3_route_object->temporary_object_recovery_filename);
 	freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_eviction);
+	freeclean((void**)&atsc3_route_object->final_object_recovery_filename_for_logging);
 
 
 #ifdef __ATSC3_ROUTE_OBJECT_PENDANTIC__
