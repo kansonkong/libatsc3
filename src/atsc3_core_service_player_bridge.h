@@ -12,6 +12,8 @@
 #include <signal.h>
 #include <limits.h>
 
+#include <algorithm>
+
 #ifndef _WIN32
 #include <sys/ioctl.h>
 #include <ftw.h>
