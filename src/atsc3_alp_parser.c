@@ -356,7 +356,7 @@ cleanup:
 atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_packet_payload) {
     
     //check for alp underrun which will need re-fragmenting
-    if(block_Remaining_size(baseband_packet_payload) < 8) {
+    if(block_Remaining_size(baseband_packet_payload) < 6) {
         __ALP_PARSER_DEBUG("atsc3_alp_packet_parse: remaining size less than 8 bytes, ptr: %p, pos: %d, size: %d",
                            baseband_packet_payload,
                            baseband_packet_payload->i_pos,
@@ -612,9 +612,7 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
         //jjustman - allow this to occur for now, as we have a valid alp header and expected length, but we are incomplete...
     } else {
         //copy into our alp_header_payload
-        block_Write(alp_packet->alp_payload, block_Get(baseband_packet_payload), alp_payload_bytes_to_write);
-        block_Seek_Relative(baseband_packet_payload, alp_payload_bytes_to_write);
-        
+        alp_packet->alp_payload = block_Duplicate_from_position_and_sizeAndMoveIptrs(baseband_packet_payload, alp_payload_bytes_to_write);
     }
     
     
