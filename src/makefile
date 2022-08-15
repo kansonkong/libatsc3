@@ -185,6 +185,8 @@ clean:
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan
+	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap
+	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
 	-rm -f a324_tests/a324_dstp_lls_aeat_emission_test
 	-rm -f phy_tests/pcap_demuxed_virtual_phy_test
 	-rm -f phy_tests/pcap_demuxed_virtual_phy_test_noasan
@@ -341,7 +343,9 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test \
-				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan
+				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan \
+				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap \
+				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
 
 a324_tests: a324_tests/a324_dstp_lls_aeat_emission_test
 
@@ -1788,6 +1792,29 @@ listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan: listener_tests/a
 
 ifeq ($(HOST), "osx")
 	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan
+endif
+
+
+
+listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap: listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o
+	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap
+
+
+listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan: listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o
+	$(CXX) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
 endif
 
 
