@@ -1176,6 +1176,27 @@ void SonyPHYAndroid::allocate_atsc3_sl_tlv_block() {
 int SonyPHYAndroid::tune(int freqKhz, int single_plp) {
     int ret = 0;
 
+
+    //tell any RXDataCallback or process event that we should discard
+    cb_should_discard = true;
+
+    //acquire our CB mutex so we don't push stale TLV packets
+    unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
+
+    //jjustman-2021-03-10 - also acquire our atsc3_sl_tlv_block_mutex so we can safely discard any pending TLV frames
+
+    if(cb_tlv) {
+        //forcibly flush any in-flight TLV packets in cb here by calling, need (cb_should_discard == true),
+        // as our type is atomic_bool and we can't printf its value here due to:
+        //                  call to implicitly-deleted copy constructor of 'std::__ndk1::atomic_bool' (aka 'atomic<bool>')
+        _SONY_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - cb_should_discard: %u, cb_GetDataSize: %zu, calling CircularBufferReset(), cb: %p, early in tune() call",
+                                   (cb_should_discard == true), CircularBufferGetDataSize(this->cb_tlv), cb_tlv);
+        CircularBufferReset(cb_tlv);
+    }
+
+    atsc3_core_service_application_bridge_reset_context();
+
+
     AcquireChannelRequest acquireChannelRequest = { 0, 6000, (u32)freqKhz, 0, 5};
 
     acquireChannelRequest.error = DL_Demodulator_acquireChannel(DC, &acquireChannelRequest, 0, 0);
@@ -1311,6 +1332,8 @@ int SonyPHYAndroid::tune(int freqKhz, int single_plp) {
     DL_Demodulator_setPLPID(DC, &mPlpData, 0, 0);
     plp_configuration_data = mPlpData;
 
+    usleep(100000);
+    cb_should_discard = false;
     return ret;
 }
 
@@ -1876,7 +1899,7 @@ int SonyPHYAndroid::statusThread() {
         atsc3_ndk_phy_client_rf_metrics.rssi_1000 = Request.rf_power * 1000;
 
         for(int i=0; i < 4; i++) {
-            if(i <= plp_configuration_data.TotalPLPnum) {
+            if(i < plp_configuration_data.TotalPLPnum) {
                 atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_id = plp_configuration_data.PLPIDArray[i];
             } else {
                 atsc3_ndk_phy_client_rf_metrics.phy_client_rf_plp_metrics[i].plp_id = 0xFF;
