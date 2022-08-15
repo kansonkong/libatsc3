@@ -279,6 +279,7 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
     set<uint8_t>::iterator it;
 
     vector<uint8_t> plps_to_listen;
+    vector<uint8_t>::iterator it_l;
 
     if(!atsc3_link_mapping_table_last) {
         __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: atsc3_link_mapping_table_last is NULL!");
@@ -436,20 +437,30 @@ vector<uint8_t>  atsc3_phy_build_plp_listeners_from_lls_slt_monitor(lls_slt_moni
      }
 
      //jjustman-2021-02-03 - treat our selected PLP's as priority fifo (e.g selected service, then additional service(s)) to ensure LG3307 demod (which can only reliably decode 1 plp at a time) can pick plps_to_listen.first()
-    plps_to_listen.push_back(first_plp);
+
+     plps_to_listen.push_back(first_plp);
+
+     if(!has_plp0_in_set) {
+        if(plps_to_check.size() < 4) {
+            plps_to_listen.push_back(0);
+        } else {
+            __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: plps_to_check contains 4 entries, but is missing plp0!");
+        }
+    }
 
     for(it = plps_to_check.begin(); it != plps_to_check.end(); it++) {
         plps_to_listen.push_back(*it);
     }
 
-     //if we don't have plp0 in our set, add it first if our size is less than 4 entries (e.g. 0 + 3plps < max of 4)
-     if(!has_plp0_in_set) {
-         if(plps_to_check.size() < 4) {
-             plps_to_listen.push_back(0);
-         } else {
-             __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_WARN("atsc3_phy_update_plp_listeners_from_lls_slt_monitor: plps_to_check contains 4 entries, but is missing plp0!");
-         }
-    }
+    sort(plps_to_listen.begin(), plps_to_listen.end());
+
+    //jjustman-2022-07-28 - make sure we don't have duplciate plp's in here, it may 'confuse' some demod devices..
+    it_l = unique(plps_to_listen.begin(), plps_to_listen.end());
+
+    plps_to_listen.resize(distance(plps_to_listen.begin(), it_l));
+
+    //if we don't have plp0 in our set, add it first if our size is less than 4 entries (e.g. 0 + 3plps < max of 4)
+
 
     //ugh, hack
     if(!plps_to_listen.size()) {
