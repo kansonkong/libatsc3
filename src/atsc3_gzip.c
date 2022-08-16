@@ -135,8 +135,10 @@ int32_t atsc3_unzip_gzip_payload_block_t(block_t* src, block_t* dest) {
 	uint8_t* output_payload = block_Get(dest);
     uint32_t output_payload_allocated = block_Remaining_size(dest);
     uint32_t output_payload_available = block_Remaining_size(dest);
-	
-	if(input_payload_size > output_payload_available) return -1;
+
+	//jjustman-2022-08-16 - this _can_ happen in some cases with very small PNGs...e.g.
+	//fdt:File TOI="5328" Content-Location="f2qu3SCtNfDbiyzCal0Q694u03rRdSi0qc1UfEnH9xo.png" Content-Length="3419" Transfer-Length="3490" Content-Encoding="gzip"><
+	//	if(input_payload_size > output_payload_available) return -1;
 
 	unsigned int input_payload_offset = 0;
 	unsigned int output_payload_offset = 0;

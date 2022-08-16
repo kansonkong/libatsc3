@@ -29,31 +29,40 @@ extern int _LLS_TRACE_ENABLED;
 #define LLS_DST_ADDR 3758102332
 #define LLS_DST_PORT 4937
 
-lls_table_t* lls_create_base_table(block_t* lls_packet_block);
-lls_table_t* lls_create_xml_table(block_t* lls_packet_block);
+atsc3_lls_table_t* lls_create_base_table(block_t* lls_packet_block);
+atsc3_lls_table_t* lls_create_xml_table(block_t* lls_packet_block);
 
-lls_table_t* __lls_table_create(block_t* lls_packet_block);
+atsc3_lls_table_t* __lls_table_create(block_t* lls_packet_block);
 
-lls_table_t* atsc3_lls_table_parse_raw_xml(atsc3_lls_table_t* lls_table);
+atsc3_lls_table_t* atsc3_lls_table_parse_raw_xml(atsc3_lls_table_t* lls_table);
 
-lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block);
-lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error);
-lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_table_t* lls_table_new, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error);
-lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor_t* lls_slt_monitor, lls_table_t* lls_table);
+atsc3_lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block);
+atsc3_lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error);
 
-void lls_table_free(lls_table_t** lls_table_p);
-int  lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_node);
-void lls_dump_instance_table(lls_table_t *base_table);
+//jjustman-2022-08-16 - for support with signedMultiTable encapsulation
+atsc3_lls_table_t* atsc3_lls_table_find_slt_if_signedMultiTable(atsc3_lls_table_t* atsc3_lls_table_to_check);
+atsc3_lls_table_t* atsc3_lls_table_find_type_if_signedMultiTable(atsc3_lls_table_t* atsc3_lls_table_to_check, atsc3_lls_table_type_t atsc3_lls_table_type);
+
+void atsc3_lls_slt_monitor_update_latest_certification_data_table_from_lls_table(atsc3_lls_slt_monitor_t* atsc3_lls_slt_monitor, atsc3_lls_table_t* lls_table_new);
+void atsc3_lls_slt_monitor_update_monitors_from_latest_certification_data_table(atsc3_lls_slt_monitor_t* atsc3_lls_slt_monitor);
+
+    
+atsc3_lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_table_t* lls_table_new, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error);
+atsc3_lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_table_t* lls_table);
+
+void lls_table_free(atsc3_lls_table_t** lls_table_p);
+int  lls_create_table_type_instance(atsc3_lls_table_t* lls_table, xml_node_t* xml_node);
+void lls_dump_instance_table(atsc3_lls_table_t *base_table);
 
 //xml parsing methods
 xml_document_t* xml_payload_document_parse(uint8_t *xml, int xml_size);
 xml_node_t* xml_payload_document_extract_root_node(xml_document_t*);
 
-int build_rrt_table(lls_table_t* lls_table, xml_node_t* xml_root);
-int build_system_time_table(lls_table_t* lls_table, xml_node_t* xml_root);
-int build_aeat_table(lls_table_t* lls_table, xml_node_t* xml_root);
-int build_onscreen_message_notification_table(lls_table_t* lls_table, xml_node_t* xml_root);
-int atsc3_lls_build_certificationdata_table(lls_table_t* lls_table, xml_node_t* xml_root);
+int build_rrt_table(atsc3_lls_table_t* lls_table, xml_node_t* xml_root);
+int build_system_time_table(atsc3_lls_table_t* lls_table, xml_node_t* xml_root);
+int build_aeat_table(atsc3_lls_table_t* lls_table, xml_node_t* xml_root);
+int build_onscreen_message_notification_table(atsc3_lls_table_t* lls_table, xml_node_t* xml_root);
+int atsc3_lls_build_certificationdata_table(atsc3_lls_table_t* lls_table, xml_node_t* xml_root);
 
 #define _LLS_PRINTLN(...) printf(__VA_ARGS__);printf("%s%s","\r","\n")
 #define _LLS_PRINTF(...)  printf(__VA_ARGS__);

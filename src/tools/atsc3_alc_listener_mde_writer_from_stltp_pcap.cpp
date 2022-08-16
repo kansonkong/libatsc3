@@ -90,7 +90,8 @@ void process_packet(atsc3_udp_packet_t* udp_packet) {
     
     //dispatch for LLS extraction and dump
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-        lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        atsc3_lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        lls_table = atsc3_lls_table_find_slt_if_signedMultiTable(lls_table);
 
         //auto-assign our first ROUTE service id here
         if(lls_table && lls_table->lls_table_id == SLT) {
@@ -179,11 +180,6 @@ void process_packet(atsc3_udp_packet_t* udp_packet) {
 				if(atsc3_route_object) {
 					atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, matching_lls_sls_alc_monitor, atsc3_route_object);
 					alc_packet_received_count++;
-
-	//				if(alc_packet_received_count > 10000) {
-	//					exit(0);
-	//				}
-
 				} else {
 					__ERROR("Error in ALC persist, atsc3_route_object is NULL!");
 

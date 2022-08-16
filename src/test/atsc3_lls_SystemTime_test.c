@@ -48,7 +48,7 @@ int test_lls_create_SystemTime_table(char* base64_payload) {
 	block_t* lls_packet_block = block_Alloc(binary_payload_size);
 	block_Write(lls_packet_block, binary_payload, binary_payload_size);
 
-	lls_table_t* lls = __lls_table_create(lls_packet_block);
+	atsc3_lls_table_t* lls = __lls_table_create(lls_packet_block);
 	if(lls) {
 		lls_dump_instance_table(lls);
 	} else {

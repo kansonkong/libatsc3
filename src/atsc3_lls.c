@@ -59,7 +59,7 @@ char* LLS_SERVICE_CATEGORY_VALUES[] = {"atsc reserved", "linear av", "linear aud
 char* LLS_PROTOCOL_VALUES[] = {"atsc reserved", "ROUTE", "MMTP", "atsc other" };
 
 
-static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
+static atsc3_lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 
     //make sure we have enough remaining data
     if(block_Remaining_size(lls_packet_block) < 4) {
@@ -67,7 +67,7 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
         return NULL;
     }
 	//zero out full struct
-	lls_table_t* base_table = (lls_table_t*)calloc(1, sizeof(lls_table_t));
+	atsc3_lls_table_t* base_table = (atsc3_lls_table_t*)calloc(1, sizeof(atsc3_lls_table_t));
 	uint8_t lls[4];
 	memcpy(&lls, block_Get(lls_packet_block), 4);
 	block_Seek_Relative(lls_packet_block, 4);
@@ -218,8 +218,8 @@ static lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 
 
 
-lls_table_t* lls_create_xml_table(block_t* lls_packet_block) {
-	lls_table_t *lls_table = __lls_create_base_table_raw(lls_packet_block);
+atsc3_lls_table_t* lls_create_xml_table(block_t* lls_packet_block) {
+	atsc3_lls_table_t *lls_table = __lls_create_base_table_raw(lls_packet_block);
 	if(!lls_table) {
         _LLS_ERROR("lls_create_xml_table - error creating instance of LLS XML table, lls_table* is NULL!");
         return NULL;
@@ -260,12 +260,12 @@ lls_table_t* lls_create_xml_table(block_t* lls_packet_block) {
 /*
  * jjustman-2022-01-19 - NOTE: this method will call lls_slt_table_perform_update, so no need to call it in LLS ip/port detection flow logic
  */
-lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block) {
+atsc3_lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block) {
 	uint32_t parsed;
 	uint32_t parsed_update;
 	uint32_t parsed_error;
 
-	lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet_block, &parsed, &parsed_update, &parsed_error);
+	atsc3_lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, lls_packet_block, &parsed, &parsed_update, &parsed_error);
 
 	if(lls_table) {
 	    if(lls_table->lls_table_id == SignedMultiTable) {
@@ -287,7 +287,38 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor_t* 
 	return lls_table;
 }
 
-lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor_t* lls_slt_monitor, lls_table_t* lls_table) {
+
+atsc3_lls_table_t* atsc3_lls_table_find_type_if_signedMultiTable(atsc3_lls_table_t* atsc3_lls_table_to_check, atsc3_lls_table_type_t atsc3_lls_table_type) {
+    atsc3_lls_table_t* atsc3_matching_table_to_return = NULL;
+    
+    if(!atsc3_lls_table_to_check) {
+        return NULL;
+    }
+    
+    if(atsc3_lls_table_to_check->lls_table_id  == atsc3_lls_table_type) {
+        return atsc3_lls_table_to_check;
+    }
+    
+    //jjustman-2022-07-12 - hack-ish workaround for non-dispatcher wired up with SignedMultiTable
+    if(atsc3_lls_table_to_check->lls_table_id == SignedMultiTable) {
+      atsc3_lls_table_t* my_smt_lls_table = NULL;
+      for(int i=0; i < atsc3_lls_table_to_check->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count && !atsc3_matching_table_to_return; i++) {
+        atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = atsc3_lls_table_to_check->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
+          if(atsc3_signed_multi_table_lls_payload->lls_table->lls_table_id == atsc3_lls_table_type) {
+              atsc3_matching_table_to_return = atsc3_signed_multi_table_lls_payload->lls_table;
+        }
+      }
+    }
+    
+    return atsc3_matching_table_to_return;
+}
+
+atsc3_lls_table_t* atsc3_lls_table_find_slt_if_signedMultiTable(atsc3_lls_table_t* atsc3_lls_table_to_check) {
+    return atsc3_lls_table_find_type_if_signedMultiTable(atsc3_lls_table_to_check, SLT);
+}
+
+
+atsc3_lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_table_t* lls_table) {
     if(lls_table) {
         switch (lls_table->lls_table_id) {
 
@@ -351,9 +382,9 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(ll
 
 //only return back if lls_table_version has changed
 
-lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error) {
+atsc3_lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor_t* lls_slt_monitor, block_t* lls_packet_block, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error) {
 
-	lls_table_t* lls_table_new = __lls_table_create(lls_packet_block);
+	atsc3_lls_table_t* lls_table_new = __lls_table_create(lls_packet_block);
 	if(!lls_table_new) {
 		(*parsed_error)++;
 		_LLS_ERROR("lls_table_create_or_update_from_lls_slt_monitor_with_metrics: failed to create lls_table_new!")
@@ -381,7 +412,7 @@ lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_sl
 
 }
 
-lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_table_t* lls_table_new, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error) {
+atsc3_lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_table_t* lls_table_new, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error) {
 	if(!lls_slt_monitor) {
 		_LLS_ERROR("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: lls_slt_monitor is NULL!");
 		return NULL;
@@ -426,16 +457,23 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
 		//persist this CDT information as needed
 		if(!lls_slt_monitor->lls_latest_certification_data_table) {
 			_LLS_INFO("Adding new CertificationData table reference: %s", lls_table_new->certification_data.raw_certification_data_xml_fragment->p_buffer);
-			lls_slt_monitor->lls_latest_certification_data_table = lls_table_new;
-		} else if(lls_slt_monitor->lls_latest_certification_data_table->lls_group_id == lls_table_new->lls_group_id &&
+            
+            atsc3_lls_slt_monitor_update_latest_certification_data_table_from_lls_table(lls_slt_monitor, lls_table_new);
+         
+        } else if(lls_slt_monitor->lls_latest_certification_data_table->lls_group_id == lls_table_new->lls_group_id &&
 				  lls_slt_monitor->lls_latest_certification_data_table->lls_table_version != lls_table_new->lls_table_version) {
 			_LLS_INFO("Updating new CertificationData table reference: %s", lls_table_new->certification_data.raw_certification_data_xml_fragment->p_buffer);
+
+            atsc3_lls_slt_monitor_update_latest_certification_data_table_from_lls_table(lls_slt_monitor, lls_table_new);
 
 			lls_table_free(&lls_slt_monitor->lls_latest_certification_data_table);
 			lls_slt_monitor->lls_latest_certification_data_table = lls_table_new;
 		} else {
 			lls_table_free(&lls_table_new);
 		}
+        //jjustman-2022-08-16 - always update our monitors for cert data table, as they are transients
+        atsc3_lls_slt_monitor_update_monitors_from_latest_certification_data_table(lls_slt_monitor);
+        
 		return lls_table_new;
 	}
    
@@ -469,7 +507,7 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
                 (lls_table_new->lls_table_version > lls_slt_monitor->lls_latest_slt_table->lls_table_version ||
                 (lls_table_new->lls_table_version == 0x00 && lls_slt_monitor->lls_latest_slt_table->lls_table_version == 0xFF))) {
 
-                lls_table_t* lls_slt_table_to_free = lls_slt_monitor->lls_latest_slt_table;
+                atsc3_lls_table_t* lls_slt_table_to_free = lls_slt_monitor->lls_latest_slt_table;
 
                 //replace our lls_latest_slt_table by freeing it and assigning it new
                 _LLS_WARN("atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table: lls_slt_table_to_free: %p (lls_table_version: %d), replacing with latest: %p (lls_table_version: %d)",
@@ -517,9 +555,9 @@ lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_
 }
 //jjustman-2020-03-10 - todo: refactor me for signedMultiTable support
 
-lls_table_t* __lls_table_create(block_t* lls_packet_block) {
+atsc3_lls_table_t* __lls_table_create(block_t* lls_packet_block) {
 
-    lls_table_t *lls_table = lls_create_xml_table(lls_packet_block);
+    atsc3_lls_table_t *lls_table = lls_create_xml_table(lls_packet_block);
     if(!lls_table) {
         _LLS_ERROR("lls_create_table - error creating instance of LLS table and subclass, return from lls_create_xml_table was null");
         return NULL;
@@ -587,8 +625,8 @@ error:
 	return NULL;
 }
 
-void lls_table_free(lls_table_t** lls_table_p) {
-	lls_table_t* lls_table = *lls_table_p;
+void lls_table_free(atsc3_lls_table_t** lls_table_p) {
+	atsc3_lls_table_t* lls_table = *lls_table_p;
 	if(!lls_table) {
 		_LLS_DEBUG("lls_table_free: lls_table == NULL");
 		return;
@@ -727,7 +765,7 @@ xml_node_t* xml_payload_document_extract_root_node(xml_document_t* document) {
 }
 
 //caller must free xml_root
-int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_root) {
+int lls_create_table_type_instance(atsc3_lls_table_t* lls_table, xml_node_t* xml_root) {
 
 	xml_string_t* root_node_name = xml_node_name(xml_root); //root
 
@@ -763,7 +801,7 @@ int lls_create_table_type_instance(lls_table_t* lls_table, xml_node_t* xml_root)
  *
  * <SystemTime xmlns="http://www.atsc.org/XMLSchemas/ATSC3/Delivery/SYSTIME/1.0/" currentUtcOffset="37" utcLocalOffset="-PT5H" dsStatus="false"/>
  */
-int build_system_time_table(lls_table_t* lls_table, xml_node_t* xml_root) {
+int build_system_time_table(atsc3_lls_table_t* lls_table, xml_node_t* xml_root) {
 
 	int ret = 0;
 
@@ -862,19 +900,19 @@ char* lls_get_sls_protocol_value(uint8_t protocol) {
 	}
 }
 
-int build_rrt_table(lls_table_t* lls_table, xml_node_t* xml_root) {
+int build_rrt_table(atsc3_lls_table_t* lls_table, xml_node_t* xml_root) {
     int ret = 0;
     _LLS_WARN("build_rrt_table: NOT IMPLEMENTED");
     return ret;
 }
 
-int build_aeat_table(lls_table_t* lls_table, xml_node_t* xml_root) {
+int build_aeat_table(atsc3_lls_table_t* lls_table, xml_node_t* xml_root) {
     int ret = 0;
     _LLS_WARN("build_aeat_table: NOT IMPLEMENTED");
     return ret;
 }
 
-int build_onscreen_message_notification_table(lls_table_t* lls_table, xml_node_t* xml_root) {
+int build_onscreen_message_notification_table(atsc3_lls_table_t* lls_table, xml_node_t* xml_root) {
     int ret = 0;
     _LLS_WARN("build_onscreen_message_notification_table: NOT IMPLEMENTED");
     return ret;
@@ -884,7 +922,7 @@ int build_onscreen_message_notification_table(lls_table_t* lls_table, xml_node_t
 /*
  * see atsc3lls_types.h for atsc3_certification_data_t
  */
-int atsc3_lls_build_certificationdata_table(lls_table_t* lls_table, xml_node_t* xml_root) {
+int atsc3_lls_build_certificationdata_table(atsc3_lls_table_t* lls_table, xml_node_t* xml_root) {
 
 	int ret = 0;
 
@@ -1010,7 +1048,7 @@ int atsc3_lls_build_certificationdata_table(lls_table_t* lls_table, xml_node_t* 
 
 
 
-void lls_dump_instance_table(lls_table_t* base_table) {
+void lls_dump_instance_table(atsc3_lls_table_t* base_table) {
 	_LLS_TRACE("dump_instance_table: base_table address: %p", base_table);
 
 	_LLS_INFO("");
@@ -1088,4 +1126,25 @@ void lls_dump_instance_table(lls_table_t* base_table) {
 
 }
 
+void atsc3_lls_slt_monitor_update_latest_certification_data_table_from_lls_table(atsc3_lls_slt_monitor_t* atsc3_lls_slt_monitor, atsc3_lls_table_t* lls_table_new) {
+    
+    if(atsc3_lls_slt_monitor->lls_latest_certification_data_table) {
+        lls_table_free(&atsc3_lls_slt_monitor->lls_latest_certification_data_table);
+    }
+    
+    atsc3_lls_slt_monitor->lls_latest_certification_data_table = lls_table_new;
+}
+
+void atsc3_lls_slt_monitor_update_monitors_from_latest_certification_data_table(atsc3_lls_slt_monitor_t* atsc3_lls_slt_monitor) {
+    
+    for(int i=0; i < atsc3_lls_slt_monitor->lls_sls_alc_monitor_v.count; i++) {
+        lls_sls_alc_monitor_t* lls_sls_alc_monitor = atsc3_lls_slt_monitor->lls_sls_alc_monitor_v.data[i];
+        lls_sls_alc_monitor->transients.atsc3_certification_data = &atsc3_lls_slt_monitor->lls_latest_certification_data_table->certification_data;
+    }
+    
+    for(int i=0; i < atsc3_lls_slt_monitor->lls_sls_mmt_monitor_v.count; i++) {
+        lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = atsc3_lls_slt_monitor->lls_sls_mmt_monitor_v.data[i];
+        lls_sls_mmt_monitor->transients.atsc3_certification_data = &atsc3_lls_slt_monitor->lls_latest_certification_data_table->certification_data;
+    }
+}
 

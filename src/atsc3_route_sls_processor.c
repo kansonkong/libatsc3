@@ -142,10 +142,10 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 				atsc3_smime_validation_context_t* atsc3_smime_validation_context = atsc3_smime_validation_context_new(atsc3_smime_entity);
 
 //jjustman-2021-03-01 - we need to parse our signing certificate from our CDT (chain) cert(s)
-				if(lls_sls_alc_monitor->atsc3_certification_data) {
+				if(lls_sls_alc_monitor->transients.atsc3_certification_data) {
 					atsc3_smime_validation_context->certificate_payload = block_Alloc(0);
-					for(int i=0; i < lls_sls_alc_monitor->atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count; i++) {
-						atsc3_certification_data_to_be_signed_data_certificates_t* atsc3_certification_data_to_be_signed_data_certificates = lls_sls_alc_monitor->atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i];
+					for(int i=0; i < lls_sls_alc_monitor->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count; i++) {
+						atsc3_certification_data_to_be_signed_data_certificates_t* atsc3_certification_data_to_be_signed_data_certificates = lls_sls_alc_monitor->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i];
 						block_Write(atsc3_smime_validation_context->certificate_payload, (const uint8_t*) ATSC3_SMIME_UTILS_BEGIN_CERTIFICATE, strlen(ATSC3_SMIME_UTILS_BEGIN_CERTIFICATE));
 						block_Append(atsc3_smime_validation_context->certificate_payload, atsc3_certification_data_to_be_signed_data_certificates->base64_payload);
 						block_Write(atsc3_smime_validation_context->certificate_payload, (const uint8_t*) ATSC3_SMIME_UTILS_END_CERTIFICATE, strlen(ATSC3_SMIME_UTILS_END_CERTIFICATE));
