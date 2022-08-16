@@ -54,8 +54,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	//dispatch for LLS extraction and dump
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 
-		lls_table_t* lls_table = __lls_table_create(udp_packet->data);
-
+		atsc3_lls_table_t* lls_table = __lls_table_create(udp_packet->data);
+        
 		if(lls_table) {
 			printf("---\n");
 			lls_dump_instance_table(lls_table);

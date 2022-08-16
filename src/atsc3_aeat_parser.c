@@ -13,7 +13,7 @@ int _AEAT_PARSER_INFO_ENABLED = 1;
 int _AEAT_PARSER_DEBUG_ENABLED = 0;
 int _AEAT_PARSER_TRACE_ENABLED = 0;
 
-int atsc3_aeat_table_populate_from_xml(lls_table_t* lls_table, xml_node_t* xml_root) {
+int atsc3_aeat_table_populate_from_xml(atsc3_lls_table_t* lls_table, xml_node_t* xml_root) {
     int ret = 0;
 
     if(lls_table->aeat_table.aeat_xml_fragment_latest) {

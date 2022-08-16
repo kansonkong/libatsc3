@@ -175,8 +175,8 @@ void atsc3_sls_on_held_trigger_received_callback_impl(uint16_t service_id, block
     void atsc3_mmt_mpu_on_sequence_mpu_metadata_present_ndk(uint16_t packet_id, uint32_t mpu_sequence_number, block_t* mmt_mpu_metadata);
     */
 
-void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table);
-void atsc3_lls_on_aeat_table_present_ndk(lls_table_t* lls_table);
+void atsc3_lls_on_sls_table_present_ndk(atsc3_lls_table_t* lls_table);
+void atsc3_lls_on_aeat_table_present_ndk(atsc3_lls_table_t* lls_table);
 
 bool atsc3_mmt_signalling_information_on_routecomponent_message_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_route_component_t* mmt_atsc3_route_component);
 void atsc3_mmt_signalling_information_on_held_message_present_ndk(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_held_message_t* mmt_atsc3_held_message);

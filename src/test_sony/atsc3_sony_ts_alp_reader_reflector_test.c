@@ -84,7 +84,7 @@ atsc3_alp_packet_collection_t* atsc3_alp_packet_collection = NULL;
 typedef struct atsc3_sony_ts_alp_packet_instance {
 	block_t*						current_ts_packet; //do NOT memset(0) this block...
 	
-	block_t*						pending_alp_packet;
+    block_t*						pending_alp_packet;
 	
 } atsc3_sony_ts_alp_packet_instance_t;
 

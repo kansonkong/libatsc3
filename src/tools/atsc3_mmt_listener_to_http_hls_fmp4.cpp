@@ -695,7 +695,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 	//auto-monitor code here for MMT
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		//process as lls.sst, dont free as we keep track of our object in the lls_slt_monitor
-        lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        atsc3_lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        lls_table = atsc3_lls_table_find_slt_if_signedMultiTable(lls_table);
+
         if(lls_table) {
 			if(lls_table->lls_table_id == SLT) {
 				int retval = lls_slt_table_perform_update(lls_table, lls_slt_monitor);

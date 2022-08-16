@@ -51,7 +51,7 @@ void handle_sighup(int sig);
 
 
 void* print_lls_instance_table_thread(void*);
-void lls_dump_instance_table_ncurses(lls_table_t* lls_session);
+void lls_dump_instance_table_ncurses(atsc3_lls_table_t* lls_session);
 
 #else
 #define ncurses_init(...)

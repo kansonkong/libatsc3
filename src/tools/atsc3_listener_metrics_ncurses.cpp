@@ -301,8 +301,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 
 		//process as lls.sst, dont free as we keep track of our object in the lls_slt_monitor
 
-		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, udp_packet->data, &atsc3_global_statistics->packet_counter_lls_packets_parsed, &atsc3_global_statistics->packet_counter_lls_packets_parsed_update, &atsc3_global_statistics->packet_counter_lls_packets_parsed_error);
-		if(lls_table) {
+		atsc3_lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor_with_metrics(lls_slt_monitor, udp_packet->data, &atsc3_global_statistics->packet_counter_lls_packets_parsed, &atsc3_global_statistics->packet_counter_lls_packets_parsed_update, &atsc3_global_statistics->packet_counter_lls_packets_parsed_error);
+        lls_table = atsc3_lls_table_find_slt_if_signedMultiTable(lls_table);
+        
+        if(lls_table) {
 
 			if(lls_table->lls_table_id == SLT) {
 
