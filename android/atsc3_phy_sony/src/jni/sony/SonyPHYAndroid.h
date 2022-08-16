@@ -55,8 +55,9 @@ public:
     static int SONY_USB_ENDPOINT_RX;
     static int SONY_USB_ENDPOINT_TX;
     static int SONY_USB_ENDPOINT_RX_TS;
+	static long ITE_93x_OPEN_CLEANUP_FROM_ERROR_LAST_REBOOT_TIMESTAMP;
 
-    //jjustman-2022-05-24 - TODO: add libusb_device_handle for Endeavour ctx instance
+	//jjustman-2022-05-24 - TODO: add libusb_device_handle for Endeavour ctx instance
     //static Endeavour            Endeavour_s; //FIXME: type aliasing against static!
 
     IT930x_Device*          dev = nullptr;
@@ -90,11 +91,8 @@ public:
 
     virtual ~SonyPHYAndroid();
 
+	static volatile bool captureThreadShouldRun;
     static void RxDataCallback(unsigned char *data, long len);
-
-    //friend functions for brUser.cpp impls
-
-    int RxThread();
 
     static void NotifyPlpSelectionChangeCallback(vector<uint8_t> plps, void* context);
 
@@ -152,7 +150,7 @@ private:
     //uses      pinProducerThreadAsNeeded
     int         captureThread();
     std::thread captureThreadHandle;
-    bool        captureThreadShouldRun = false;
+//    static volatile bool captureThreadShouldRun;
     bool        captureThreadIsRunning = false;
 
     //uses      pinConsumerThreadAsNeeded

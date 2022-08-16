@@ -1755,7 +1755,7 @@ SL_I2cResult_t SL_I2cWrite_tolka(unsigned char i2cAddr, unsigned int wLen, unsig
         return SL_I2C_ERR_TRANSFER_FAILED;
     }
     //retVal = (SL_I2cResult_t)IT9300_ExtI2C_write(endeavour_sl3000, 0, endeavour_sl3000_i2cBus, (Byte)(i2cAddr<<1), (Byte)wLen, data, False);
-    usleep(6000); //jjustman-2022-05-24 - super hack???
+    usleep(10000); //jjustman-2022-05-24 - super hack???
 
     error = IT9300_ExtI2C_write(&TolkaPHYAndroid::Endeavour_s, 0, TOLKA_USB_sl3000_i2cBus, (Byte)(i2cAddr << 1), (Byte)wLen, data, False);
     if (!error)
@@ -1831,8 +1831,8 @@ SL_GpioResult_t SL_GpioSetPin_tolka_hack(unsigned char gpio, unsigned char value
 
 static volatile bool stopRx = false;
 static volatile int  isCaptStarted = 0;
-static unsigned int reqsize = 16;  // Request size in number of packets
-static unsigned int queuedepth = 16;   // Number of requests to queue
+static unsigned int reqsize = 128;  // Request size in number of packets
+static unsigned int queuedepth = 4;   // Number of requests to queue
 static unsigned int pktsize = 512;     // Maximum packet size for the endpoint
 static unsigned int        success_count = 0;  // Number of successful transfers
 static unsigned int        failure_count = 0;  // Number of failed transfers

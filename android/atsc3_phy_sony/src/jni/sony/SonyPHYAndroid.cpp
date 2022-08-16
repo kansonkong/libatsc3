@@ -8,10 +8,13 @@ SonyPHYAndroid* sonyPHYAndroid = nullptr;
 CircularBuffer SonyPHYAndroid::cb_tlv = nullptr;
 
 libusb_device_handle* SonyPHYAndroid::Libusb_device_handle = nullptr;
+long SonyPHYAndroid::ITE_93x_OPEN_CLEANUP_FROM_ERROR_LAST_REBOOT_TIMESTAMP = 0;
 
 int SonyPHYAndroid::SONY_USB_ENDPOINT_RX = -1;
 int SonyPHYAndroid::SONY_USB_ENDPOINT_TX = -1;
 int SonyPHYAndroid::SONY_USB_ENDPOINT_RX_TS = -1;
+
+volatile bool SonyPHYAndroid::captureThreadShouldRun = false;
 
 mutex SonyPHYAndroid::CircularBufferMutex;
 
@@ -23,8 +26,6 @@ int SonyPHYAndroid::Last_tune_freq = -1;
 int _SONY_PHY_ANDROID_INFO_ENABLED = 1;
 int _SONY_PHY_ANDROID_DEBUG_ENABLED = 1;
 int _SONY_PHY_ANDROID_TRACE_ENABLED = 0;
-
-Endeavour *g_it9300;
 
 //sony methods
 
@@ -58,14 +59,12 @@ SonyPHYAndroid::SonyPHYAndroid(JNIEnv* env, jobject jni_instance) {
     //atomic_set(&dev->DC->filter_count, 0);
     DC->it9300.ctrlBus = BUS_USB;	///for read eeprom
     DC->it9300.maxBusTxSize = 63;	///for read eeprom
-    g_it9300 = &DC->it9300;
     DC->it9300.usbbus_timeout = 500;
     DC->rx_number = 0;
     DC->map_enalbe = false;
     DC->hihg_byte = 0;
     DC->low_byte = 0;
     DC->if_degug = 0;
-
 
     BrUser_createCriticalSection();
 }
@@ -76,6 +75,7 @@ SonyPHYAndroid::~SonyPHYAndroid() {
 
     this->stop();
 
+    BrUser_deleteCriticalSection();
     if(atsc3_ndk_application_bridge_get_instance()) {
         atsc3_ndk_application_bridge_get_instance()->atsc3_phy_notify_plp_selection_change_clear_callback();
     }
@@ -97,10 +97,22 @@ SonyPHYAndroid::~SonyPHYAndroid() {
 
     CircularBufferMutex_local.unlock();
 
+    if(DC) {
+        freeclean((void**)&DC);
+    }
+
+    if(dev) {
+        freeclean((void**)&dev);
+    }
+    if(Libusb_device_handle) {
+        libusb_reset_device(Libusb_device_handle);
+        libusb_close(Libusb_device_handle);
+        Libusb_device_handle = nullptr;
+        libusb_exit(NULL);
+    }
+
     _SONY_PHY_ANDROID_INFO("SonyPHYAndroid::~SonyPHYAndroid - exit: deleting with this: %p", this);
 }
-
-
 
 int  SonyPHYAndroid::init() {
     //jj: todo
@@ -116,8 +128,78 @@ bool SonyPHYAndroid::is_running() {
 };
 
 int SonyPHYAndroid::stop() {
-    //jj: todo
-    return -1;
+
+    _SONY_PHY_ANDROID_INFO("SonyPHYAndroid::stop: enter with this: %p, captureThreadIsRunning: %d, processThreadIsRunning: %d, processAlpThreadIsRunning:%d, statusThreadIsRunning: %d",
+                               this,
+                               this->captureThreadIsRunning,
+                               this->processThreadIsRunning,
+                               this->processAlpThreadIsRunning,
+                               this->statusThreadIsRunning);
+
+    SonyPHYAndroid::cb_should_discard = true;
+
+    statusThreadShouldRun = false;
+    captureThreadShouldRun = false;
+    processThreadShouldRun = false;
+    processAlpThreadShouldRun = false;
+
+    //shut down status thread first...
+    if(this->captureThreadIsRunning) {
+        captureThreadShouldRun = false;
+    }
+
+    //tear down status thread first, as its the most 'problematic' with the Sony i2c i/f processing
+    while(this->statusThreadIsRunning) {
+        usleep(1000);
+        _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: this->statusThreadIsRunning: %d", this->statusThreadIsRunning);
+    }
+
+    _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: before join for statusThreadHandle");
+    if(statusThreadHandle.joinable()) {
+        statusThreadHandle.join();
+    }
+    _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: after join for statusThreadHandle");
+
+    while(this->captureThreadIsRunning) {
+        usleep(1000);
+        _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: this->captureThreadIsRunning: %d", this->captureThreadIsRunning);
+    }
+
+    _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: before join for captureThreadHandle");
+    if(captureThreadHandle.joinable()) {
+        captureThreadHandle.join();
+    }
+    _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: after join for captureThreadHandle");
+
+    if(processThreadIsRunning) {
+        _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: setting processThreadShouldRun: false");
+        while(this->processThreadIsRunning) {
+            usleep(1000);
+            _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
+        }
+    }
+
+    _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: before join for processThreadHandle");
+    if(processThreadHandle.joinable()) {
+        processThreadHandle.join();
+    }
+
+    //process ALP thread
+
+    if(processAlpThreadIsRunning) {
+        _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: setting processThreadShouldRun: false");
+        while(this->processAlpThreadIsRunning) {
+            usleep(1000);
+            _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
+        }
+    }
+
+    _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: before join for processThreadHandle");
+    if(processAlpThreadHandle.joinable()) {
+        processAlpThreadHandle.join();
+    }
+
+    return 0;
 };
 
 int SonyPHYAndroid::deinit() {
@@ -135,12 +217,24 @@ string SonyPHYAndroid::get_firmware_version() {
 };
 
 int SonyPHYAndroid::download_bootloader_firmware(int fd, int device_type, string devicePath) {
-    //jj: todo
+    //jj: noop
     return -1;
 };
 
 int SonyPHYAndroid::open(int fd, int device_type, string devicePath)   {
     int r = -1;
+
+    //check to make sure we aren't re-enumerating from cleanup_from_error ite9300 reboot flow (e.g. to reset for possible other usbphyatsc3 sources that may have same VID/PID for IT93x chip host i/f
+    if(SonyPHYAndroid::ITE_93x_OPEN_CLEANUP_FROM_ERROR_LAST_REBOOT_TIMESTAMP) {
+        long current_ts = gtl();
+        long last_open_delta = current_ts - SonyPHYAndroid::ITE_93x_OPEN_CLEANUP_FROM_ERROR_LAST_REBOOT_TIMESTAMP;
+
+        _SONY_PHY_ANDROID_WARN("open - ts delta is: %ld", last_open_delta);
+        if(last_open_delta < 2000) {
+            //less than 2s, ignore this re-enumeration
+            return -31337;
+        }
+    }
 
     libusb_fd = fd;
 
@@ -434,7 +528,7 @@ epReadTs: 2022-05-24 05:41:44.177 27647-27647/com.example.endeavour_SL3000_R855.
                 _SONY_PHY_ANDROID_INFO("Tuner Initialize Fail [0x%08lx]\n", error);
                 DC->is_rx_init[br_idx][ts_idx] = 0;
                 if (DC->chip_Type[br_idx][ts_idx] != EEPROM_IT913X)
-                    return error;
+					goto cleanup_from_error;
             } else
                 DC->is_rx_init[br_idx][ts_idx] = 1;
         }
@@ -527,11 +621,21 @@ epReadTs: 2022-05-24 05:41:44.177 27647-27647/com.example.endeavour_SL3000_R855.
         /////IT9300_setIgnoreFail(g_it9300, br_idx, true);	//open error packet
     }
 
-    _SONY_PHY_ANDROID_INFO("open success?!!!");
+    _SONY_PHY_ANDROID_INFO("open success...");
     //success?!
 
     return 0;
 
+cleanup_from_error:
+	_SONY_PHY_ANDROID_WARN("open - error: %d, dc: %p, calling IT9300_reboot", -error, DC);
+	if(DC) {
+		int reboot_error = IT9300_reboot(&DC->it9300, br_idx);
+        SonyPHYAndroid::ITE_93x_OPEN_CLEANUP_FROM_ERROR_LAST_REBOOT_TIMESTAMP = gtl();
+
+        _SONY_PHY_ANDROID_WARN("open - error: after IT9300_reboot: reboot error: %d, last reboot timestamp: %ld", reboot_error, SonyPHYAndroid::ITE_93x_OPEN_CLEANUP_FROM_ERROR_LAST_REBOOT_TIMESTAMP);
+	}
+
+	return -error;
 exit:
     return -1;
 };
@@ -1189,13 +1293,12 @@ int SonyPHYAndroid::tune(int freqKhz, int single_plp) {
         //forcibly flush any in-flight TLV packets in cb here by calling, need (cb_should_discard == true),
         // as our type is atomic_bool and we can't printf its value here due to:
         //                  call to implicitly-deleted copy constructor of 'std::__ndk1::atomic_bool' (aka 'atomic<bool>')
-        _SONY_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - cb_should_discard: %u, cb_GetDataSize: %zu, calling CircularBufferReset(), cb: %p, early in tune() call",
+        _SONY_PHY_ANDROID_INFO("SonyPHYAndroid::tune - cb_should_discard: %u, cb_GetDataSize: %zu, calling CircularBufferReset(), cb: %p, early in tune() call",
                                    (cb_should_discard == true), CircularBufferGetDataSize(this->cb_tlv), cb_tlv);
         CircularBufferReset(cb_tlv);
     }
 
     atsc3_core_service_application_bridge_reset_context();
-
 
     AcquireChannelRequest acquireChannelRequest = { 0, 6000, (u32)freqKhz, 0, 5};
 
@@ -1573,6 +1676,11 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SonyPHYAndroid_open(JNIEnv *env, j
 
         res = sonyPHYAndroid->open(fd, device_type, device_path);
         env->ReleaseStringUTFChars( device_path_jstring, device_path_weak );
+
+        if(res < 0) {
+            delete sonyPHYAndroid;
+            sonyPHYAndroid = nullptr;
+        }
     }
     _SONY_PHY_ANDROID_DEBUG("Java_org_ngbp_libatsc3_middleware_android_phy_SonyPHYAndroid_open: fd: %d, return: %d", fd, res);
 
@@ -1641,7 +1749,6 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SonyPHYAndroid_get_1firmware_1vers
 //jjustman-2022-05-24 - hacks
 
 //URB 153408 -> ~ 300 -> /4 -.
-static volatile bool    stopRx = false;
 static volatile int     isCaptStarted = 0;
 static unsigned int     reqsize = 128;  // Request size in number of packets
 static unsigned int     queuedepth = 4;   // Number of requests to queue
@@ -1656,7 +1763,7 @@ static void xfer_callback(struct libusb_transfer *transfer)
     rqts_in_flight--;
 
     // Prepare and re-submit the read request.
-    if (!stopRx)
+    if (SonyPHYAndroid::captureThreadShouldRun)
     {
         switch (transfer->status)
         {
@@ -1719,7 +1826,6 @@ static void free_transfer_buffers(unsigned char **databuffers, struct libusb_tra
 }
 
 static void readFromUsbDemodEndpointRxTs() {
-    stopRx = false; // reset our exit flag state
 
     int  rStatus;
 
@@ -1782,7 +1888,7 @@ static void readFromUsbDemodEndpointRxTs() {
     tv_thread_running_events.tv_sec = 1;
     tv_thread_running_events.tv_usec = 0;
 
-    while (!stopRx)
+    while (SonyPHYAndroid::captureThreadShouldRun)
     {
         libusb_handle_events_timeout_completed(NULL, &tv_thread_running_events, &libusb_running_events_completed);
     }
@@ -1821,15 +1927,6 @@ static void readFromUsbDemodEndpointRxTs() {
     return;
 }
 
-static int SL_IsRxDataStarted_sony(void)
-{
-    return isCaptStarted;
-}
-
-static void SL_RxDataStop_sony_hack(void) {
-    stopRx = true;
-}
-
 
 int SonyPHYAndroid::processThread()
 {
@@ -1841,7 +1938,7 @@ int SonyPHYAndroid::processThread()
 
     while (this->processThreadShouldRun)
     {
-        //_SAANKHYA_PHY_ANDROID_DEBUG("SonyPHYAndroid::ProcessThread: getDataSize is: %d", CircularBufferGetDataSize(cb));
+        //_Sony_PHY_ANDROID_DEBUG("SonyPHYAndroid::ProcessThread: getDataSize is: %d", CircularBufferGetDataSize(cb));
 
         //unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
 
@@ -1913,7 +2010,7 @@ int SonyPHYAndroid::statusThread() {
                                                                           sonyPHYAndroid->alp_total_LMTs_recv);
         }
 
-        usleep(2000000);
+        usleep(500000);
     }
 }
 
