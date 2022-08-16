@@ -24,15 +24,22 @@ typedef struct pcap pcap_t;
 extern "C" {
 #endif
 
-typedef struct alp_single_packet_header_sub_stream_identification {
+typedef struct alp_header_sub_stream_identification {
 	uint8_t SID;
-} alp_single_packet_header_sub_stream_identification_t;
+} alp_header_sub_stream_identification_t;
 
-typedef struct alp_single_packet_header_header_extension {
+/*
+ alp header header_extension() type
+    extension_type          meaning
+    --------------          -------
+    0x00-0xEF               Reserved
+    0xF0-0xFF               User Private
+ */
+typedef struct alp_header_extension_header_extension {
 	uint8_t 	extension_type;
 	uint8_t 	extension_length_minus1;
 	uint8_t*	extension_byte;
-} alp_single_packet_header_header_extension_t;
+} alp_header_extension_header_extension_t;
 
 
 /**
@@ -48,12 +55,13 @@ typedef struct alp_single_packet_header_header_extension {
  */
 
 typedef struct alp_single_packet_hdr {
-	uint8_t		length_MSB:5;
-	uint8_t		reserved:1;
-	uint8_t		SIF:1;
-	uint8_t		HEF:1;
-	alp_single_packet_header_sub_stream_identification_t 	alp_single_packet_header_sub_stream_identification;
-	alp_single_packet_header_header_extension_t				alp_single_packet_header_header_extension;
+	uint8_t		                                length_MSB:5;
+	uint8_t		                                reserved:1;
+	uint8_t		                                SIF:1;
+	uint8_t		                                HEF:1;
+    
+	alp_header_sub_stream_identification_t 	    sub_stream_identification;
+	alp_header_extension_header_extension_t		header_extension;
 } alp_single_packet_hdr_t;
 
 /*
@@ -69,46 +77,48 @@ typedef struct alp_single_packet_hdr {
  */
 //alp_packet_header:1
 typedef struct alp_packet_header_mode {
-	uint8_t	 header_mode:1;
-	uint16_t length_LSB:11;
-	uint16_t length:16;
-	
-	alp_single_packet_hdr_t alp_single_packet_header;
+	uint8_t	                                    header_mode:1;
+	uint16_t                                    length_LSB:11;
+    alp_single_packet_hdr_t                     alp_single_packet_header;
 
+	uint16_t                                    length:16;     // 5_msb + 11 -> 16 bits -> 65,535 bytes unlike concatenation mode
 } alp_packet_header_mode_t;
 
 typedef struct alp_segmentation_header {
-	uint8_t	segment_sequence_number:5;
-	uint8_t	last_segment_indicator:1;
-	uint8_t	SIF:1;
-	uint8_t	HEF:1;
-	alp_single_packet_header_sub_stream_identification_t 	alp_single_packet_header_sub_stream_identification;
-	alp_single_packet_header_header_extension_t				alp_single_packet_header_header_extension;
+	uint8_t	                                    segment_sequence_number:5;
+	uint8_t	                                    last_segment_indicator:1;
+	uint8_t	                                    SIF:1;
+	uint8_t	                                    HEF:1;
+    
+	alp_header_sub_stream_identification_t 	    sub_stream_identification;
+	alp_header_extension_header_extension_t		header_extension;
 } alp_segmentation_header_t;
 
 typedef struct alp_concatentation_header_component_length {
-	uint16_t length:12;
+	uint16_t                                        length:12;
 } alp_concatentation_header_component_length_t;
 
 typedef struct alp_concatentation_header {
-	uint8_t	length_MSB:4;
-	uint8_t	count:3;
-	uint8_t	SIF:1;
-	uint8_t	HEF:1;
-	//upper_bound on component_length
-	alp_concatentation_header_component_length_t			alp_concatenation_header_component_length[7];
-	uint8_t stuffing_bits:4;
-	alp_single_packet_header_sub_stream_identification_t 	alp_single_packet_header_sub_stream_identification;
+	uint8_t	                                        length_MSB:4;       //note - only 4 msb here for concatenation
+	uint8_t	                                        count_minus_2:3;    //count minus 2, results in range of 2-9 concatenated packets
+	uint8_t	                                        SIF:1;
+
+    //upper_bound on component_length
+	alp_concatentation_header_component_length_t    alp_concatenation_header_component_length[8]; //up to 9 concatenated packets..
+	uint8_t                                         stuffing_bits:4;
+	alp_header_sub_stream_identification_t 	        sub_stream_identification;
 } alp_concatentation_header_t;
 
 
 typedef struct alp_packet_segmentation_concatenation {
-	uint8_t 	segmentation_concatenation:1;
-	uint16_t 	length:11;
-	union {
-		alp_segmentation_header_t 	alp_segmentation_header; //segmentation_concatenation == 0
-		alp_concatentation_header_t alp_concatentation_header; //segmentation_concatenation ==1
-	};
+	uint8_t 	                                    segmentation_concatenation:1;
+	uint16_t 	                                    length_LSB:11;
+    
+
+    alp_segmentation_header_t 	                    alp_segmentation_header;    //segmentation_concatenation == 0
+	alp_concatentation_header_t                     alp_concatentation_header;  //segmentation_concatenation ==1
+	
+    uint16_t                                        length:15; //max length for concatenation is 32,767 bytes unlike header_mode==1
 
 } alp_packet_segmentation_concatenation_t;
 
@@ -135,6 +145,7 @@ typedef struct alp_packet_segmentation_concatenation {
  * 	10					reserved
  * 	11					reserved
  */
+
 typedef struct alp_additional_header_for_signaling_information {
 	uint8_t		signaling_type;
 	uint16_t	signaling_type_extension;
@@ -170,28 +181,37 @@ typedef struct alp_additional_header_for_type_extension {
  *	<From A330-2016 Table 5.2 Code Values for packet_type>
  */
 
-typedef struct alp_packet_header  {
-	uint8_t packet_type:3;
-	uint8_t payload_configuration:1;
-	union {
-		alp_packet_header_mode_t 				alp_packet_header_mode; //payload_configuration == 0
-		alp_packet_segmentation_concatenation_t	alp_packet_segmentation_concatenation; //payload_configuration == 1
-	};
-    
+#define ATSC3_ALP_PACKET_TYPE_IPV4                      0x0  //000
+#define ATSC3_ALP_PACKET_TYPE_RESERVED_001              0x1  //001
+#define ATSC3_ALP_PACKET_TYPE_COMPRESSED_IP             0x2  //010
+#define ATSC3_ALP_PACKET_TYPE_RESERVED_011              0x3  //011
+#define ATSC3_ALP_PACKET_TYPE_LINK_LAYER_SIGNALLING     0x4  //100
+#define ATSC3_ALP_PACKET_TYPE_RESERVED_101              0x5  //101
+#define ATSC3_ALP_PACKET_TYPE_PACKET_TYPE_EXTENSION     0x6  //110
+#define ATSC3_ALP_PACKET_TYPE_MPEG2_TS                  0x7  //111
+
+typedef struct atsc3_alp_packet_header  {
+	uint8_t                                             packet_type:3;
+	uint8_t                                             payload_configuration:1;
+
+    alp_packet_header_mode_t 				            alp_packet_header_mode; //payload_configuration == 0
+	alp_packet_segmentation_concatenation_t	            alp_packet_segmentation_concatenation; //payload_configuration == 1
+	
     //for payload_type == 4 (bits: 100)
-    alp_additional_header_for_signaling_information_t alp_additional_header_for_signaling_information;
+    alp_additional_header_for_signaling_information_t   alp_additional_header_for_signaling_information;
     
     //jjustman-2020-09-08 - raw alp packet header for re-consitution in stltp modulation use-cases for LMT, etc.
-    block_t*	alp_header_payload;
-} alp_packet_header_t;
+    block_t*	                                        alp_header_payload;
+} atsc3_alp_packet_header_t;
 
 typedef struct atsc3_alp_packet {
 	atsc3_rtp_ctp_header_timestamp_t	bootstrap_timing_data_timestamp_short_reference;
-	uint8_t				plp_num;
+	uint8_t				                plp_num;
 
-    alp_packet_header_t alp_packet_header;
-    block_t*            alp_payload;
-    bool                is_alp_payload_complete;
+    atsc3_alp_packet_header_t           alp_packet_header;
+    block_t*                            alp_payload;
+    
+    bool                                is_alp_payload_complete;
 } atsc3_alp_packet_t;
 
 typedef struct atsc3_link_mapping_table_multicast {
@@ -240,6 +260,8 @@ typedef struct atsc3_alp_packet_collection {
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_baseband_packet);
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(atsc3_alp_packet_collection, atsc3_alp_packet);
+
+//atsc3_alp_packet_t* atsc3_alp_packet_new();
 
 //TODO: jjustman-2019-08-08 - fixme: clone is a shallow clone (memcpy) and MAY leave dangling pointer references
 atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet);

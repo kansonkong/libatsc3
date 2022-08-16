@@ -190,7 +190,7 @@ int32_t atsc3_unzip_gzip_payload_block_t(block_t* src, block_t* dest) {
                 case Z_BUF_ERROR:
 				case Z_MEM_ERROR:
 					(void)inflateEnd(&strm);
-
+					//don't free our &output_payload here, as it points to block_t->p_data
 				return ret;
 			}
 
@@ -209,7 +209,8 @@ int32_t atsc3_unzip_gzip_payload_block_t(block_t* src, block_t* dest) {
     int payload_len = strm.total_out;
 
 	(void)inflateEnd(&strm);
-	
+	//don't free our &output_payload here, as it points to block_t->p_data
+
 	return ret == Z_STREAM_END ?  payload_len : Z_DATA_ERROR;
 }
 
@@ -278,7 +279,8 @@ int32_t atsc3_unzip_gzip_payload_block_t_with_dynamic_realloc(block_t* src, bloc
 				case Z_DATA_ERROR:
 				case Z_MEM_ERROR:
 					(void)inflateEnd(&strm);
-				return ret;
+					freeclean((void**)&output_payload);
+					return ret;
 			}
 			
 			block_Write(dest, output_payload, output_payload_available - strm.avail_out);
@@ -293,6 +295,7 @@ int32_t atsc3_unzip_gzip_payload_block_t_with_dynamic_realloc(block_t* src, bloc
 	//jjustman-2020-11-23 - don't put null terminating character, assumed that block_t will have pre-allocated if needed...
 	//output_payload[payload_len] = '\0';
 
+	freeclean((void**)&output_payload);
 	(void)inflateEnd(&strm);
 	
 	return ret == Z_STREAM_END ?  payload_len : Z_DATA_ERROR;

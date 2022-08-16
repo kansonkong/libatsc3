@@ -185,6 +185,8 @@ clean:
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan
+	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap
+	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
 	-rm -f a324_tests/a324_dstp_lls_aeat_emission_test
 	-rm -f phy_tests/pcap_demuxed_virtual_phy_test
 	-rm -f phy_tests/pcap_demuxed_virtual_phy_test_noasan
@@ -196,6 +198,8 @@ clean:
 	-rm -f tools/atsc3_alc_listener_mde_writer_asan
 	-rm -f tools/atsc3_alc_listener_mde_writer_noasan
 	-rm -f tools/atsc3_alc_listener_mde_writer_malloc_debug
+	-rm -f tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap
+	-rm -f tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap_noasan
 	-rm -f tools/atsc3_alc_listener_mde_writer_from_stltp_pcap
 	-rm -f tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan
 	-rm -f tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer
@@ -339,7 +343,9 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test \
-				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan
+				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan \
+				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap \
+				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
 
 a324_tests: a324_tests/a324_dstp_lls_aeat_emission_test
 
@@ -358,6 +364,8 @@ tools: tools/atsc3_listener_metrics_ncurses \
 	tools/atsc3_mmt_mfu_monitor \
 	tools/atsc3_alc_listener_mde_writer \
 	tools/atsc3_alc_listener_mde_writer_asan \
+	tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap \
+	tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap_noasan \
 	tools/atsc3_alc_listener_mde_writer_from_stltp_pcap \
 	tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan \
 	tools/atsc3_mmt_listener_to_http_hls_fmp4 \
@@ -1787,6 +1795,29 @@ ifeq ($(HOST), "osx")
 endif
 
 
+
+listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap: listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o
+	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap
+
+
+listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan: listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o
+	$(CXX) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
+endif
+
+
 # this one has some ncurses inclusion to support 		
 # -D _TEST_RUN_VALGRIND_OSX_=true to disable pthread_create on osx due to issues with lldb startup bug
 
@@ -1961,6 +1992,32 @@ tools/atsc3_alc_listener_mde_writer_asan: tools/atsc3_alc_listener_mde_writer.cp
 		$(LOCAL_LD_LIBS) \
 		-o tools/atsc3_alc_listener_mde_writer_asan
 
+# DEMUXEd pcap replay and ROUTE / ALC extractor
+# tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap
+
+tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap: tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap.cpp libatsc3.o
+	$(CXX) $(INCLUDE_PATHS) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap.cpp \
+		libatsc3.o \
+		$(LIBATSC3_LOCAL_INCLUDE_PATHS) \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+	-o tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap
+
+tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap_noasan: tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap.cpp libatsc3.o
+	$(CXX) $(INCLUDE_PATHS) $(CFLAGS) $(CXXFLAGS) $(DEBUG) \
+		tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap.cpp \
+		libatsc3.o \
+		$(LIBATSC3_LOCAL_INCLUDE_PATHS) \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+	-o tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap_noasan
+	
+	
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist tools/atsc3_alc_listener_mde_writer_from_demuxed_pcap_noasan
+endif
+
 # STLTP pcap replay and ROUTE / ALC extractor
 tools/atsc3_alc_listener_mde_writer_from_stltp_pcap: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3.o
 	$(CXX) $(INCLUDE_PATHS) $(CFLAGS) $(CXXFLAGS) $(DEBUG) tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
@@ -1975,7 +2032,6 @@ tools/atsc3_alc_listener_mde_writer_from_stltp_pcap: tools/atsc3_alc_listener_md
 tools/atsc3_alc_listener_mde_writer_from_stltp_pcap_asan: tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp libatsc3.o
 	$(CXX) $(INCLUDE_PATHS) $(ASAN) $(CFLAGS) $(CXXFLAGS) $(DEBUG)  tools/atsc3_alc_listener_mde_writer_from_stltp_pcap.cpp \
 		libatsc3_asan.o \
-		-I../bento/include/ \
 		$(LIBATSC3_LOCAL_INCLUDE_PATHS) \
 		$(LOCAL_LD_LIBS_OPENSSL) \
 		$(LOCAL_LD_LIBS) \

@@ -23,6 +23,13 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_link_mapping_table_plp, atsc3_
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_link_mapping_table_plp);
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_link_mapping_table_multicast);
 
+//
+//atsc3_alp_packet_t* atsc3_alp_packet_new() {
+//    atsc3_alp_packet_t* atsc3_alp_packet = calloc(1, sizeof(atsc3_alp_packet_t));
+//    
+//    return atsc3_alp_packet;
+//}
+
 //TODO: jjustman-2019-08-08 - fixme: clone is a shallow clone (memcpy) and MAY leave dangling pointer references
 
 atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet) {
@@ -30,7 +37,19 @@ atsc3_alp_packet_t* atsc3_alp_packet_clone(atsc3_alp_packet_t* atsc3_alp_packet)
     atsc3_alp_packet_new->bootstrap_timing_data_timestamp_short_reference = atsc3_alp_packet->bootstrap_timing_data_timestamp_short_reference;
     atsc3_alp_packet_new->plp_num = atsc3_alp_packet->plp_num;
 
-    memcpy(&atsc3_alp_packet_new->alp_packet_header, &atsc3_alp_packet->alp_packet_header, sizeof(alp_packet_header_t));
+    memcpy(&atsc3_alp_packet_new->alp_packet_header, &atsc3_alp_packet->alp_packet_header, sizeof(atsc3_alp_packet_header_t));
+    
+    //jjustman-2022-08-11 - additional fields for HEF
+    if(atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.alp_single_packet_header.header_extension.extension_byte) {
+        atsc3_alp_packet_new->alp_packet_header.alp_packet_header_mode.alp_single_packet_header.header_extension.extension_byte = calloc(atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.alp_single_packet_header.header_extension.extension_length_minus1 + 1, sizeof(uint8_t));
+        memcpy(atsc3_alp_packet_new->alp_packet_header.alp_packet_header_mode.alp_single_packet_header.header_extension.extension_byte, atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.alp_single_packet_header.header_extension.extension_byte, atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.alp_single_packet_header.header_extension.extension_length_minus1 + 1);
+    }
+    
+    if(atsc3_alp_packet->alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.header_extension.extension_byte) {
+        atsc3_alp_packet_new->alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.header_extension.extension_byte = calloc(atsc3_alp_packet->alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.header_extension.extension_length_minus1 + 1, sizeof(uint8_t));
+        memcpy(atsc3_alp_packet_new->alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.header_extension.extension_byte, atsc3_alp_packet->alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.header_extension.extension_byte, atsc3_alp_packet->alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.header_extension.extension_length_minus1 + 1);
+    }
+    
     atsc3_alp_packet_new->alp_payload = block_Duplicate(atsc3_alp_packet->alp_payload);
     atsc3_alp_packet_new->alp_packet_header.alp_header_payload = block_Duplicate(atsc3_alp_packet->alp_packet_header.alp_header_payload);
     atsc3_alp_packet_new->is_alp_payload_complete = atsc3_alp_packet->is_alp_payload_complete;
@@ -52,12 +71,22 @@ void atsc3_alp_packet_free(atsc3_alp_packet_t** atsc3_alp_packet_p) {
     if(atsc3_alp_packet_p) {
         atsc3_alp_packet_t* atsc3_alp_packet = *atsc3_alp_packet_p;
         if(atsc3_alp_packet) {
+            if(atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.alp_single_packet_header.header_extension.extension_byte) {
+                freeclean((void**)&atsc3_alp_packet->alp_packet_header.alp_packet_header_mode.alp_single_packet_header.header_extension.extension_byte);
+            }
+            
+            if(atsc3_alp_packet->alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.header_extension.extension_byte) {
+                freeclean((void**)&atsc3_alp_packet->alp_packet_header.alp_packet_segmentation_concatenation.alp_segmentation_header.header_extension.extension_byte);
+            }
+            
         	if(atsc3_alp_packet->alp_packet_header.alp_header_payload) {
         		block_Destroy(&atsc3_alp_packet->alp_packet_header.alp_header_payload);
         	}
+            
             if(atsc3_alp_packet->alp_payload) {
                 block_Destroy(&atsc3_alp_packet->alp_payload);
             }
+            
             free(atsc3_alp_packet);
             atsc3_alp_packet = NULL;
         }

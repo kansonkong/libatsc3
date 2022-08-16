@@ -485,6 +485,36 @@ block_t* block_AppendFromSrciPos(block_t* dest, block_t* src) {
 
 	return dest;
 }
+//append into dest[->i_pos] from src[->i_pos] for supplied length and move both dest->i_pos and src->i_pos forward by size for subsequent appends
+//block_AppendFromSrciPosToSizeAndMoveIptrs
+
+block_t* block_AppendFromSrciPosToSizeAndMoveIptrs(block_t* dest, block_t* src, uint32_t size) {
+    if(!__block_check_bounaries(__FUNCTION__, dest)) return 0;
+
+    if(block_Remaining_size(src) < size)  {
+        //bail, we can't append enough bytes from src to make this work
+        _ATSC3_UTILS_ERROR("block_AppendFromSrciPosToSizeAndMoveIptrs: src remaining bytes: %d is less than size to copy: %d",
+                           block_Remaining_size(src), size);
+        return NULL;
+    }
+
+    uint32_t dest_size_required = dest->i_pos + size;
+
+    if(dest->p_size < dest_size_required) {
+        block_t* ret_block = block_Resize_Soft(dest, dest_size_required);
+        if(!ret_block) {
+            _ATSC3_UTILS_ERROR("block_Append: block: %p, unable to realloc from size: %u to %u, returning NULL", dest, dest->p_size, dest_size_required);
+            return 0;
+        }
+    }
+    memcpy(&dest->p_buffer[dest->i_pos], block_Get(src), size);
+    dest->i_pos += size;
+    src->i_pos += size;
+
+    return dest;
+}
+
+
 
 block_t* block_AppendFromBuf(block_t* dest, const uint8_t* src_buf, uint32_t src_size) {
 	if(!__block_check_bounaries(__FUNCTION__, dest)) return NULL;
@@ -598,8 +628,6 @@ block_t* block_Duplicate(block_t* src) {
 	return dest;
 }
 
-
-
 /**
  *
  * this will return a new block starting at src->i_pos to the end of the payload size
@@ -635,15 +663,12 @@ block_t* block_Duplicate_from_position_and_size(block_t* src, uint32_t size) {
         return NULL;
     }
 
-
     block_t* dest = __block_Alloc_internal(size);
     memcpy(dest->p_buffer, &src->p_buffer[src->i_pos], size);
     dest->i_pos = 0;
 
     return dest;
 }
-
-
 
 uint8_t* block_Get(block_t* src) {
     if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
@@ -661,13 +686,34 @@ uint32_t block_Len(block_t* src) {
 block_t* block_Duplicate_to_size(block_t* src, uint32_t target_len) {
 	if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
 
-	uint32_t to_alloc_size = __CLIP(target_len, 8, src->p_size);
+	if(target_len > src->p_size) {
+		_ATSC3_UTILS_WARN("block_Duplicate_to_size: target_len: %d, but src_size is: %d",
+						  target_len, src->p_size);
+		return NULL;
+	}
 
-	block_t* dest = __block_Alloc_internal(to_alloc_size);
-	memcpy(dest->p_buffer, src->p_buffer, to_alloc_size);
-	dest->i_pos = to_alloc_size;
+	block_t* dest = __block_Alloc_internal(target_len);
+	memcpy(dest->p_buffer, src->p_buffer, target_len);
+	dest->i_pos = target_len;
 
 	return dest;
+}
+
+
+block_t* block_Duplicate_from_position_and_sizeAndMoveIptrs(block_t* src, uint32_t target_len) {
+    if(!__block_check_bounaries(__FUNCTION__, src)) return NULL;
+
+    if(block_Remaining_size(src) < target_len) {
+        _ATSC3_UTILS_WARN("block_Duplicate_from_position_and_sizeAndMoveIptrs: src remaining size is: %d, but target len is: %d, bailing!",
+                          block_Remaining_size(src), target_len);
+        return NULL;
+    }
+
+    block_t* dest = __block_Alloc_internal(target_len);
+    memcpy(dest->p_buffer, &src->p_buffer[src->i_pos], target_len);
+    dest->i_pos = target_len;
+    src->i_pos += target_len;
+    return dest;
 }
 
 // create new block_t from *data and size
