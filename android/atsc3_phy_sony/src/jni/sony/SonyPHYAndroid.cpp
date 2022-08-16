@@ -2001,7 +2001,10 @@ void SonyPHYAndroid::processTLVFromCallback() {
                 }
 
                 uint8_t starting_bb_alp_length = 184 - ts_payload_alp_start_byte_pos;
-
+                if(current_reassembeled_baseband_alp_frame) {
+                    _SONY_PHY_ANDROID_WARN("discarding non-enqueued current_reassembeled_baseband_alp_frame: %p, p_size: %d", current_reassembeled_baseband_alp_frame, current_reassembeled_baseband_alp_frame->p_size);
+                    block_Destroy(&current_reassembeled_baseband_alp_frame);
+                }
                 current_reassembeled_baseband_alp_frame = block_Duplicate_from_position_and_sizeAndMoveIptrs(atsc3_sl_tlv_block, starting_bb_alp_length);
 
                 if(innerLoggingLoopCount++ % 10000 == 0) {
@@ -2082,9 +2085,6 @@ int SonyPHYAndroid::processAlpFromCircularBufferThread() {
     uint8_t my_plp = 0xFF;
     uint64_t l1dTimeNs_value_last = 0;
 
-    block_t* atsc3_baseband_alp_payload             = block_Alloc(TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
-    block_t* atsc3_baseband_alp_payload_wrap_buffer = block_Alloc(TLV_CIRCULAR_BUFFER_PROCESS_BLOCK_SIZE);
-
     processAlpThreadIsRunning = true;
 
     //jjustman-2020-12-07 - loop while we have data in our cb, or break if cb_should_discard is true
@@ -2115,15 +2115,13 @@ int SonyPHYAndroid::processAlpFromCircularBufferThread() {
 
                 atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(my_plp, atsc3_baseband_alp_payload);
 
-                //keep our in-flight atsc3_baseband_alp_payload around for investigation...
 
                 if(!atsc3_alp_packet) {
-                    _SONY_PHY_ANDROID_DEBUG("parse returned NULL alp packet, pre-parse i_ptr: %d, pending_alp_packet->i_pos: %d, p_size: %d", pre_parse_alp_packet_rollback_ptr_i_pos, atsc3_baseband_alp_payload->i_pos, atsc3_baseband_alp_payload->p_size);
-                    //process_any_small_alp_packet = false;
-
-                    //block_Destroy(&atsc3_baseband_alp_payload);
-                    continue;
+                    _SONY_PHY_ANDROID_WARN("parse returned NULL alp packet, pre-parse i_ptr: %d, pending_alp_packet->i_pos: %d, p_size: %d", pre_parse_alp_packet_rollback_ptr_i_pos, atsc3_baseband_alp_payload->i_pos, atsc3_baseband_alp_payload->p_size);
+					continue;
                 }
+
+//                _SONY_PHY_ANDROID_TRACE("after atsc3_alp_packet_parse\t%p\t%p", atsc3_alp_packet, atsc3_alp_packet->alp_payload);
 
 //                if(!atsc3_alp_packet->is_alp_payload_complete) {
 //                    _SONY_PHY_ANDROID_DEBUG("alp payload NOT complete! pre-parse i_ptr: %d, pending_alp_packet->i_pos: %d, p_size: %d, alp_length: %d",
@@ -2149,7 +2147,6 @@ int SonyPHYAndroid::processAlpFromCircularBufferThread() {
                             atsc3_link_mapping_table_free(&atsc3_link_mapping_table_to_free);
                         }
                     }
-                    continue;
                 }
 
                 if (atsc3_alp_packet->alp_packet_header.packet_type == 0x00) {
@@ -2206,11 +2203,12 @@ int SonyPHYAndroid::processAlpFromCircularBufferThread() {
                                     l1dTimeNs_value_last = l1dTimeNs_value;
                                 }
                             }
-                      }
+                        }
                     }
-                atsc3_alp_packet_free(&atsc3_alp_packet);
+				}
 
-                }
+//				_SONY_PHY_ANDROID_TRACE("before atsc3_alp_packet_free\t%p\t%p", atsc3_alp_packet, atsc3_alp_packet->alp_payload);
+				atsc3_alp_packet_free(&atsc3_alp_packet);
             }
 
             block_Destroy(&atsc3_baseband_alp_payload);
