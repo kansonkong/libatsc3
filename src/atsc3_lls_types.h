@@ -46,7 +46,7 @@
 extern "C" {
 #endif
 
-
+typedef struct atsc3_lls_table atsc3_lls_table_t;
 
 /***
  * From < A/331 2017 - Signaling Delivery Sync > https://www.atsc.org/wp-content/uploads/2017/12/A331-2017-Signaling-Deivery-Sync-FEC-3.pdf
@@ -114,10 +114,6 @@ See Annex F Sec. 6.4 Sec. 6.5 Sec. 6.6
 	}
 
  */
-
-//jjustman-2020-03-10 - cleanup and renaming to atsc3_ prefix
-typedef lls_table_t atsc3_lls_table_t;
-
 
 /**
  TODO: jjustman-2019-09-18 - move to block_t
@@ -642,13 +638,15 @@ typedef enum {
     RESERVED = 0x00,             //anything else...
 } lls_table_type_t;
 
+typedef lls_table_type_t atsc3_lls_table_type_t;
+
 typedef struct rrt_table {
 	void* to_implement;
 
 } rrt_table_t;
 
 
-typedef struct lls_table {
+typedef struct atsc3_lls_table {
 	uint8_t								lls_table_id; //map via lls_table_id_type;
 	uint8_t								lls_group_id;
 	uint8_t 							group_count_minus1;
@@ -671,8 +669,10 @@ typedef struct lls_table {
 		lls_reserved_table_t				lls_reserved_table;
 	};
 	xml_document_t* xml_document;
-} lls_table_t;
+} atsc3_lls_table_t;
 
+//jjustman-2022-08-16 - backwards compatable typedef
+typedef atsc3_lls_table_t lls_table_t;
 
 
 typedef struct udp_flow_packet_id_mpu_sequence_tuple {
@@ -802,7 +802,7 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_sls_mmt_session, atsc3_mmt_sls_mpt_lo
     * used to store all mmt active sessions for this flow
     */
 typedef struct lls_sls_mmt_session_flows {
-    lls_table_t* lls_table_slt;
+    atsc3_lls_table_t* lls_table_slt;
 
     ATSC3_VECTOR_BUILDER_STRUCT(lls_sls_mmt_session);
     
@@ -872,11 +872,14 @@ typedef struct lls_sls_alc_session {
 **/
 typedef struct lls_sls_mmt_monitor {
 
+    //jjustman-2022-08-16 - NOTE: this monitor does not own the ptr refs to these transients, they must be assigned and null'd with care
 	struct atsc3_lls_sls_mmt_monitor_transients {
-		atsc3_lls_slt_service_t* atsc3_lls_slt_service;
-        atsc3_lls_slt_service_t* atsc3_lls_slt_service_stale;
+		atsc3_lls_slt_service_t*                atsc3_lls_slt_service;
+        atsc3_lls_slt_service_t*                atsc3_lls_slt_service_stale;
 
-        lls_sls_mmt_session_t *lls_mmt_session;
+        lls_sls_mmt_session_t*                  lls_mmt_session;
+        atsc3_certification_data_t*             atsc3_certification_data;
+
     } transients;
 
     lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
@@ -1059,8 +1062,11 @@ A/331 - Section 7:
 typedef struct lls_sls_alc_monitor {
 	atsc3_lls_slt_service_t* 				atsc3_lls_slt_service;
 
+    //jjustman-2022-08-16 - note - this monitor does not own the ptr ref to these transients, they must be assigned and null'd very carefully (never free'd)
     struct atsc3_lls_sls_alc_monitor_transients {
-        atsc3_lls_slt_service_t*            atsc3_lls_slt_service_stale;
+        atsc3_lls_slt_service_t*                atsc3_lls_slt_service_stale;
+        atsc3_certification_data_t*             atsc3_certification_data;
+
     } transients;
 
     lls_sls_alc_session_t* 					lls_alc_session;
@@ -1145,8 +1151,6 @@ typedef struct lls_sls_alc_monitor {
     lls_sls_monitor_output_buffer_t 		lls_sls_monitor_output_buffer;
     lls_sls_monitor_output_buffer_mode_t 	lls_sls_monitor_output_buffer_mode;
 
-	atsc3_certification_data_t* 			atsc3_certification_data;
-
 } lls_sls_alc_monitor_t;
 
 typedef struct lls_slt_service_id {
@@ -1188,18 +1192,18 @@ typedef struct lls_slt_monitor {
 	ATSC3_VECTOR_BUILDER_STRUCT(lls_slt_service_id_group_id_cache);
 
     //LATEST:	last successfully processed SLT table
-    lls_table_t* lls_latest_slt_table;
+    atsc3_lls_table_t* lls_latest_slt_table;
 
     //LATEST: 	last successfully processed AEAT table
 	//			use this against aeat_table_latest.atsc3_aeat_table_t
-    lls_table_t* lls_latest_aeat_table;
+    atsc3_lls_table_t* lls_latest_aeat_table;
     
     //LATEST: 	last successfully processed on screen message notification table
     //use this against on_screen_message_notification
-    lls_table_t* lls_latest_on_screen_message_notification_table;
+    atsc3_lls_table_t* lls_latest_on_screen_message_notification_table;
 
     //LATEST: last successfully processed certification data table
-    lls_table_t* lls_latest_certification_data_table;
+    atsc3_lls_table_t* lls_latest_certification_data_table;
 
     //jjustman-2019-10-12 - adding lls event callback hooks
 
@@ -1215,6 +1219,8 @@ typedef struct lls_slt_monitor {
 	atsc3_lls_on_userdefined_table_present_f						atsc3_lls_on_userdefined_table_present_callback;
 
 } lls_slt_monitor_t;
+
+typedef lls_slt_monitor_t atsc3_lls_slt_monitor_t;
 
 ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(lls_slt_monitor, lls_slt_service_id);
 

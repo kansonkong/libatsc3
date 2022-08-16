@@ -53,9 +53,9 @@ void handle_sighup(int sig);
 
 
 void* print_lls_instance_table_thread(void*);
-void lls_dump_instance_table_ncurses(lls_table_t* lls_session);
+void lls_dump_instance_table_ncurses(atsc3_lls_table_t* lls_session);
 
-void lls_dump_instance_table_mmt_only_ncurses(lls_table_t* lls_session);
+void lls_dump_instance_table_mmt_only_ncurses(atsc3_lls_table_t* lls_session);
 
 #define __BW_STATS_NCURSES true
 #define __PKT_STATS_NCURSES true

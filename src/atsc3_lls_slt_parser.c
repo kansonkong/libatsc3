@@ -59,6 +59,7 @@ void atsc3_lls_slt_monitor_free(lls_slt_monitor_t** lls_slt_monitor_p) {
             lls_table_free(&lls_slt_monitor->lls_latest_slt_table);
             lls_table_free(&lls_slt_monitor->lls_latest_aeat_table);
             lls_table_free(&lls_slt_monitor->lls_latest_on_screen_message_notification_table);
+            lls_table_free(&lls_slt_monitor->lls_latest_certification_data_table);
 
             free(lls_slt_monitor);
             lls_slt_monitor = NULL;
@@ -67,7 +68,7 @@ void atsc3_lls_slt_monitor_free(lls_slt_monitor_t** lls_slt_monitor_p) {
     }
 }
 
-int lls_slt_table_build(lls_table_t *lls_table, xml_node_t *xml_root) {
+int lls_slt_table_build(atsc3_lls_table_t *lls_table, xml_node_t *xml_root) {
 	/** bsid **/
 
 	xml_string_t* root_node_name = xml_node_name(xml_root); //root
@@ -270,7 +271,7 @@ cleanup:
 jjustman-2021-03-10 - warning: atsc3_lls_slt_service is a reference to our new lls_table, so if we have a LLS update, we need to update any transient references
 
  */
-int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor) {
+int lls_slt_table_perform_update(atsc3_lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor) {
 
     __LLS_SLT_PARSER_INFO("lls_slt_table_perform_update: lls_table: %p, lls_group_id: %d, lls_table_version: %d", lls_table, lls_table->lls_group_id, lls_table->lls_table_version);
 

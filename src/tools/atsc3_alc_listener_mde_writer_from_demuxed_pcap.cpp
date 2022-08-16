@@ -75,7 +75,8 @@ void process_packet(block_t* raw_ethernet_packet_blockt) {
     
     //dispatch for LLS extraction and dump
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-        lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        atsc3_lls_table_t* original_lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        atsc3_lls_table_t* lls_table = atsc3_lls_table_find_type_if_signedMultiTable(original_lls_table, SLT);
 
         //auto-assign our first ROUTE service id here
         if(lls_table && lls_table->lls_table_id == SLT) {
@@ -85,7 +86,6 @@ void process_packet(block_t* raw_ethernet_packet_blockt) {
                    atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol == SLS_PROTOCOL_ROUTE) {
 					lls_sls_alc_monitor_t* lls_sls_alc_monitor_local = lls_sls_alc_monitor_create();
 					lls_sls_alc_monitor_local->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback = &atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows;
-
 								
 					lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
 					lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
@@ -164,10 +164,6 @@ void process_packet(block_t* raw_ethernet_packet_blockt) {
 				if(atsc3_route_object) {
 					atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, matching_lls_sls_alc_monitor, atsc3_route_object);
 					alc_packet_received_count++;
-
-	//				if(alc_packet_received_count > 10000) {
-	//					exit(0);
-	//				}
 
 				} else {
                     _ATSC3_ALC_MDE_WRITER_TOOL_ERROR("Error in ALC persist, atsc3_route_object is NULL!");
