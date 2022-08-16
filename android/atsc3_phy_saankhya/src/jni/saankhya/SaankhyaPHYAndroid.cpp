@@ -904,6 +904,8 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     unsigned int cFrequency = 0;
     int isRxDataStartedSpinCount = 0;
 
+    bool has_unlocked_sl_tlv_block_and_cb_mutex = false;
+
     if(freqKHz == Last_tune_freq) {
         _SAANKHYA_PHY_ANDROID_INFO("SaankhyaPHYAndroid::tune - re-tuning to frequency freqKHz (%d)", Last_tune_freq);
 
@@ -980,8 +982,12 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
 #endif
 #ifndef __JJ_CALIBRATION_ENABLED
 
-    SL_DemodStop(slUnit);
-    usleep(1000000);
+    if(demodStartStatus) {
+        SL_DemodStop(slUnit);
+        usleep(1000000);
+    }
+
+    demodStartStatus = 0;
 #endif
 
     tres = SL_TunerSetFrequency(tUnit, freqKHz*1000);
@@ -992,12 +998,7 @@ int SaankhyaPHYAndroid::tune(int freqKHz, int plpid)
     }
     usleep(1000000);
 
-#ifndef __JJ_CALIBRATION_ENABLED
-
-    //jjustman-2022-06-03 - hack!
-    SL_DemodStart(slUnit);
-    usleep(1000000);
-#endif
+    //jjustman-2022-08-10 - demod start occurs below...
 
     tres = SL_TunerGetConfiguration(tUnit, &tunerGetCfg);
     if (tres != 0)
@@ -1129,12 +1130,6 @@ TEST_ERROR:
         SL_SleepMS(100);
     }
 
-    atsc3_sl_tlv_block_mutex.unlock();
-    CircularBufferMutex_local.unlock();
-
-    //jjustman-2021-01-19 - allow for cb to start acumulating TLV frames
-    SaankhyaPHYAndroid::cb_should_discard = false;
-
     //check if we were re-initalized and might have an open threads to wind-down
 #ifdef __RESPWAN_THREAD_WORKERS
     if(captureThreadHandle.joinable()) {
@@ -1213,6 +1208,23 @@ TEST_ERROR:
         }
     }
 
+    //jjustman-2022-08=10 - set our plps first..
+
+    SL_PlpConfigParams_mutex_update_plps.lock();
+
+    atsc3ConfigParams.plpConfig.plp0 = plpid;
+    atsc3ConfigParams.plpConfig.plp1 = 0xFF;
+    atsc3ConfigParams.plpConfig.plp2 = 0xFF;
+    atsc3ConfigParams.plpConfig.plp3 = 0xFF;
+
+
+    SL_PlpConfigParams_mutex_update_plps.unlock();
+    slres = SL_DemodConfigureEx(slUnit, demodStandard, &atsc3ConfigParams);
+    if (slres != 0) {
+        printToConsoleDemodError("SL_DemodConfigPlps", slres);
+        goto ERROR;
+    }
+
     if(!demodStartStatus) {
         while (SL_IsRxDataStarted() != 1) {
             SL_SleepMS(100);
@@ -1256,7 +1268,7 @@ TEST_ERROR:
         slres = SL_DemodStart(slUnit);
 
         if (!(slres == SL_OK || slres == SL_ERR_ALREADY_STARTED)) {
-            _SAANKHYA_PHY_ANDROID_DEBUG("Saankhya Demod Start Failed");
+            _SAANKHYA_PHY_ANDROID_ERROR("Saankhya Demod Start Failed");
             demodStartStatus = 0;
             goto ERROR;
         } else {
@@ -1264,30 +1276,18 @@ TEST_ERROR:
             _SAANKHYA_PHY_ANDROID_DEBUG("SUCCESS");
             //_SAANKHYA_PHY_ANDROID_DEBUG("SL Demod Output Capture: STARTED : sl-tlv.bin");
         }
-        SL_SleepMS(500); // Delay to accomdate set configurations at SL to take effect for SL_DemodStart()
-
     } else {
         _SAANKHYA_PHY_ANDROID_DEBUG("SLDemod: already running");
     }
 
-    SL_PlpConfigParams_mutex_update_plps.lock();
-
-    atsc3ConfigParams.plpConfig.plp0 = plpid;
-    atsc3ConfigParams.plpConfig.plp1 = 0xFF;
-    atsc3ConfigParams.plpConfig.plp2 = 0xFF;
-    atsc3ConfigParams.plpConfig.plp3 = 0xFF;
-
-    slres = SL_DemodConfigureEx(slUnit, demodStandard, &atsc3ConfigParams);
-
-    SL_PlpConfigParams_mutex_update_plps.unlock();
-
-    if (slres != 0) {
-        printToConsoleDemodError("SL_DemodConfigPlps", slres);
-        goto ERROR;
-    }
-
     statusMetricsResetFromTuneChange();
 
+    atsc3_sl_tlv_block_mutex.unlock();
+    CircularBufferMutex_local.unlock();
+    has_unlocked_sl_tlv_block_and_cb_mutex = true;
+
+    //jjustman-2021-01-19 - allow for cb to start acumulating TLV frames
+    SaankhyaPHYAndroid::cb_should_discard = false;
     ret = 0;
     Last_tune_freq = freqKHz;
 
@@ -1300,6 +1300,11 @@ ERROR:
     //unlock our i2c mutex
 UNLOCK:
     SL_I2C_command_mutex_tuner_tune.unlock();
+    //jjustman-2022-08-10 - as a failsafe, make sure to unlock atsc3_sl_tlv_block_mutex and CBmutex locks
+    if(!has_unlocked_sl_tlv_block_and_cb_mutex) {
+        atsc3_sl_tlv_block_mutex.unlock();
+        CircularBufferMutex_local.unlock();
+    }
     return ret;
 
 }
@@ -1739,7 +1744,7 @@ SL_ConfigResult_t SaankhyaPHYAndroid::configPlatformParams_bb_markone() {
 
 //jjustman-2022-07-12 - for 9501c690 BB @ 575mhz
 
-    tunerIQDcOffSet.iOffSet = 9;
+    tunerIQDcOffSet.iOffSet = 10;
     tunerIQDcOffSet.qOffSet = 12;
 
 
@@ -2420,7 +2425,7 @@ int SaankhyaPHYAndroid::statusThread()
 #else
 
             //2022-03-30 - updated to 10s...hack testing for 256QAM 11/15
-            usleep(2000000);
+            usleep(1000000);
             //jjustman: target: sleep for 500ms
             //TODO: jjustman-2019-12-05: investigate FX3 firmware and i2c single threaded interrupt handling instead of dma xfer
 #endif

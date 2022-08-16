@@ -214,6 +214,7 @@ udp_packet_t* udp_packet_process_from_block_t(block_t* ip_blockt) {
 }
 
 //process ip header and copy packet data
+int __udp_packet_process_from_ptr_error_count = 0;
 udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_length) {
 	int i = 0;
 	int k = 0;
@@ -228,7 +229,9 @@ udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_lengt
 
 	//check if we are a UDP packet, otherwise bail
 	if (ip_header[9] != 0x11) {
-		__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet!");
+		if((__udp_packet_process_from_ptr_error_count++ % 1000) == 0) {
+			__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet!");
+		}
 		return NULL;
 	}
 

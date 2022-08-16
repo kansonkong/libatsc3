@@ -1,0 +1,357 @@
+/*
+ * atsc3_alc_listener_mde_writer_from_demuxed_pcap.cpp
+ *
+ *  Created on: Aug 10th, 2022
+ *      Author: jjustman
+ *
+ *
+*/
+
+int PACKET_COUNTER=0;
+
+#ifdef __MALLOC_DEBUGGING
+#include <mcheck.h>
+#endif
+
+#include <pcap.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+
+#include <string.h>
+#include <sys/stat.h>
+
+#include <atsc3_utils.h>
+#include <atsc3_listener_udp.h>
+#include <atsc3_pcap_type.h>
+
+#include <atsc3_lls.h>
+#include <atsc3_lls_alc_utils.h>
+#include <atsc3_alc_rx.h>
+#include <atsc3_alc_utils.h>
+#include <atsc3_listener_udp.h>
+#include <atsc3_logging_externs.h>
+
+#define _ATSC3_ALC_MDE_WRITER_TOOL_ERROR(...)    __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
+#define _ATSC3_ALC_MDE_WRITER_TOOL_WARN(...)     __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);
+#define _ATSC3_ALC_MDE_WRITER_TOOL_INFO(...)     __LIBATSC3_TIMESTAMP_INFO(__VA_ARGS__);
+#define _ATSC3_ALC_MDE_WRITER_TOOL_DEBUG(...)    __LIBATSC3_TIMESTAMP_DEBUG(__VA_ARGS__);
+#define _ATSC3_ALC_MDE_WRITER_TOOL_TRACE(...)    __LIBATSC3_TIMESTAMP_TRACE(__VA_ARGS__);
+
+uint64_t rx_udp_invocation_count = 0;
+
+lls_slt_monitor_t* lls_slt_monitor;
+lls_sls_alc_monitor_t* lls_sls_alc_monitor;
+
+uint32_t* dst_ip_addr_filter = NULL;
+uint16_t* dst_ip_port_filter = NULL;
+uint16_t* dst_service_id_filter = NULL;
+
+atsc3_alc_arguments_t* alc_arguments;
+atsc3_alc_session_t* atsc3_alc_session;
+
+uint32_t alc_packet_received_count = 0;
+
+
+//NOTE: this will _not_ by default update the PHY with a new list of PLPs to listen, this needs to performed in the atsc3_core_service_player_bridge.cpp
+void atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows(lls_sls_alc_monitor_t* lls_sls_alc_monitor) {
+	int ip_mulitcast_flows_added_count = 0;
+
+	ip_mulitcast_flows_added_count = lls_sls_alc_add_additional_ip_flows_from_route_s_tsid(lls_slt_monitor, lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_sls_metadata_fragments->atsc3_route_s_tsid);
+
+	if(ip_mulitcast_flows_added_count) {
+		_ATSC3_ALC_MDE_WRITER_TOOL_INFO("atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows: added %d ip mulitcast flows for alc monitor and session", ip_mulitcast_flows_added_count);
+	}
+}
+
+
+void process_packet(block_t* raw_ethernet_packet_blockt) {
+    atsc3_alc_packet_t* alc_packet = NULL;
+
+    udp_packet_t* udp_packet = udp_packet_process_from_raw_ethernet_block_t(raw_ethernet_packet_blockt);
+    if(!udp_packet) {
+        return;
+    }
+    
+    //dispatch for LLS extraction and dump
+    if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
+        lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+
+        //auto-assign our first ROUTE service id here
+        if(lls_table && lls_table->lls_table_id == SLT) {
+            for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
+                atsc3_lls_slt_service_t* atsc3_lls_slt_service = lls_table->slt_table.atsc3_lls_slt_service_v.data[i];
+                if(atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.count &&
+                   atsc3_lls_slt_service->atsc3_slt_broadcast_svc_signalling_v.data[0]->sls_protocol == SLS_PROTOCOL_ROUTE) {
+					lls_sls_alc_monitor_t* lls_sls_alc_monitor_local = lls_sls_alc_monitor_create();
+					lls_sls_alc_monitor_local->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback = &atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows;
+
+								
+					lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
+					lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
+
+					lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
+					if(!lls_sls_alc_session) {
+                        _ATSC3_ALC_MDE_WRITER_TOOL_WARN("lls_slt_alc_session_find_from_service_id: lls_sls_alc_session is NULL!");
+					}
+					lls_sls_alc_monitor_local->lls_alc_session = lls_sls_alc_session;
+					lls_sls_alc_monitor_local->atsc3_lls_slt_service = atsc3_lls_slt_service;
+					lls_sls_alc_monitor_local->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+
+
+                    _ATSC3_ALC_MDE_WRITER_TOOL_INFO("process_packet: adding lls_sls_alc_monitor: %p to lls_slt_monitor: %p, service_id: %d",
+						   lls_sls_alc_monitor_local, lls_slt_monitor, lls_sls_alc_session->service_id);
+
+					lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor_local);
+
+					if(!lls_sls_alc_monitor) {
+						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor_local;
+						lls_sls_alc_monitor =  lls_sls_alc_monitor_local;
+
+					} else {
+						//only swap out this lls_sls_alc_monitor if this alc flow is "retired"
+					}
+                }
+            }
+        }
+        
+
+        return udp_packet_free(&udp_packet);
+    }
+    
+    /*
+	 jjustman-2020-03-25 - alternatively, filter out by ServiceID:
+	lls_sls_alc_monitor->atsc3_lls_slt_service &&
+	lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == matching_lls_slt_alc_session->atsc3_lls_slt_service->service_id
+	 
+	clang optimized out matching_lls_slt_alc_session in the first conditional, so its added in the 3rd filter test for service_id
+    */
+	
+    lls_sls_alc_monitor_t* matching_lls_sls_alc_monitor = atsc3_lls_sls_alc_monitor_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+	//only used for service id filtering.
+    lls_sls_alc_session_t* matching_lls_slt_alc_session = lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
+
+    if(matching_lls_sls_alc_monitor) {
+
+		if(matching_lls_slt_alc_session && (
+		   (dst_service_id_filter == NULL && dst_ip_addr_filter == NULL && dst_ip_port_filter == NULL) ||
+		   ((dst_service_id_filter != NULL && matching_lls_slt_alc_session && matching_lls_slt_alc_session->service_id == *dst_service_id_filter ) ||
+			(dst_ip_addr_filter != NULL && dst_ip_port_filter == NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter) ||
+			(dst_ip_addr_filter != NULL && dst_ip_port_filter != NULL && udp_packet->udp_flow.dst_ip_addr == *dst_ip_addr_filter && udp_packet->udp_flow.dst_port == *dst_ip_port_filter)))) {
+
+			//process ALC streams
+			int retval = alc_rx_analyze_packet_a331_compliant((char*)block_Get(udp_packet->data), block_Remaining_size(udp_packet->data), &alc_packet);
+
+	#ifdef __MALLOC_DEBUGGING
+			mcheck(0);
+	#endif
+
+			if(!retval) {
+				//check our alc_packet for a wrap-around TOI value, if it is a monitored TSI, and re-patch the MBMS MPD for updated availabilityStartTime and startNumber with last closed TOI values
+				atsc3_alc_packet_check_monitor_flow_for_toi_wraparound_discontinuity(alc_packet, matching_lls_sls_alc_monitor);
+	#ifdef __MALLOC_DEBUGGING
+	mcheck(0);
+	#endif
+
+				//keep track of our EXT_FTI and update last_toi as needed for TOI length and manual set of the close_object flag
+				atsc3_route_object_t* atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(alc_packet, matching_lls_sls_alc_monitor);
+	#ifdef __MALLOC_DEBUGGING
+	mcheck(0);
+	#endif
+
+				//persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
+				//the full packet has been recovered (e.g. no missing data units in the forward transmission)
+				if(atsc3_route_object) {
+					atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, matching_lls_sls_alc_monitor, atsc3_route_object);
+					alc_packet_received_count++;
+
+	//				if(alc_packet_received_count > 10000) {
+	//					exit(0);
+	//				}
+
+				} else {
+                    _ATSC3_ALC_MDE_WRITER_TOOL_ERROR("Error in ALC persist, atsc3_route_object is NULL!");
+
+				}
+		#ifdef __MALLOC_DEBUGGING
+		mcheck(0);
+		#endif
+
+			} else {
+                _ATSC3_ALC_MDE_WRITER_TOOL_ERROR("Error in ALC decode: %d", retval);
+			}
+		} else {
+			_ATSC3_ALC_MDE_WRITER_TOOL_INFO("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p, ", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
+		}
+	} else {
+		//_ATSC3_ALC_MDE_WRITER_TOOL_INFO("Discarding packet: lls_sls_alc_monitor: %p, matching_lls_sls_alc_monitor: %p, matching_lls_slt_alc_session: %p", lls_sls_alc_monitor, matching_lls_sls_alc_monitor, matching_lls_slt_alc_session);
+	}
+
+udp_packet_free:
+	alc_packet_free(&alc_packet);
+	alc_packet = NULL;
+    
+#ifdef __MALLOC_DEBUGGING
+	mcheck(0);
+#endif
+	
+    return udp_packet_free(&udp_packet);
+}
+
+int main(int argc,char **argv) {
+
+#ifdef __MALLOC_DEBUGGING
+    mcheck(0);
+    mtrace ();
+#endif
+    
+	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
+	_LLS_ALC_UTILS_INFO_ENABLED = 1;
+
+    _ALC_UTILS_DEBUG_ENABLED = 0;
+	_ALC_RX_DEBUG_ENABLED = 0;
+    _ALC_UTILS_DEBUG_ENABLED = 0;
+
+    _ROUTE_OBJECT_INFO_ENABLED = 1;
+    _ROUTE_OBJECT_DEBUG_ENABLED = 0;
+    _ROUTE_OBJECT_TRACE_ENABLED = 0;
+
+    _SLS_ALC_FLOW_INFO_ENABLED = 1;
+    _SLS_ALC_FLOW_DEBUG_ENABLED = 0;
+    _SLS_ALC_FLOW_TRACE_ENABLED = 0;
+
+    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 0;
+
+	
+#ifdef __LOTS_OF_DEBUGGING__
+	_LLS_INFO_ENABLED = 1;
+	_LLS_DEBUG_ENABLED = 1;
+
+	_LLS_SLT_PARSER_INFO_ROUTE_ENABLED = 1;
+    _ALC_UTILS_DEBUG_ENABLED = 1;
+    _ALC_UTILS_TRACE_ENABLED = 1;
+
+	_ALC_UTILS_IOTRACE_ENABLED=1;
+
+	_ALC_RX_DEBUG_ENABLED = 1;
+	_ALC_RX_TRACE_ENABLED = 1;
+    _ROUTE_OBJECT_DEBUG_ENABLED = 1;
+    _ROUTE_SLS_PROCESSOR_DEBUG_ENABLED = 1;
+    _SLS_ALC_FLOW_DEBUG_ENABLED = 1;
+
+
+#endif
+
+    char* PCAP_FILENAME = "";
+    atsc3_pcap_replay_context_t* atsc3_pcap_replay_context = NULL;
+
+    char *dst_ip = NULL;
+    char *dst_port = NULL;
+	char *dst_service_id = NULL;
+	
+	uint16_t dst_service_id_int;
+	uint32_t dst_ip_int = 4025479151; //239.239.239.239 default
+	uint16_t dst_port_int = 30000;
+
+    char errbuf[PCAP_ERRBUF_SIZE];
+    pcap_t* descr;
+    struct bpf_program fp;
+    bpf_u_int32 maskp;
+    bpf_u_int32 netp;
+
+	//wire up our required lls and sls structs here, if needed for "ad-hoc" IP based ROUTE flow selection without LLS/SLS
+#ifndef _WIN32	
+    mkdir("route", 0777);
+#else
+	mkdir("route");
+#endif
+    lls_slt_monitor = lls_slt_monitor_create();
+	alc_arguments = (atsc3_alc_arguments_t*)calloc(1, sizeof(atsc3_alc_arguments_t));
+    
+    atsc3_alc_session = atsc3_open_alc_session(alc_arguments);
+	
+
+    if(argc == 1) {
+        println("%s - a DEMUXED pcap de-packetization and ROUTE/ALC extraction tool", argv[0]);
+        println("---");
+        println("args: demuxed_pcap_filename");
+        
+        println(" demuxed_pcap_filename: demuxed pcap to process for ROUTE/ALC extraction (all flows)");
+        println("");
+        exit(1);
+    }
+    
+    //listen to all flows
+    if(argc >= 2) {
+        PCAP_FILENAME = argv[1];
+        _ATSC3_ALC_MDE_WRITER_TOOL_INFO("opening DEMUXED pcap for replay: %s", PCAP_FILENAME);
+    }
+    
+    if(argc==4) {
+
+		dst_ip = argv[2];
+		dst_port = argv[3];
+
+		dst_ip_int = parseIpAddressIntoIntval(dst_ip);
+		dst_ip_addr_filter = &dst_ip_int;
+
+		dst_port_int = parsePortIntoIntval(dst_port);
+		dst_ip_port_filter = &dst_port_int;
+
+		_ATSC3_ALC_MDE_WRITER_TOOL_INFO(" filtering to alc flow with: dst_ip: %s, dst_port: %s", dst_ip, dst_port);
+
+		/* jjustman-2020-03-28 - create a dummy lls_sls_alc_monitor_t for ad-hoc SLS management (e.g. LLS is not present in this pcap flow - may be on a non-listening PLP */
+
+		atsc3_lls_slt_service_t* atsc3_lls_slt_service = atsc3_lls_slt_service_new();
+		atsc3_lls_slt_service->service_id=31337; //hack
+
+		atsc3_slt_broadcast_svc_signalling_t* atsc3_slt_broadcast_svc_signalling = atsc3_slt_broadcast_svc_signalling_new();
+		atsc3_slt_broadcast_svc_signalling->sls_destination_ip_address = dst_ip;
+		atsc3_slt_broadcast_svc_signalling->sls_destination_udp_port =  dst_port;
+		atsc3_slt_broadcast_svc_signalling->sls_protocol = SLS_PROTOCOL_ROUTE;
+		atsc3_lls_slt_service_add_atsc3_slt_broadcast_svc_signalling(atsc3_lls_slt_service, atsc3_slt_broadcast_svc_signalling);
+
+		lls_slt_alc_session_find_or_create(lls_slt_monitor, atsc3_lls_slt_service);
+
+		lls_slt_service_id_t* lls_slt_service_id = lls_slt_service_id_new_from_atsc3_lls_slt_service(atsc3_lls_slt_service);
+		lls_slt_monitor_add_lls_slt_service_id(lls_slt_monitor, lls_slt_service_id);
+
+		lls_sls_alc_session_t* lls_sls_alc_session = lls_slt_alc_session_find_from_service_id(lls_slt_monitor, atsc3_lls_slt_service->service_id);
+		
+		lls_sls_alc_monitor_t* lls_sls_alc_monitor_local = lls_sls_alc_monitor_create();
+		lls_sls_alc_monitor_local->atsc3_lls_sls_alc_on_metadata_fragments_updated_callback = &atsc3_lls_sls_alc_on_metadata_fragments_updated_callback_internal_add_monitor_and_alc_session_flows;
+
+		lls_sls_alc_monitor_local->lls_alc_session = lls_sls_alc_session;
+		lls_sls_alc_monitor_local->atsc3_lls_slt_service = atsc3_lls_slt_service;
+		lls_sls_alc_monitor_local->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+
+
+		lls_slt_monitor_add_lls_sls_alc_monitor(lls_slt_monitor, lls_sls_alc_monitor_local);
+
+		if(!lls_sls_alc_monitor) {
+			lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor_local;
+			lls_sls_alc_monitor =  lls_sls_alc_monitor_local;
+		}
+    }
+
+    atsc3_pcap_replay_context = atsc3_pcap_replay_open_filename(PCAP_FILENAME);
+    _ATSC3_ALC_MDE_WRITER_TOOL_DEBUG("Opening pcap: %s, context is: %p", PCAP_FILENAME, atsc3_pcap_replay_context);
+
+    if(atsc3_pcap_replay_context) {
+        while((atsc3_pcap_replay_context = atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_context))) {
+            atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_context);
+
+            _ATSC3_ALC_MDE_WRITER_TOOL_TRACE("pcap reader release: pos: %ld, Got packet len: %d, ts_sec: %u, ts_usec: %u",
+                    ftell(atsc3_pcap_replay_context->pcap_fp),
+                    atsc3_pcap_replay_context->atsc3_pcap_packet_instance.current_pcap_packet->p_size,
+                    atsc3_pcap_replay_context->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_sec,
+                    atsc3_pcap_replay_context->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_usec);
+            
+            process_packet(atsc3_pcap_replay_context->atsc3_pcap_packet_instance.current_pcap_packet);
+        }
+    }
+
+    return 0;
+}
+
+
