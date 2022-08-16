@@ -299,7 +299,17 @@ uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
 		//jjustman-2020-12-03: TODO: perform any additional processing based upon the internal atsc3_message_content_type
         mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload);
 
-	} else if(mmt_signalling_message_header->message_id == MMT_SCTE35_Signal_Message) {
+	} else if(mmt_signalling_message_header->message_id == SIGNED_MMT_ATSC3_MESSAGE_ID) {
+        //jjustman-2022-08-16 - TODO:
+        
+        //call ourselves...mmt_signalling_message_parse_id_type
+        buf = mmt_signed_atsc3_message_payload_parse(mmtp_signalling_packet, mmt_signalling_message_header_and_payload, udp_packet);
+        mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = SIGNED_MMT_ATSC3_MESSAGE_ID;
+//
+//        //jjustman-2020-12-03: TODO: perform any additional processing based upon the internal atsc3_message_content_type
+//        mmt_atsc3_message_payload_dump(mmt_signalling_message_header_and_payload);
+
+    } else if(mmt_signalling_message_header->message_id == MMT_SCTE35_Signal_Message) {
 		buf = mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload, udp_packet);
 		mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = MMT_SCTE35_Signal_Message;
 
@@ -311,7 +321,7 @@ uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
     uint8_t* buf_start = block_Get(udp_packet);
 
     //jjustman-2020-11-11 - keep our udp_packet position up to date (note: buf may be null if message type processing failed
-	if(buf) {
+	if(buf && buf != block_Get(udp_packet)) {
         block_Seek_Relative(udp_packet, __MAX(0, buf - buf_start));
     }
 
@@ -897,9 +907,12 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 	        // atsc3_message_content_type: 0x0002
             case MMT_ATSC3_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF:
                 {
-                    __MMSM_TRACE("mmt_atsc3_message_payload_parse, no parsing for MPD mmt_atsc3 message type: MMT_ATSC3_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF (0x%04x)", mmt_atsc3_message_payload->atsc3_message_content_type);
-					
-				
+                    __MMSM_DEBUG("mmt_atsc3_message_payload_parse, extracting MPD mmt_atsc3 message type: MMT_ATSC3_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF (0x%04x)", mmt_atsc3_message_payload->atsc3_message_content_type);
+                    mmt_atsc3_mpd_message_t* mmt_atsc3_mpd_message = mmt_atsc3_message_payload_add_mmt_atsc3_mpd_message(mmt_atsc3_message_payload);
+
+                    if(mmt_atsc3_mpd_message) {
+                        mmt_atsc3_mpd_message->mpd_message = block_Duplicate_from_ptr(mmt_atsc3_message_payload->atsc3_message_content, mmt_atsc3_message_payload->atsc3_message_content_length);
+                    }
 				}
                 break;
 
@@ -1471,6 +1484,45 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 	return buf;
 }
 
+uint8_t* mmt_signed_atsc3_message_payload_parse(mmtp_signalling_packet_t* mmtp_signalling_packet, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
+    if(!__mmt_signalling_message_parse_length_long(udp_packet, mmt_signalling_message_header_and_payload)) {
+        __MMSM_WARN("mpt_message_parse: __mmt_signalling_message_parse_length_long failed to parse, udp_packet bytes remaining: %d",
+                    block_Remaining_size(udp_packet));
+        return NULL;
+    }
+    
+    //mmt_signalling_message_header_and_payload->message_header.length
+    
+    mmt_atsc3_signed_message_payload_t* mmt_atsc3_signed_message_payload = &mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_signed_message_payload;
+    
+    uint8_t* message_instance_start = block_Get(udp_packet);
+    uint8_t mmt_signalling_message_parse_result = mmt_signalling_message_parse_id_type(mmtp_signalling_packet, udp_packet);
+    uint8_t* message_instance_end = block_Get(udp_packet);
+    
+    uint32_t interior_message_length = message_instance_end - message_instance_start;
+    
+    mmt_atsc3_signed_message_payload->message_instance_binary = block_Duplicate_from_ptr(message_instance_start, interior_message_length);
+    block_Rewind(mmt_atsc3_signed_message_payload->message_instance_binary);
+    
+    mmt_atsc3_signed_message_payload->atsc3_signature_length = block_Read_uint16_ntohs(udp_packet);
+    mmt_atsc3_signed_message_payload->atsc3_signature_byte = block_Read_uint8_varlen(udp_packet, mmt_atsc3_signed_message_payload->atsc3_signature_length);
+
+	mmt_atsc3_signed_message_payload->atsc3_signature_block_t = block_Duplicate_from_ptr(mmt_atsc3_signed_message_payload->atsc3_signature_byte, mmt_atsc3_signed_message_payload->atsc3_signature_length);
+
+	block_Rewind(mmt_atsc3_signed_message_payload->atsc3_signature_block_t);
+    
+    __MMSM_WARN("TODO: implement mmt_signed_atsc3_message_payload_parse binary validation, total_len: %d, mmt_signalling_message_parse_result: %d, message_instance_binary: %p, len: %d, atsc3_signature_binary: %p, len: %d, udp_packet remaining: %d",
+                mmt_signalling_message_header_and_payload->message_header.length,
+                mmt_signalling_message_parse_result,
+                block_Get(mmt_atsc3_signed_message_payload->message_instance_binary),
+                block_Remaining_size(mmt_atsc3_signed_message_payload->message_instance_binary),
+                block_Get(mmt_atsc3_signed_message_payload->atsc3_signature_block_t),
+                block_Remaining_size(mmt_atsc3_signed_message_payload->atsc3_signature_block_t),
+                block_Remaining_size(udp_packet));
+    
+    return block_Get(udp_packet);
+}
+
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_scte35_message_payload, mmt_scte35_signal_descriptor)
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_scte35_signal_descriptor);
 
@@ -1705,6 +1757,17 @@ mmt_atsc3_signalling_information_usbd_component_t* mmt_atsc3_message_payload_add
 }
 
 
+mmt_atsc3_mpd_message_t* mmt_atsc3_message_payload_add_mmt_atsc3_mpd_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload) {
+    if(!mmt_atsc3_message_payload) {
+        return NULL;
+    }
+    
+    mmt_atsc3_mpd_message_t* mmt_atsc3_mpd_message = calloc(1, sizeof(mmt_atsc3_mpd_message_t));
+    mmt_atsc3_message_payload->mmt_atsc3_mpd_message = mmt_atsc3_mpd_message;
+    return mmt_atsc3_mpd_message;
+}
+
+
 mmt_atsc3_route_component_t* mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload) {
     if(!mmt_atsc3_message_payload) {
         return NULL;
@@ -1805,7 +1868,9 @@ void mmt_signalling_message_dump(mmtp_signalling_packet_t* mmtp_signalling_packe
 			mpt_message_dump(mmt_signalling_message_header_and_payload);
 		} else if(mmt_signalling_message_header_and_payload->message_header.message_id == MMT_ATSC3_MESSAGE_ID) {
 			mmt_atsc3_message_payload_dump_with_mmtp_packet_header(mmt_signalling_message_header_and_payload, (mmtp_packet_header_t*)mmtp_signalling_packet);
-		}
+		} else if(mmt_signalling_message_header_and_payload->message_header.message_id == SIGNED_MMT_ATSC3_MESSAGE_ID) {
+            //jjustman-2022-08-16 - TODO IMPL - mmt_atsc3_message_payload_dump_with_mmtp_packet_header(mmt_signalling_message_header_and_payload, (mmtp_packet_header_t*)mmtp_signalling_packet);
+        }
 	}
 }
 

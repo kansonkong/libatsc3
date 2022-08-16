@@ -16,39 +16,38 @@ extern "C" {
 #include "atsc3_vector_builder.h"
 #include "atsc3_mmtp_packet_types.h"
 
-//signaling message - message id values:
+//From ISO 23008-1:2017 - signaling message - message id values:
 
-#define PA_message 				0x0000
+#define PA_message 				        0x0000
 
-#define MPI_message				0x0001
-#define MPI_message_start 		0x0001
-#define MPI_message_end	 		0x0010
+#define MPI_message				        0x0001
+#define MPI_message_start 		        0x0001
+#define MPI_message_end	 		        0x0010
 
-#define MPT_message				0x0011
-#define MPT_message_start		0x0011
-#define MPT_message_end			0x0020
-//		RESERVED				0x0021 ~ 0x01FF
+#define MPT_message				        0x0011
+#define MPT_message_start		        0x0011
+#define MPT_message_end			        0x0020
+//		RESERVED				        0x0021 ~ 0x01FF
 
-#define	CRI_message				0x0200
-#define	DCI_message				0x0201
-#define	SSWR_message			0x0202
-#define	AL_FEC_message			0x0203
-#define	HRBM_message			0x0204
-#define	MC_message				0x0205
-#define	AC_message				0x0206
-#define	AF_message				0x0207
-#define	RQF_message				0x0208
-#define	ADC_message				0x0209
-#define	HRB_removal_message		0x020A
-#define	LS_message				0x020B
-#define	LR_message				0x020C
-#define	NAMF_message			0x020D
-#define	LDC_message				0x020E
-//Reserved for private use 		0x8000 ~ 0xFFFF
+#define	CRI_message				        0x0200
+#define	DCI_message				        0x0201
+#define	SSWR_message			        0x0202
+#define	AL_FEC_message			        0x0203
+#define	HRBM_message			        0x0204
+#define	MC_message				        0x0205
+#define	AC_message				        0x0206
+#define	AF_message				        0x0207
+#define	RQF_message				        0x0208
+#define	ADC_message				        0x0209
+#define	HRB_removal_message		        0x020A
+#define	LS_message				        0x020B
+#define	LR_message				        0x020C
+#define	NAMF_message			        0x020D
+#define	LDC_message				        0x020E
+//Reserved for private use 		        0x8000 ~ 0xFFFF
 
-
-#define	MMT_ATSC3_MESSAGE_ID		0x8100
-#define	SIGNED_MMT_ATSC3_MESSAGE_ID	0x8101
+#define	MMT_ATSC3_MESSAGE_ID		    0x8100
+#define	SIGNED_MMT_ATSC3_MESSAGE_ID	    0x8101
 
 //From A/331:2020 - Table 7.8 Code Values for atsc3_message_content_type
 
@@ -195,6 +194,13 @@ typedef struct mmt_atsc3_route_component {
     bool        __is_pinned_to_context;
 
 } mmt_atsc3_route_component_t;
+
+
+//Used in MMT_ATSC3_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF
+typedef struct mmt_atsc3_mpd_message {
+    block_t*    mpd_message;
+} mmt_atsc3_mpd_message_t;
+
 
 //Used in MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
 typedef struct mmt_atsc3_held_message {
@@ -985,14 +991,19 @@ typedef struct mmt_atsc3_message_payload {
 	
 	mmt_atsc3_signalling_information_usbd_component_t* 						mmt_atsc3_signalling_information_usbd_component;
 
+    
 	//<ROUTEComponent sTSIDUri="stsid.sls" sTSIDDestinationIpAddress="239.255.70.1" sTSIDDestinationUdpPort="5009" sTSIDSourceIpAddress="172.16.200.1"></ROUTEComponent>
 	mmt_atsc3_route_component_t*    										mmt_atsc3_route_component;
 
+    //MMT_ATSC#_MESSAGE_CONTENT_TYPE_MPD_FROM_DASHIF
+    mmt_atsc3_mpd_message_t*                                                mmt_atsc3_mpd_message;
+    
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
 	mmt_atsc3_held_message_t*       										mmt_atsc3_held_message;
-	
-	
+
+    //VSPD
 	mmt_atsc3_message_content_type_video_stream_properties_descriptor_t*	mmt_atsc3_message_content_type_video_stream_properties_descriptor;
+    
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
 	mmt_atsc3_message_content_type_caption_asset_descriptor_t* 				mmt_atsc3_message_content_type_caption_asset_descriptor;
 	
@@ -1006,6 +1017,15 @@ typedef struct mmt_atsc3_message_payload {
 
 } mmt_atsc3_message_payload_t;
 
+typedef struct mmt_atsc3_signed_message_payload {
+    block_t*    message_instance_binary;
+
+	uint16_t    atsc3_signature_length;
+    uint8_t*    atsc3_signature_byte;
+
+	block_t*	atsc3_signature_block_t;
+    
+} mmt_atsc3_signed_message_payload_t;
 
 
 //table 58 - asset id descriptor
@@ -1305,6 +1325,7 @@ ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_scte35_message_payload, mmt_scte35_si
 
 typedef union mmt_signalling_message_payload {
 	mmt_atsc3_message_payload_t			mmt_atsc3_message_payload;
+    mmt_atsc3_signed_message_payload_t  mmt_atsc3_signed_message_payload;
 	mp_table_t							mp_table;
 	mmt_scte35_message_payload_t		mmt_scte35_message_payload;
 } mmt_signalling_message_payload_u;
@@ -1323,13 +1344,17 @@ void atsc3_mmt_mp_table_asset_row_free_inner(mp_table_asset_row_t* mp_table_asse
 
 //ATSC3 MMT SI: internal helper methods / aggregation for inner payload type marshalling
 mmt_atsc3_signalling_information_usbd_component_t* 		mmt_atsc3_message_payload_add_mmt_atsc3_signalling_information_usbd_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+
+mmt_atsc3_mpd_message_t*                                mmt_atsc3_message_payload_add_mmt_atsc3_mpd_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
 mmt_atsc3_route_component_t* 							mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
 void 													mmt_atsc3_route_component_dump(mmt_atsc3_route_component_t* mmt_atsc3_route_component);
 
 mmt_atsc3_held_message_t*    							mmt_atsc3_message_payload_add_mmt_atsc3_held_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
 
+//free - make sure to call from mmt_signalling_message_header_and_payload_free
 void mmt_atsc3_signalling_information_usbd_component_free(mmt_atsc3_signalling_information_usbd_component_t** mmt_atsc3_signalling_information_usbd_component_p);
 void mmt_atsc3_route_component_free(mmt_atsc3_route_component_t** mmt_atsc3_route_component_p);
+void mmt_atsc3_mpd_message_free(mmt_atsc3_mpd_message_t** mmt_atsc3_mpd_message_p);
 void mmt_atsc3_held_message_free(mmt_atsc3_held_message_t** mmt_atsc3_held_message_p);
 
 void mmt_atsc3_message_content_type_asset_header_free_asset_id(mmt_atsc3_message_content_type_asset_header_t* mmt_atsc3_message_content_type_asset_heaader);

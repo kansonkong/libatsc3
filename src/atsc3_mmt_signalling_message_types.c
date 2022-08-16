@@ -82,6 +82,13 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 	if(mmt_signalling_message_header_and_payload) {
 		__MMT_SI_TYPES_DEBUG("mmt_signalling_message_header_and_payload_free: clearing MMT_ATSC3_MESSAGE_ID");
     
+        if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == SIGNED_MMT_ATSC3_MESSAGE_ID) {
+            //clear out our interior message binary and signature binary fields
+            block_Destroy(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_signed_message_payload.message_instance_binary);
+			freeclean((void**)&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_signed_message_payload.atsc3_signature_byte);
+            block_Destroy(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_signed_message_payload.atsc3_signature_block_t);
+        }
+        
 		//determine if we have any internal mallocs to clear
 		if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type >= MMT_ATSC3_MESSAGE_ID) {
 			//free structs from mmt_atsc3_message_payload_t
@@ -118,6 +125,11 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 					mmt_atsc3_route_component_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_route_component);
 				}
 			}
+            
+            //mmt_atsc3_held_message
+            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_mpd_message) {
+                mmt_atsc3_mpd_message_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_mpd_message);
+            }
 
 			//mmt_atsc3_held_message
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message) {
@@ -340,6 +352,22 @@ void mmt_atsc3_route_component_free(mmt_atsc3_route_component_t** mmt_atsc3_rout
             mmt_atsc3_route_component = NULL;
         }
         *mmt_atsc3_route_component_p = NULL;
+    }
+}
+
+
+void mmt_atsc3_mpd_message_free(mmt_atsc3_mpd_message_t** mmt_atsc3_mpd_message_p) {
+    if(mmt_atsc3_mpd_message_p) {
+        mmt_atsc3_mpd_message_t* mmt_atsc3_mpd_message = *mmt_atsc3_mpd_message_p;
+        if(mmt_atsc3_mpd_message) {
+            if(mmt_atsc3_mpd_message->mpd_message) {
+                block_Destroy(&mmt_atsc3_mpd_message->mpd_message);
+            }
+
+            free(mmt_atsc3_mpd_message);
+            mmt_atsc3_mpd_message = NULL;
+        }
+        *mmt_atsc3_mpd_message_p = NULL;
     }
 }
 

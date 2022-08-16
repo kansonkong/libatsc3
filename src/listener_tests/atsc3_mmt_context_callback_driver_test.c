@@ -133,7 +133,7 @@ void atsc3_mmt_mpu_on_sequence_movie_fragment_metadata_present_local(atsc3_mmt_m
 
 
 
-void atsc3_lls_on_sls_table_present_local(lls_table_t* lls_table) {
+void atsc3_lls_on_sls_table_present_local(atsc3_lls_table_t* lls_table) {
     if(!lls_table) {
         __MMT_CONTEXT_LISTENER_TEST_ERROR("no LLS table for update!")
         return;
@@ -206,7 +206,9 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
         //auto-monitor code here for MMT
         //process as lls.sst, dont free as we keep track of our object in the lls_slt_monitor
-        lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        atsc3_lls_table_t* original_lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        atsc3_lls_table_t* lls_table = atsc3_lls_table_find_slt_if_signedMultiTable(original_lls_table);
+
         if(lls_table) {
             if(lls_table->lls_table_id == SLT) {
                 //pretty sure this is redundant, as it is already called in lls_table_create_or_update_from_lls_slt_monitor

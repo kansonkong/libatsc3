@@ -176,7 +176,8 @@ void process_from_udp_packet(udp_packet_t* udp_packet) {
 
     //dispatch for LLS extraction and dump
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-        lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        atsc3_lls_table_t* original_lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        atsc3_lls_table_t* lls_table = atsc3_lls_table_find_slt_if_signedMultiTable(original_lls_table);
 
         //auto-assign our first ROUTE service id here
         if(lls_table && lls_table->lls_table_id == SLT) {
@@ -251,7 +252,11 @@ void process_from_udp_packet(udp_packet_t* udp_packet) {
 					lls_slt_monitor_add_lls_sls_mmt_monitor(lls_slt_monitor, lls_sls_mmt_monitor);
 				}
             }
-        } else if(lls_table && lls_table->lls_table_id == AEAT) {
+        }
+        
+        lls_table = atsc3_lls_table_find_type_if_signedMultiTable(original_lls_table, AEAT);
+
+        if(lls_table && lls_table->lls_table_id == AEAT) {
 			_SRT_STLTP_VIRTUAL_PHY_ALC_WRITER_INFO("process_from_udp_packet: AEAT table is:\n%s", lls_table->raw_xml.xml_payload);
 			//jjustman-2021-04-16 - write out our lls.xml fragment
 			block_t* lls_table_payload = block_Duplicate_from_ptr(lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);

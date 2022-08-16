@@ -152,30 +152,10 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
     
     //dispatch for LLS extraction and dump
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
-        lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
-#ifdef __AIRWAVZ_PCAP_FIXUP__
-        if(lls_table) {
-        	lls_dump_instance_table(lls_table);
-        }
-#endif
+        atsc3_lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        lls_table = atsc3_lls_table_find_slt_if_signedMultiTable(lls_table);
 
-	//jjustman-2022-07-12 - hack-ish workaround for non-dispatcher wired up with SignedMultiTable
-	if(lls_table && lls_table->lls_table_id == SignedMultiTable) {
-	  lls_table_t* my_smt_lls_table = NULL;
-	  for(int i=0; i < lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count && !my_smt_lls_table; i++) {
-	    atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
-	    //    atsc3_lls_table_create_or_update_from_lls_slt_monitor_dispatcher(lls_slt_monitor, atsc3_signed_multi_table_lls_payload->lls_table);
-	    if(atsc3_signed_multi_table_lls_payload->lls_table->lls_table_id == SLT) {
-	      my_smt_lls_table = atsc3_signed_multi_table_lls_payload->lls_table;
-	    }
-	  }
-
-	  if(my_smt_lls_table) {
-	    lls_table = my_smt_lls_table;
-	  }
-	}
-		
-	//auto-assign our first ROUTE service id here
+        //auto-assign our first ROUTE service id here
 
         if(lls_table && lls_table->lls_table_id == SLT) {
             for(int i=0; i < lls_table->slt_table.atsc3_lls_slt_service_v.count; i++) {
@@ -268,20 +248,8 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 				//persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
 				//the full packet has been recovered (e.g. no missing data units in the forward transmission)
 				if(atsc3_route_object) {
-				  //jjustman-2022-07-12 - set our certification data for lls_slt_monitor for validation
-				    if(lls_slt_monitor->lls_latest_certification_data_table) {
-				      lls_slt_monitor->lls_sls_alc_monitor->atsc3_certification_data = &lls_slt_monitor->lls_latest_certification_data_table->certification_data;
-				    } else {
-				      lls_slt_monitor->lls_sls_alc_monitor->atsc3_certification_data = NULL;
-				    }
-
-				  atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, matching_lls_sls_alc_monitor, atsc3_route_object);
-					alc_packet_received_count++;
-
-	//				if(alc_packet_received_count > 10000) {
-	//					exit(0);
-	//				}
-
+                    atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, matching_lls_sls_alc_monitor, atsc3_route_object);
+                    alc_packet_received_count++;
 				} else {
 					__ERROR("Error in ALC persist, atsc3_route_object is NULL!");
 

@@ -83,13 +83,7 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 		  atsc3_route_object_t* atsc3_route_object = atsc3_alc_persist_route_object_lct_packet_received_for_lls_sls_alc_monitor_all_flows(alc_packet, lls_slt_monitor->lls_sls_alc_monitor);
 
 		   if (atsc3_route_object) {
-                    if(lls_slt_monitor->lls_latest_certification_data_table) {
-                        lls_slt_monitor->lls_sls_alc_monitor->atsc3_certification_data = &lls_slt_monitor->lls_latest_certification_data_table->certification_data;
-                    } else {
-                        lls_slt_monitor->lls_sls_alc_monitor->atsc3_certification_data = NULL;
-                    }
-
-                    atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
+               atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
 		   }
 		} else {
 			__ERROR("process_packet: Error in ALC decode: %d", retval);

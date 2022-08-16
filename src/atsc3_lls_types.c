@@ -154,7 +154,29 @@ void atsc3_lls_slt_service_free(atsc3_lls_slt_service_t** atsc3_lls_slt_service_
 
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_slt_service_id); //no pointers
 
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_monitor); //custom impl not needed, atsc3_lls_slt_service_t* and lls_sls_mmt_session_t* are both transients
+
+//ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_monitor);
+void lls_sls_mmt_monitor_free(lls_sls_mmt_monitor_t** lls_sls_mmt_monitor_p) {
+    if(lls_sls_mmt_monitor_p) {
+        lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = *lls_sls_mmt_monitor_p;
+        if(lls_sls_mmt_monitor) {
+            
+            if(lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.joined_isobmff_block) {
+                block_Destroy(&lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.joined_isobmff_block);
+            }
+        
+            //jjustman-2022-08-16 - DON'T free these pointers, just set to null, as we don't own them...
+            lls_sls_mmt_monitor->transients.atsc3_lls_slt_service = NULL;
+            lls_sls_mmt_monitor->transients.atsc3_lls_slt_service_stale = NULL;
+            lls_sls_mmt_monitor->transients.lls_mmt_session = NULL;
+            lls_sls_mmt_monitor->transients.atsc3_certification_data = NULL;
+            
+            free(lls_sls_mmt_monitor);
+            lls_sls_mmt_monitor = NULL;
+        }
+        *lls_sls_mmt_monitor_p = NULL;
+    }
+}
 
 ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(lls_sls_mmt_session_flows);
 
@@ -241,7 +263,10 @@ void lls_sls_alc_monitor_free(lls_sls_alc_monitor_t** lls_sls_alc_monitor_p) {
             
             atsc3_sls_alc_flow_free_v(&lls_sls_alc_monitor->atsc3_sls_alc_all_s_tsid_flow_v);
 
-
+            //jjustman-2022-08-16 - DON'T free these pointers, just set to null, as we don't own them...
+            lls_sls_alc_monitor->transients.atsc3_certification_data = NULL;
+            lls_sls_alc_monitor->transients.atsc3_lls_slt_service_stale = NULL;
+            
             free(lls_sls_alc_monitor);
             lls_sls_alc_monitor = NULL;
         }

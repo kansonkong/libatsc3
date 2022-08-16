@@ -101,7 +101,7 @@ void process_packet(block_t* ip_blockt) {
 
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
                 //process as lls
-        lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        atsc3_lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
 
         return udp_packet_free(&udp_packet);
     }
@@ -110,6 +110,7 @@ void process_packet(block_t* ip_blockt) {
         return udp_packet_free(&udp_packet);
     }
 
+    //jjustman-2022-08-16 - this works because we are only using session flow, not looking at monitor...
     lls_sls_mmt_session_t* matching_lls_slt_mmt_session = lls_sls_mmt_session_find_from_udp_packet(lls_slt_monitor, udp_packet->udp_flow.src_ip_addr, udp_packet->udp_flow.dst_ip_addr, udp_packet->udp_flow.dst_port);
     if(matching_lls_slt_mmt_session) {
 

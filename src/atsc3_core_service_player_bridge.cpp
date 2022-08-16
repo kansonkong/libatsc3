@@ -876,7 +876,9 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
     //don't auto-select service here, let the lls_slt_monitor->atsc3_lls_on_sls_table_present event callback trigger in a service selection
     if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
         //note: lls_slt_table_perform_update will be called via lls_table_create_or_update_from_lls_slt_monitor if the SLT version changes
-        lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        atsc3_lls_table_t* original_lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+        atsc3_lls_table_t* lls_table = atsc3_lls_table_find_slt_if_signedMultiTable(original_lls_table);
+
         if(lls_table) {
             if(lls_table->lls_table_id == SLT) {
                 lls_dump_instance_table(lls_table);
@@ -1027,15 +1029,8 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                 //persist to disk, process sls mbms and/or emit ROUTE media_delivery_event complete to the application tier if
                 //the full packet has been recovered (e.g. no missing data units in the forward transmission)
                 if (atsc3_route_object) {
-                    if(lls_slt_monitor->lls_latest_certification_data_table) {
-                        lls_slt_monitor->lls_sls_alc_monitor->atsc3_certification_data = &lls_slt_monitor->lls_latest_certification_data_table->certification_data;
-                    } else {
-                        lls_slt_monitor->lls_sls_alc_monitor->atsc3_certification_data = NULL;
-                    }
-
                     atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(&udp_packet->udp_flow, alc_packet, lls_slt_monitor->lls_sls_alc_monitor, atsc3_route_object);
                     goto cleanup;
-
                 } else {
                     __ATSC3_CORE_SERVICE_PLAYER_BRIDGE_ERROR("atsc3_core_service_bridge_process_packet_phy: Error in ALC persist, atsc3_route_object is NULL!");
                 }
@@ -1381,7 +1376,7 @@ cleanup:
  */
 
 
-void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table) {
+void atsc3_lls_on_sls_table_present_ndk(atsc3_lls_table_t* lls_table) {
 
     printf("atsc3_lls_on_sls_table_present_ndk: lls_table is: %p, val: %s", lls_table, lls_table->raw_xml.xml_payload);
     if(!lls_table) {
@@ -1406,7 +1401,7 @@ void atsc3_lls_on_sls_table_present_ndk(lls_table_t* lls_table) {
 
 
 
-void atsc3_lls_on_aeat_table_present_ndk(lls_table_t* lls_table) {
+void atsc3_lls_on_aeat_table_present_ndk(atsc3_lls_table_t* lls_table) {
     printf("atsc3_lls_on_aeat_table_present_ndk: lls_table is: %p, val: %s", lls_table, lls_table->raw_xml.xml_payload);
     if(!lls_table) {
         Atsc3NdkApplicationBridge_ptr->LogMsg("E: atsc3_lls_on_aeat_table_present_ndk: no lls_table for AEAT!");
