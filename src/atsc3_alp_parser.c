@@ -9,9 +9,9 @@
 
 #include "atsc3_baseband_packet_types.h"
 
-int _ALP_PARSER_INFO_ENABLED  = 0;
-int _ALP_PARSER_DEBUG_ENABLED = 0;
-int _ALP_PARSER_TRACE_ENABLED = 0;
+int _ALP_PARSER_INFO_ENABLED  = 1;
+int _ALP_PARSER_DEBUG_ENABLED = 1;
+int _ALP_PARSER_TRACE_ENABLED = 1;
 
 
 /**
@@ -601,7 +601,9 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
     } else {
         alp_packet->is_alp_payload_complete = true;
     }
-    
+
+    alp_packet->alp_payload = block_Alloc(alp_payload_length);
+
     if(remaining_binary_payload_bytes < 1) {
     	__ALP_PARSER_WARN("atsc3_alp_packet_parse: remaining size is %d bytes, returning NULL, ptr: %p, pos: %d, size: %d",
     		   remaining_binary_payload_bytes,
@@ -609,10 +611,10 @@ atsc3_alp_packet_t* atsc3_alp_packet_parse(uint8_t plp_num, block_t* baseband_pa
 			   baseband_packet_payload->i_pos,
 			   baseband_packet_payload->p_size);
         //jjustman - allow this to occur for now, as we have a valid alp header and expected length, but we are incomplete...
-        alp_packet->alp_payload = block_Alloc(alp_payload_length);
     } else {
-        //copy into our alp_header_payload
-        alp_packet->alp_payload = block_Duplicate_from_position_and_sizeAndMoveIptrs(baseband_packet_payload, alp_payload_bytes_to_write);
+        //jjustman-2022-08-16 - old method here...needed for stltp re-fragmentation..
+        block_Write(alp_packet->alp_payload, block_Get(baseband_packet_payload), alp_payload_bytes_to_write);
+        block_Seek_Relative(baseband_packet_payload, alp_payload_bytes_to_write);
     }
     
     
