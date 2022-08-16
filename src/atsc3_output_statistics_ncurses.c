@@ -586,7 +586,7 @@ void* print_lls_instance_table_thread(void* lls_slt_monitor_ptr) {
 
 }
 
-void lls_dump_instance_table_ncurses(lls_table_t* base_table) {
+void lls_dump_instance_table_ncurses(atsc3_lls_table_t* base_table) {
 
 	__LLS_DUMP("LLS Base Table:");
 	__LLS_DUMP("");

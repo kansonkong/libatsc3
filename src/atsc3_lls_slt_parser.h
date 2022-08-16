@@ -44,8 +44,8 @@ lls_slt_monitor_t* lls_slt_monitor_create(void);
 void atsc3_lls_slt_monitor_free(lls_slt_monitor_t** lls_slt_monitor_p);
 
 
-int lls_slt_table_check_process_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);
-int lls_slt_table_perform_update(lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);
+int lls_slt_table_check_process_update(atsc3_lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);
+int lls_slt_table_perform_update(atsc3_lls_table_t* lls_table, lls_slt_monitor_t* lls_slt_monitor);
 
 
 //etst methods
@@ -53,7 +53,7 @@ char* lls_get_service_category_value(uint8_t service_category);
 char* lls_get_sls_protocol_value(uint8_t protocol);
 
 
-int lls_slt_table_build(lls_table_t* lls_table, xml_node_t *xml_root);
+int lls_slt_table_build(atsc3_lls_table_t* lls_table, xml_node_t *xml_root);
 
 int SLT_BROADCAST_SVC_SIGNALING_build_table(atsc3_lls_slt_service_t* atsc3_lls_slt_service, xml_node_t *service_row_node, kvp_collection_t* kvp_collection);
 

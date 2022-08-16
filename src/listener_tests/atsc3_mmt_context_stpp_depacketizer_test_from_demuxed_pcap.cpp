@@ -231,8 +231,12 @@ void process_packet(block_t* raw_ethernet_packet_blockt) {
 	if(udp_packet->udp_flow.dst_ip_addr == LLS_DST_ADDR && udp_packet->udp_flow.dst_port == LLS_DST_PORT) {
 		//auto-monitor code here for MMT
 		//process as lls.sst, dont free as we keep track of our object in the lls_slt_monitor
-		lls_table_t* lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
-		if(lls_table) {
+		atsc3_lls_table_t* original_lls_table = lls_table_create_or_update_from_lls_slt_monitor(lls_slt_monitor, udp_packet->data);
+
+		if(original_lls_table) {
+            
+            atsc3_lls_table_t* lls_table = atsc3_lls_table_find_type_if_signedMultiTable(original_lls_table, SLT);
+
 			if(lls_table->lls_table_id == SLT) {
 				int retval = lls_slt_table_perform_update(lls_table, lls_slt_monitor);
 

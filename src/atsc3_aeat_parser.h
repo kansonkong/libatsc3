@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-int atsc3_aeat_table_populate_from_xml(lls_table_t* lls_table, xml_node_t* xml_root);
+int atsc3_aeat_table_populate_from_xml(atsc3_lls_table_t* lls_table, xml_node_t* xml_root);
 
 #define __AEAT_PARSER_ERROR(...) __LIBATSC3_TIMESTAMP_ERROR(__VA_ARGS__);
 #define __AEAT_PARSER_WARN(...)  __LIBATSC3_TIMESTAMP_WARN(__VA_ARGS__);

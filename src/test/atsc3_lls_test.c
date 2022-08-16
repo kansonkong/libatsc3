@@ -100,7 +100,7 @@ int test_lls_create_xml_table(char* base64_payload) {
 	__create_binary_payload(base64_payload, &binary_payload, &binary_payload_size);
 	block_t* lls_packet_block = block_Alloc(binary_payload_size);
 	block_Write(lls_packet_block, binary_payload, binary_payload_size);
-	lls_table_t *lls_table = lls_create_xml_table(lls_packet_block);
+	atsc3_lls_table_t *lls_table = lls_create_xml_table(lls_packet_block);
 
 	lls_dump_instance_table(lls_table);
 
@@ -120,7 +120,7 @@ int test_lls_create_slt_table(char* base64_payload) {
 	block_t* lls_packet_block = block_Alloc(binary_payload_size);
 	block_Write(lls_packet_block, binary_payload, binary_payload_size);
 
-	lls_table_t* lls = __lls_table_create(lls_packet_block);
+	atsc3_lls_table_t* lls = __lls_table_create(lls_packet_block);
 
 	lls_dump_instance_table(lls);
 	block_Destroy(&lls_packet_block);
@@ -139,7 +139,7 @@ int test_lls_create_slt_route_dash(char* base64_payload) {
 	block_t* lls_packet_block = block_Alloc(binary_payload_size);
 	block_Write(lls_packet_block, binary_payload, binary_payload_size);
 
-	lls_table_t* lls = __lls_table_create(lls_packet_block);
+	atsc3_lls_table_t* lls = __lls_table_create(lls_packet_block);
 
 	if(!lls) {
 		printf("error creating lls table for %s", base64_payload);
@@ -169,7 +169,7 @@ int test_lls_components() {
 
 	block_t* lls_packet_block = block_Alloc(test_payload_binary_size);
 	block_Write(lls_packet_block, test_payload_binary, test_payload_binary_size);
-	lls_table_t *parsed_table = lls_create_xml_table(lls_packet_block);
+	atsc3_lls_table_t *parsed_table = lls_create_xml_table(lls_packet_block);
 
 	lls_dump_instance_table(parsed_table);
 
