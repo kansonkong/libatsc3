@@ -48,6 +48,7 @@
 
 #include "atsc3_aeat_parser.h"
 #include "atsc3_lls_types.h"
+#include "atsc3_cms_utils.h"
 
 int _LLS_INFO_ENABLED  = 0;
 int _LLS_DEBUG_ENABLED = 0;
@@ -57,7 +58,6 @@ char* LLS_SERVICE_CATEGORY_VALUES[] = {"atsc reserved", "linear av", "linear aud
 //jjustman-2020-03-10: note: 0xFE=>"SignedMultiTable", 0xFF=>"UserDefined"
 
 char* LLS_PROTOCOL_VALUES[] = {"atsc reserved", "ROUTE", "MMTP", "atsc other" };
-
 
 static atsc3_lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block) {
 
@@ -189,7 +189,9 @@ static atsc3_lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block)
                 _LLS_TRACE("__lls_create_base_table_raw: SignedMultiTable: signature_length is: %d, signature: %s",
                            base_table->signed_multi_table.signature_length,
                            base_table->signed_multi_table.signature->p_buffer);
-            }
+
+
+			}
         } else {
             _LLS_ERROR("_lls_create_base_table_raw: SignedMultiTable: error finalizing signedMultiTable, base_table: %p, remaining bytes for signature: %d",
                     base_table,
@@ -217,6 +219,47 @@ static atsc3_lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block)
 }
 
 
+bool atsc3_lls_SignedMultiTable_verify_cms_message(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_table_t* lls_table) {
+	bool is_signature_valid = false;
+
+	block_Rewind(lls_table->signed_multi_table.raw_signed_multi_table_for_signature);
+	//block_Write_to_filename(lls_table->signed_multi_table.raw_signed_multi_table_for_signature, "lls.data");
+
+	block_Rewind(lls_table->signed_multi_table.signature);
+	//block_Write_to_filename(lls_table->signed_multi_table.signature, "lls.signature");
+
+	atsc3_cms_entity_t* atsc3_cms_entity = atsc3_cms_entity_new();
+	atsc3_cms_entity->signature = block_Duplicate(lls_table->signed_multi_table.signature);
+	atsc3_cms_entity->raw_binary_payload = block_Duplicate(lls_table->signed_multi_table.raw_signed_multi_table_for_signature);
+
+	atsc3_cms_validation_context_t* atsc3_cms_validation_context = atsc3_cms_validation_context_new(atsc3_cms_entity);
+	atsc3_cms_validation_context_set_cms_noverify(atsc3_cms_validation_context, true);
+	atsc3_cms_validation_context->certificate_payload = block_Alloc(0);
+
+	if(lls_slt_monitor->lls_latest_certification_data_table) {
+
+		for (int i = 0; i < lls_slt_monitor->lls_latest_certification_data_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count; i++) {
+			atsc3_certification_data_to_be_signed_data_certificates_t *atsc3_certification_data_to_be_signed_data_certificates = lls_slt_monitor->lls_latest_certification_data_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i];
+			block_Write(atsc3_cms_validation_context->certificate_payload, (const uint8_t *) ATSC3_CMS_UTILS_BEGIN_CERTIFICATE, strlen(ATSC3_CMS_UTILS_BEGIN_CERTIFICATE));
+			block_Append(atsc3_cms_validation_context->certificate_payload, atsc3_certification_data_to_be_signed_data_certificates->base64_payload);
+			block_Write(atsc3_cms_validation_context->certificate_payload, (const uint8_t *) ATSC3_CMS_UTILS_END_CERTIFICATE, strlen(ATSC3_CMS_UTILS_END_CERTIFICATE));
+
+		}
+		block_Rewind(atsc3_cms_validation_context->certificate_payload);
+	}
+
+	atsc3_cms_validation_context_t* atsc3_cms_validation_context_ret = atsc3_cms_validate_from_context(atsc3_cms_validation_context);
+
+	if(!atsc3_cms_validation_context_ret) {
+		_LLS_WARN("!atsc3_cms_validation_context_ret");
+		is_signature_valid = false;
+	} else {
+		is_signature_valid = true;
+	}
+	atsc3_cms_validation_context_free(&atsc3_cms_validation_context);
+
+	return is_signature_valid;
+}
 
 atsc3_lls_table_t* lls_create_xml_table(block_t* lls_packet_block) {
 	atsc3_lls_table_t *lls_table = __lls_create_base_table_raw(lls_packet_block);
@@ -394,6 +437,14 @@ atsc3_lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(
     if(lls_table_new->lls_table_id != SignedMultiTable) {
         return atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor, lls_table_new, parsed, parsed_update, parsed_error);
     } else {
+		//validate that our SignedMultiTable signature is valid
+
+		if(!atsc3_lls_SignedMultiTable_verify_cms_message(lls_slt_monitor, lls_table_new)) {
+			_LLS_ERROR("lls_table_create_or_update_from_lls_slt_monitor_with_metrics: atsc3_lls_SignedMultiTable_verify_cms_message invalid!");
+			lls_table_free(&lls_table_new);
+			return NULL;
+		}
+
         _LLS_DEBUG("lls_table_create_or_update_from_lls_slt_monitor_with_metrics: iterating over %d entries", lls_table_new->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count);
         //iterate over our interior tables...
         for(int i=0; i < lls_table_new->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
@@ -459,8 +510,8 @@ atsc3_lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_me
 			_LLS_INFO("Adding new CertificationData table reference: %s", lls_table_new->certification_data.raw_certification_data_xml_fragment->p_buffer);
             
             atsc3_lls_slt_monitor_update_latest_certification_data_table_from_lls_table(lls_slt_monitor, lls_table_new);
-         
-        } else if(lls_slt_monitor->lls_latest_certification_data_table->lls_group_id == lls_table_new->lls_group_id &&
+
+		} else if(lls_slt_monitor->lls_latest_certification_data_table->lls_group_id == lls_table_new->lls_group_id &&
 				  lls_slt_monitor->lls_latest_certification_data_table->lls_table_version != lls_table_new->lls_table_version) {
 			_LLS_INFO("Updating new CertificationData table reference: %s", lls_table_new->certification_data.raw_certification_data_xml_fragment->p_buffer);
 
@@ -468,6 +519,7 @@ atsc3_lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_me
 
 			lls_table_free(&lls_slt_monitor->lls_latest_certification_data_table);
 			lls_slt_monitor->lls_latest_certification_data_table = lls_table_new;
+
 		} else {
 			lls_table_free(&lls_table_new);
 		}
@@ -700,8 +752,7 @@ void lls_table_free(atsc3_lls_table_t** lls_table_p) {
 		for(int i=0; i < lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
 			atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
 			if(atsc3_signed_multi_table_lls_payload) {
-				lls_table_free(&atsc3_signed_multi_table_lls_payload->lls_table);
-				freesafe((void**)&lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i]);
+				lls_table_free(&lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i]);
 			}
 		}
 
