@@ -152,6 +152,8 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 
 					}
 					block_Rewind(atsc3_smime_validation_context->certificate_payload);
+
+					block_Write_to_filename(atsc3_smime_validation_context->certificate_payload, "cert_payload.pem");
 					_ATSC3_ROUTE_SLS_PROCESSOR_INFO("CMS certificate chain payload is: %s", block_Get(atsc3_smime_validation_context->certificate_payload));
 				} else {
 //					atsc3_smime_validation_context_certificate_payload_parse_from_file(atsc3_smime_validation_context, signing_certificate_filename);

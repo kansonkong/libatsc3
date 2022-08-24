@@ -375,19 +375,41 @@ err:
 		atsc3_smime_validation_context_return = NULL;
 	}
 
-	CMS_ContentInfo_free(cms);
-	
-	X509_free(cacert_cdt);
-	X509_free(cacert_root);
-	
-	BIO_free(signed_payload_in);
-	BIO_free(extracted_payload_out);
-	BIO_free(cacert_cdt_payload_in);
-	
+
+	if(signed_payload_in) {
+		BIO_free(signed_payload_in);
+	}
+
+
 	if(cont) {
 		BIO_free(cont);
 	}
-	
+
+	if(extracted_payload_out) {
+		BIO_free(extracted_payload_out);
+	}
+
+	if(cacert_cdt_payload_in) {
+		BIO_free(cacert_cdt_payload_in);
+	}
+
+	if(st_root) {
+		X509_STORE_free(st_root);
+	}
+
+	if(cacert_root) {
+		X509_free(cacert_root);
+	}
+
+	if(cacert_cdt) {
+		X509_free(cacert_cdt);
+	}
+
+	if(cms) {
+		CMS_ContentInfo_free(cms);
+	}
+
+
 	return atsc3_smime_validation_context_return;
 }
 
