@@ -279,6 +279,12 @@ atsc3_lls_table_t* lls_create_xml_table(block_t* lls_packet_block) {
 	uint8_t *decompressed_payload;
 	int32_t ret = atsc3_unzip_gzip_payload(lls_table->raw_xml.xml_payload_compressed, lls_table->raw_xml.xml_payload_compressed_size, &decompressed_payload);
 
+	//make sure we won't overwrite an already extracted xml_payload, e.g. from signedMultiTable interior children..
+	if(lls_table->raw_xml.xml_payload) {
+		freeclean((void**)&lls_table->raw_xml.xml_payload);
+		lls_table->raw_xml.xml_payload_size = 0;
+	}
+
 	if(ret > 0) {
 		lls_table->raw_xml.xml_payload = decompressed_payload;
 		lls_table->raw_xml.xml_payload_size = ret;
@@ -453,14 +459,21 @@ atsc3_lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(
 			if(!processed_table) {
 				//jjustman-2022-05-30 - remove this element if we aren't processed via table update
 				atsc3_signed_multi_table_remove_atsc3_signed_multi_table_lls_payload(&lls_table_new->signed_multi_table, lls_table_payload);
+				//jjustman-2022-08-24 - hack - set our lls_table_payload->lls_table to null as we are already freed
+				lls_table_payload->lls_table = NULL;
+				atsc3_signed_multi_table_lls_payload_free(&lls_table_payload);
 				i--; //decrement our i position to process the next element (if applicable)
 
 			}
         }
 
-        return lls_table_new;
+		if(!lls_table_new->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count) {
+			lls_table_free(&lls_table_new);
+			return NULL;
+		} else {
+			return lls_table_new;
+		}
     }
-
 }
 
 atsc3_lls_table_t* atsc3_lls_table_create_or_update_from_lls_slt_monitor_with_metrics_single_table(lls_slt_monitor_t* lls_slt_monitor, atsc3_lls_table_t* lls_table_new, uint32_t* parsed, uint32_t* parsed_update, uint32_t* parsed_error) {
@@ -752,7 +765,9 @@ void lls_table_free(atsc3_lls_table_t** lls_table_p) {
 		for(int i=0; i < lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
 			atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
 			if(atsc3_signed_multi_table_lls_payload) {
-				lls_table_free(&lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i]);
+				atsc3_signed_multi_table_lls_payload_free(&lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i]);
+				freeclean((void**)&lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i]);
+
 			}
 		}
 
