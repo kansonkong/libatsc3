@@ -28,7 +28,7 @@ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_lls_slt_table, atsc3_lls_slt_s
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(atsc3_signed_multi_table, atsc3_signed_multi_table_lls_payload);
 //default for now
-ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_signed_multi_table_lls_payload);
+//ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(atsc3_signed_multi_table_lls_payload);
 
 
 //jjustman-2022-06-01 - certificateData a/360 cdt payload
@@ -236,6 +236,24 @@ void lls_sls_mmt_session_free(lls_sls_mmt_session_t** lls_sls_mmt_session_ptr) {
 	}
 }
 
+void atsc3_signed_multi_table_lls_payload_free(atsc3_signed_multi_table_lls_payload_t** atsc3_signed_multi_table_lls_payload_p) {
+	if(atsc3_signed_multi_table_lls_payload_p) {
+		atsc3_signed_multi_table_lls_payload_t* atsc3_signed_multi_table_lls_payload = *atsc3_signed_multi_table_lls_payload_p;
+		if(atsc3_signed_multi_table_lls_payload) {
+
+			if(atsc3_signed_multi_table_lls_payload->lls_payload) {
+				block_Destroy(&atsc3_signed_multi_table_lls_payload->lls_payload);
+			}
+
+			if(atsc3_signed_multi_table_lls_payload->lls_table) {
+				atsc3_lls_table_free(&atsc3_signed_multi_table_lls_payload->lls_table);
+			}
+
+			freeclean((void**)&atsc3_signed_multi_table_lls_payload);
+		}
+		*atsc3_signed_multi_table_lls_payload_p = NULL;
+	}
+}
 
 
 
