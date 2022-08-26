@@ -13,6 +13,10 @@ build for linux:
 
 > cd src; ./build_linux.sh 
 
+## Aug, 2022 Release: Signed MultiTable and Signed SLS validation
+
+New features for Signed LLS and Signed SLS validation and processing for A/360 security support.
+
 ## Nov, 2021 Release: New ATSC3 Sample and TV App repos, local android sample app removed
 
 Please see the new Android ATSC3 Sample and TV App open-source repos here:
