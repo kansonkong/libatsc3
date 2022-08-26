@@ -7,9 +7,23 @@ checkout libatsc3:
 
 > git clone --branch develop --recurse-submodules https://github.com/jjustman/libatsc3.git 
 
+(note, some submodules are not publically distributed, you can safely skip username/password requests via hitting enter a few times)
+
 build for linux:
 
 > cd src; ./build_linux.sh 
+
+## Aug, 2022 Release: Signed MultiTable and Signed SLS validation
+
+New features for Signed LLS and Signed SLS validation and processing for A/360 security support.
+
+## Nov, 2021 Release: New ATSC3 Sample and TV App repos, local android sample app removed
+
+Please see the new Android ATSC3 Sample and TV App open-source repos here:
+
+https://github.com/jjustman/libatsc3-middleware-sample-app
+
+https://github.com/jjustman/libatsc3-android-tv-app
 
 
 ## March, 2021 Update: Join the libatsc3 slack workspace for development support and updates
