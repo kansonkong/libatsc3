@@ -254,6 +254,8 @@ bool atsc3_lls_SignedMultiTable_verify_cms_message(lls_slt_monitor_t* lls_slt_mo
 		_LLS_WARN("!atsc3_cms_validation_context_ret");
 		is_signature_valid = false;
 	} else {
+		_LLS_WARN("atsc3_cms_validation_context_ret is: %p", atsc3_cms_validation_context_ret);
+
 		is_signature_valid = true;
 	}
 	atsc3_cms_validation_context_free(&atsc3_cms_validation_context);
@@ -634,7 +636,16 @@ atsc3_lls_table_t* __lls_table_create(block_t* lls_packet_block) {
         //iterate over our interior tables...
         for(int i=0; i < lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.count; i++) {
             atsc3_signed_multi_table_lls_payload_t* lls_table_payload = lls_table->signed_multi_table.atsc3_signed_multi_table_lls_payload_v.data[i];
-            atsc3_lls_table_parse_raw_xml(lls_table_payload->lls_table);
+			atsc3_lls_table_t* processed_table = atsc3_lls_table_parse_raw_xml(lls_table_payload->lls_table);
+			if(!processed_table) {
+				//remove this entry as we were not able to parse as a LLS table...
+				//jjustman-2022-05-30 - remove this element if we aren't processed via table update
+				atsc3_signed_multi_table_remove_atsc3_signed_multi_table_lls_payload(&lls_table->signed_multi_table, lls_table_payload);
+				//jjustman-2022-08-24 - hack - set our lls_table_payload->lls_table to null as we are already freed
+				lls_table_payload->lls_table = NULL;
+				atsc3_signed_multi_table_lls_payload_free(&lls_table_payload);
+				i--; //decrement our i position to process the next element (if applicable)
+			}
         }
 
         return lls_table;
@@ -990,9 +1001,11 @@ int build_onscreen_message_notification_table(atsc3_lls_table_t* lls_table, xml_
  */
 int atsc3_lls_build_certificationdata_table(atsc3_lls_table_t* lls_table, xml_node_t* xml_root) {
 
-	int ret = 0;
+    int ret = 0;
 
 	atsc3_certification_data_t*  atsc3_certification_data = &lls_table->certification_data;
+    
+    atsc3_certification_data->raw_certification_data_xml_fragment = block_Duplicate_from_ptr(lls_table->raw_xml.xml_payload, lls_table->raw_xml.xml_payload_size);
 	xml_string_t* root_node_name = xml_node_name(xml_root); //CertificationData
 	dump_xml_string(root_node_name);
 
