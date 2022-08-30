@@ -12,8 +12,8 @@ int _ATSC3_CMS_UTILS_INFO_ENABLED  = 1;
 int _ATSC3_CMS_UTILS_DEBUG_ENABLED = 0;
 int _ATSC3_CMS_UTILS_TRACE_ENABLED = 0;
 
-char* ATSC3_CMS_UTILS_BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----\n";
-char* ATSC3_CMS_UTILS_END_CERTIFICATE = "-----END CERTIFICATE-----\n";
+char* ATSC3_CMS_UTILS_BEGIN_CERTIFICATE = "\n-----BEGIN CERTIFICATE-----\n";
+char* ATSC3_CMS_UTILS_END_CERTIFICATE = "\n-----END CERTIFICATE-----\n";
 
 char* ATSC3_CMS_UTILS_CDT_A3SA_ROOT_2020_CERT = "-----BEGIN CERTIFICATE-----\n"
 "MIIF1DCCA7ygAwIBAgIJAJs5WkwMaeOYMA0GCSqGSIb3DQEBCwUAMEkxCzAJBgNV\n"
@@ -336,7 +336,7 @@ atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_valida
 	if(atsc3_cms_validation_context->cms_no_content_verify) {
 		cms_verify_flags = CMS_BINARY | CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL | CMS_NO_ATTR_VERIFY | CMS_NO_CONTENT_VERIFY;
 	} else if(atsc3_cms_validation_context->cms_noverify) {
-		cms_verify_flags = CMS_BINARY | CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL | CMS_NO_ATTR_VERIFY;
+		cms_verify_flags = CMS_BINARY | CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL | CMS_NO_ATTR_VERIFY | CMS_CRLFEOL;
 	} else {
 		cms_verify_flags = CMS_BINARY;
 	}
@@ -345,6 +345,10 @@ atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_valida
 	   _ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context:CMS_verify: verification failure");
 		atsc3_cms_validation_context->cms_signature_valid = false;
 
+		block_Write_to_filename(atsc3_cms_validation_context->certificate_payload, "cert_payload.pem");
+
+		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->signature, "raw_binary_payload_signature.der");
+		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload, "raw_binary_payload.data");
 	} else {
 		_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: verification successful");
 		atsc3_cms_validation_context->cms_signature_valid = true;
@@ -366,7 +370,7 @@ err:
 
 	if (!atsc3_cms_validation_context->cms_signature_valid) {
 		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context: error verifying data, errors:");
-		ERR_print_errors_fp(stderr);
+		ERR_print_errors_fp(stdout);
 		atsc3_cms_validation_context_return = NULL;
 	}
 

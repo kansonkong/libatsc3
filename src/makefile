@@ -168,6 +168,8 @@ clean:
 	-rm -f listener_tests/atsc3_alc_listener_test_valgrind
 	-rm -f listener_tests/atsc3_lls_listener_test
 	-rm -f listener_tests/atsc3_lls_listener_test_noasan
+	-rm -f listener_tests/atsc3_lls_listener_test_from_stltp_pcap
+	-rm -f listener_tests/atsc3_lls_listener_test_from_stltp_pcap_noasan
 	-rm -f listener_tests/atsc3_mmt_listener_test
 	-rm -f listener_tests/atsc3_mmt_listener_test_noasan
 	-rm -f listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets
@@ -287,6 +289,8 @@ intermediate_virtual_phy: 	PcapDemuxedVirtualPHY.o \
 
 intermediate_smime:	atsc3_smime_utils.o	  
 
+intermedaite_cms_utils: atsc3_cms_utils.o
+
 libatsc3_core: libatsc3.o \
 				libatsc3_asan.o
 listener_ncurses: tools/atsc3_listener_metrics_ncurses
@@ -327,6 +331,8 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_alc_listener_test_valgrind \
 				listener_tests/atsc3_lls_listener_test \
 				listener_tests/atsc3_lls_listener_test_noasan \
+				listener_tests/atsc3_lls_listener_test_from_stltp_pcap \
+				listener_tests/atsc3_lls_listener_test_from_stltp_pcap_noasan \
 				listener_tests/atsc3_mmt_listener_test \
 				listener_tests/atsc3_mmt_listener_test_noasan \
 				listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets \
@@ -653,6 +659,9 @@ PcapSTLTPVirtualPHY.o: phy/virtual/PcapSTLTPVirtualPHY.h phy/virtual/PcapSTLTPVi
 atsc3_smime_utils.o: atsc3_smime_utils.h atsc3_smime_utils.c
 	$(CC) $(CFLAGS) $(CFLAGS_OPENSSL_INCLUDE) $(DEBUG)  -c atsc3_smime_utils.c -o atsc3_smime_utils.o
 
+# jjustman-2022-08-24 - adding in openssl cms validation utils
+atsc3_cms_utils.o: atsc3_cms_utils.h atsc3_cms_utils.c
+	$(CC) $(CFLAGS) $(CFLAGS_OPENSSL_INCLUDE) $(DEBUG)  -c atsc3_cms_utils.c -o atsc3_cms_utils.o
 
 # jjustman-2020-08-17 - todo: add in full deps here
 atsc3_srt_live_receiver.o: phy/virtual/srt/atsc3_srt_live_receiver.h \
@@ -865,7 +874,8 @@ libatsc3.o: atsc3_lls.o \
 		atsc3_isobmff_box_parser_tools.o \
 		atsc3_mmt_context_signalling_information_callbacks_internal.o \
 		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o \
-		atsc3_smime_utils.o
+		atsc3_smime_utils.o \
+		atsc3_cms_utils.o
 
 
 #		atsc3_srt_live_receiver.o \
@@ -944,7 +954,8 @@ libatsc3.o: atsc3_lls.o \
 		atsc3_isobmff_box_parser_tools.o \
 		atsc3_mmt_context_signalling_information_callbacks_internal.o \
 		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o \
-		atsc3_smime_utils.o
+		atsc3_smime_utils.o \
+		atsc3_cms_utils.o
 
 
 #		atsc3_srt_live_receiver.o \
@@ -1023,7 +1034,8 @@ libatsc3_asan.o: \
 		atsc3_isobmff_box_parser_tools.o \
 		atsc3_mmt_context_signalling_information_callbacks_internal.o \
 		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o \
-		atsc3_smime_utils.o
+		atsc3_smime_utils.o \
+		atsc3_cms_utils.o
 		
 	ld  -o libatsc3_asan.o -r \
 		atsc3_lls_asan.o \
@@ -1098,7 +1110,8 @@ libatsc3_asan.o: \
 		atsc3_isobmff_box_parser_tools.o \
 		atsc3_mmt_context_signalling_information_callbacks_internal.o \
 		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o \
-		atsc3_smime_utils.o
+		atsc3_smime_utils.o \
+		atsc3_cms_utils.o
 
 
 # MIT-compatable linkage (no bento4) by default...
@@ -1444,6 +1457,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 										avltree.o \
 										strnstr.o \
 										atsc3_smime_utils.o \
+										atsc3_cms_utils.o \
 										atsc3_mmt_mfu_context_free_noop.o
 
 	$(CC) $(ASAN) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG) test/atsc3_route_dash_mpd_patch_test.c  \
@@ -1481,6 +1495,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 							avltree.o \
 							strnstr.o \
 							atsc3_smime_utils.o \
+							atsc3_cms_utils.o \
 							atsc3_mmt_mfu_context_free_noop.o \
 							$(LOCAL_LD_LIBS_OPENSSL) \
 							$(LOCAL_LD_LIBS) \
@@ -1523,6 +1538,7 @@ test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 										avltree.o \
 										strnstr.o \
 										atsc3_smime_utils.o \
+										atsc3_cms_utils.o \
 										atsc3_mmt_mfu_context_free_noop.o
 
 	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_smime_validation_test.c  \
@@ -1560,6 +1576,7 @@ test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 							avltree.o \
 							strnstr.o \
 							atsc3_smime_utils.o \
+							atsc3_cms_utils.o \
 							atsc3_mmt_mfu_context_free_noop.o \
 							$(LOCAL_LD_LIBS_OPENSSL) \
 							$(LOCAL_LD_LIBS) \
@@ -1600,6 +1617,28 @@ listener_tests/atsc3_lls_listener_test_noasan: listener_tests/atsc3_lls_listener
 
 ifeq ($(HOST), "osx")
 	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_lls_listener_test_noasan
+endif
+
+
+# listener_tests/atsc3_lls_listener_test_from_stltp_pcap
+
+# low level signal listener testing
+listener_tests/atsc3_lls_listener_test_from_stltp_pcap: listener_tests/atsc3_lls_listener_test_from_stltp_pcap.cpp libatsc3.o
+	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG) listener_tests/atsc3_lls_listener_test_from_stltp_pcap.cpp libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_lls_listener_test_from_stltp_pcap
+
+
+# low level signal listener testing
+listener_tests/atsc3_lls_listener_test_from_stltp_pcap_noasan: listener_tests/atsc3_lls_listener_test_from_stltp_pcap.cpp libatsc3.o
+	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG) listener_tests/atsc3_lls_listener_test_from_stltp_pcap.cpp libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_lls_listener_test_from_stltp_pcap_noasan
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_lls_listener_test_from_stltp_pcap_noasan
 endif
 
 # stltp listener test

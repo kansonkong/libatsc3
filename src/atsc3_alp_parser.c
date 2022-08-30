@@ -9,9 +9,9 @@
 
 #include "atsc3_baseband_packet_types.h"
 
-int _ALP_PARSER_INFO_ENABLED  = 1;
-int _ALP_PARSER_DEBUG_ENABLED = 1;
-int _ALP_PARSER_TRACE_ENABLED = 1;
+int _ALP_PARSER_INFO_ENABLED  = 0;
+int _ALP_PARSER_DEBUG_ENABLED = 0;
+int _ALP_PARSER_TRACE_ENABLED = 0;
 
 
 /**
