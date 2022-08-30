@@ -24,7 +24,7 @@ void mmt_atsc3_message_content_type_asset_header_free_asset_id(mmt_atsc3_message
 
 
 //MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR
-ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_atsc3_message_content_type_video_stream_properties_descriptor, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
+ ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_atsc3_message_content_type_video_stream_properties_descriptor, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
 //ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_atsc3_message_content_type_video_stream_properties_descriptor);
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(mmt_atsc3_message_content_type_video_stream_properties_descriptor);
 //jjustman-2021-09-13 - todo:
@@ -81,7 +81,8 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
     
 	if(mmt_signalling_message_header_and_payload) {
 		__MMT_SI_TYPES_DEBUG("mmt_signalling_message_header_and_payload_free: clearing MMT_ATSC3_MESSAGE_ID");
-    
+
+		//jjustman-2022-08-24 - note SIGNED_MMT_ATSC3_MESSAGE is not a superclass for MMT_ATSC3_MESSAGE_ID, a/331 defines it via aggregation...
         if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == SIGNED_MMT_ATSC3_MESSAGE_ID) {
             //clear out our interior message binary and signature binary fields
             block_Destroy(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_signed_message_payload.message_instance_binary);
@@ -89,15 +90,15 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
             block_Destroy(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_signed_message_payload.atsc3_signature_block_t);
         }
         
-		//determine if we have any internal mallocs to clear
-		if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type >= MMT_ATSC3_MESSAGE_ID) {
+		//determine if we have any internal mallocs to clear for unsigned payload representations
+		if(mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type == MMT_ATSC3_MESSAGE_ID) {
 			//free structs from mmt_atsc3_message_payload_t
             __MMT_SI_TYPES_DEBUG("mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload ptr: %p", mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload);
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload) {
 				free(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload);
 				mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.URI_payload = NULL;
 			}
-            
+
             __MMT_SI_TYPES_DEBUG("mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content ptr: %p", mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content);
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content) {
 				free(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.atsc3_message_content);

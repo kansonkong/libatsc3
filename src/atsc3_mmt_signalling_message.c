@@ -139,8 +139,13 @@ int8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signal
 		}
 	} else if(block_Remaining_size(udp_packet)) {
 		//parse a single message (from a re-constituted udp_packet msg_payload
-		processed_messages_count = mmt_signalling_message_parse_id_type(mmtp_signalling_packet, udp_packet);
+		//processed_messages_count =
+		mmt_signalling_message_parse_id_type(mmtp_signalling_packet, udp_packet);
 	}
+
+	//jjustman-2022-08-24 - hack-ish
+	processed_messages_count = mmtp_signalling_packet->mmt_signalling_message_header_and_payload_v.count;
+
 	return processed_messages_count;
 }
 
@@ -1520,7 +1525,7 @@ uint8_t* mmt_signed_atsc3_message_payload_parse(mmtp_signalling_packet_t* mmtp_s
                 block_Remaining_size(mmt_atsc3_signed_message_payload->atsc3_signature_block_t),
                 block_Remaining_size(udp_packet));
     
-    return block_Get(udp_packet);
+    return message_instance_end;
 }
 
 ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_scte35_message_payload, mmt_scte35_signal_descriptor)
@@ -1893,7 +1898,7 @@ void mpt_message_dump(mmt_signalling_message_header_and_payload_t* mmt_signallin
 
 	mp_table_t* mp_table = &mmt_signalling_message_header_and_payload->message_payload.mp_table;
 
-	__MMSM_DEBUG(" table_id                    : %u", mp_table->table_id);
+	__MMSM_DEBUG(" table_id                    : 0x%02x (%u) ", mp_table->table_id, mp_table->table_id);
 	__MMSM_DEBUG(" version                     : %u", mp_table->version);
 	__MMSM_DEBUG(" length                      : %u", mp_table->length);
 	__MMSM_DEBUG(" mp_table_mode               : %u", mp_table->mp_table_mode);
