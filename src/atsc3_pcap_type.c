@@ -193,7 +193,7 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 	atsc3_pcap_replay_context_to_iterate->pcap_read_packet_count++;
     
     if(atsc3_pcap_replay_context_to_iterate->ATSC3_PCAP_TYPE_INFO_ENABLE_PCAP_READ_PACKET_COUNT_LOGGING) {
-        _ATSC3_PCAP_TYPE_INFO("pcap packet_id: %d", atsc3_pcap_replay_context_to_iterate->pcap_read_packet_count);
+        _ATSC3_PCAP_TYPE_INFO("pcap packet number: %d", atsc3_pcap_replay_context_to_iterate->pcap_read_packet_count);
     }
 
 	return atsc3_pcap_replay_context_to_iterate;
