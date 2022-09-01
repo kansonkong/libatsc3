@@ -188,13 +188,17 @@ cms signature from A/360 for SLS validation, sample from enensys - 2020-11-17:
  00001a50  38 3a 51 37 34 27 6c 6c  77 35 75 74 54 63 7a 4a  |8:Q74'llw5utTczJ|
  00001a60  5a 55 2d 2d 0d 0a                                 |ZU--..|
 
- 
- 
+
+
+ -- jjustman-2022-09-01
+
  
  */
 
-#include "atsc3_utils.h"
-#include "atsc3_logging_externs.h"
+#include <atsc3_utils.h>
+#include <atsc3_logging_externs.h>
+#include <atsc3_a360_certificates.h>
+#include <atsc3_lls_types.h>
 
 #include <openssl/pem.h>
 #include <openssl/cms.h>
@@ -230,9 +234,10 @@ typedef struct atsc3_cms_validation_context {
 	bool					cms_no_content_verify;
 	
 	atsc3_cms_entity_t* 	atsc3_cms_entity;
-	
-	//other CDT information here...
-	block_t*				certificate_payload;
+
+	struct atsc3_cms_validation_context_transients {
+		atsc3_certification_data_t* atsc3_certification_data;
+	} transients;
 	
 	bool 					cms_signature_valid;
 		

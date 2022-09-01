@@ -54,6 +54,8 @@ int _LLS_INFO_ENABLED  = 0;
 int _LLS_DEBUG_ENABLED = 0;
 int _LLS_TRACE_ENABLED = 0;
 
+int __DISABLE_LLS_SIGNEDMULTITABLE_VALIDATION__ = 0;
+
 char* LLS_SERVICE_CATEGORY_VALUES[] = {"atsc reserved", "linear av", "linear audio", "app based svc.", "esg service", "eas service", "certificateData", "atsc other" };
 //jjustman-2020-03-10: note: 0xFE=>"SignedMultiTable", 0xFF=>"UserDefined"
 
@@ -233,19 +235,9 @@ bool atsc3_lls_SignedMultiTable_verify_cms_message(lls_slt_monitor_t* lls_slt_mo
 	atsc3_cms_entity->raw_binary_payload = block_Duplicate(lls_table->signed_multi_table.raw_signed_multi_table_for_signature);
 
 	atsc3_cms_validation_context_t* atsc3_cms_validation_context = atsc3_cms_validation_context_new(atsc3_cms_entity);
-	atsc3_cms_validation_context_set_cms_noverify(atsc3_cms_validation_context, true);
-	atsc3_cms_validation_context->certificate_payload = block_Alloc(0);
-
+	//atsc3_cms_validation_context_set_cms_noverify(atsc3_cms_validation_context, true);
 	if(lls_slt_monitor->lls_latest_certification_data_table) {
-
-		for (int i = 0; i < lls_slt_monitor->lls_latest_certification_data_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count; i++) {
-			atsc3_certification_data_to_be_signed_data_certificates_t *atsc3_certification_data_to_be_signed_data_certificates = lls_slt_monitor->lls_latest_certification_data_table->certification_data.atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i];
-			block_Write(atsc3_cms_validation_context->certificate_payload, (const uint8_t *) ATSC3_CMS_UTILS_BEGIN_CERTIFICATE, strlen(ATSC3_CMS_UTILS_BEGIN_CERTIFICATE));
-			block_Append(atsc3_cms_validation_context->certificate_payload, atsc3_certification_data_to_be_signed_data_certificates->base64_payload);
-			block_Write(atsc3_cms_validation_context->certificate_payload, (const uint8_t *) ATSC3_CMS_UTILS_END_CERTIFICATE, strlen(ATSC3_CMS_UTILS_END_CERTIFICATE));
-
-		}
-		block_Rewind(atsc3_cms_validation_context->certificate_payload);
+		atsc3_cms_validation_context->transients.atsc3_certification_data = &lls_slt_monitor->lls_latest_certification_data_table->certification_data;
 	}
 
 	atsc3_cms_validation_context_t* atsc3_cms_validation_context_ret = atsc3_cms_validate_from_context(atsc3_cms_validation_context);
@@ -447,7 +439,7 @@ atsc3_lls_table_t* lls_table_create_or_update_from_lls_slt_monitor_with_metrics(
     } else {
 		//validate that our SignedMultiTable signature is valid
 
-		if(!atsc3_lls_SignedMultiTable_verify_cms_message(lls_slt_monitor, lls_table_new)) {
+		if(!__DISABLE_LLS_SIGNEDMULTITABLE_VALIDATION__ &&  !atsc3_lls_SignedMultiTable_verify_cms_message(lls_slt_monitor, lls_table_new)) {
 			_LLS_ERROR("lls_table_create_or_update_from_lls_slt_monitor_with_metrics: atsc3_lls_SignedMultiTable_verify_cms_message invalid!");
 			lls_table_free(&lls_table_new);
 			return NULL;
