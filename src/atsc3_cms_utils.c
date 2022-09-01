@@ -9,7 +9,7 @@
 #include "atsc3_cms_utils.h"
 
 int _ATSC3_CMS_UTILS_INFO_ENABLED  = 1;
-int _ATSC3_CMS_UTILS_DEBUG_ENABLED = 0;
+int _ATSC3_CMS_UTILS_DEBUG_ENABLED = 1;
 int _ATSC3_CMS_UTILS_TRACE_ENABLED = 0;
 
 char* ATSC3_CMS_UTILS_BEGIN_CERTIFICATE = "\n-----BEGIN CERTIFICATE-----\n";
@@ -187,7 +187,12 @@ atsc3_cms_validation_context_t* atsc3_cms_validation_context_certificate_payload
 
 atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_validation_context_t* atsc3_cms_validation_context) {
 	atsc3_cms_validation_context_t* atsc3_cms_validation_context_return = atsc3_cms_validation_context;
-	
+
+	if(!atsc3_cms_validation_context->transients.atsc3_certification_data) {
+		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validation_context->transients.atsc3_certification_data is NULL, returning NULL!");
+		return NULL;
+	}
+
 	BIO 	*signature_binary_der_in = NULL;
 	BIO 	*payload_binary_in = NULL;
 
