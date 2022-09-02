@@ -195,6 +195,9 @@ cms signature from A/360 for SLS validation, sample from enensys - 2020-11-17:
  
  */
 
+#ifndef ATSC3_CMS_UTILS_H_
+#define ATSC3_CMS_UTILS_H_
+
 #include <atsc3_utils.h>
 #include <atsc3_logging_externs.h>
 #include <atsc3_a360_certificates.h>
@@ -203,9 +206,6 @@ cms signature from A/360 for SLS validation, sample from enensys - 2020-11-17:
 #include <openssl/pem.h>
 #include <openssl/cms.h>
 #include <openssl/err.h>
-
-#ifndef ATSC3_CMS_UTILS_H_
-#define ATSC3_CMS_UTILS_H_
 
 #if defined (__cplusplus)
 extern "C" {

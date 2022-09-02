@@ -7,6 +7,10 @@
 
 #include "atsc3_mmt_signalling_message.h"
 
+//jjustman-2022-09-01 dependency hack
+#include <atsc3_cms_utils.h>
+
+
 int _MMT_SIGNALLING_MESSAGE_ERROR_23008_1_ENABLED = 0;
 int _MMT_SIGNALLING_MESSAGE_INFO_ENABLED = 1;
 int _MMT_SIGNALLING_MESSAGE_DEBUG_ENABLED = 0;
@@ -109,6 +113,11 @@ mmtp_signalling_packet_t* mmtp_signalling_packet_parse_from_block_t(mmtp_packet_
 
 
 int8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet) {
+	return mmt_signalling_message_parse_packet_with_sls_monitor(NULL, mmtp_signalling_packet, udp_packet);
+}
+
+//lls_sls_mmt_monitor - for signed MMT verificiation
+int8_t mmt_signalling_message_parse_packet_with_sls_monitor(lls_sls_mmt_monitor_t* lls_sls_mmt_monitor, mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet) {
 	int8_t processed_messages_count = -1;
 
 	if(mmtp_signalling_packet->mmtp_payload_type != 0x02) {
@@ -134,13 +143,13 @@ int8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signal
 			} else {
                 //build a msg from buf to buf+mmtp_aggregation_msg_length
                 __MMSM_DEBUG("mmt_signalling_message_parse_packet: aggregation_flag=1 is UNTESTED - mmtp_aggregation_msg_length is: %d, udp_packet: %p", mmtp_aggregation_msg_length, udp_packet);
-                processed_messages_count += mmt_signalling_message_parse_id_type(mmtp_signalling_packet, udp_packet);
+                processed_messages_count += mmt_signalling_message_parse_id_type(lls_sls_mmt_monitor, mmtp_signalling_packet, udp_packet);
             }
 		}
 	} else if(block_Remaining_size(udp_packet)) {
 		//parse a single message (from a re-constituted udp_packet msg_payload
 		//processed_messages_count =
-		mmt_signalling_message_parse_id_type(mmtp_signalling_packet, udp_packet);
+		mmt_signalling_message_parse_id_type(lls_sls_mmt_monitor, mmtp_signalling_packet, udp_packet);
 	}
 
 	//jjustman-2022-08-24 - hack-ish
@@ -190,7 +199,7 @@ mmt_signalling_message_header_and_payload_t* __mmt_signalling_message_parse_leng
 	return NULL;
 }
 
-uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet) {
+uint8_t mmt_signalling_message_parse_id_type(lls_sls_mmt_monitor_t* lls_sls_mmt_monitor, mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet) {
 
     uint8_t* buf = NULL;
 
@@ -308,7 +317,7 @@ uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_sign
         //jjustman-2022-08-16 - TODO:
         
         //call ourselves...mmt_signalling_message_parse_id_type
-        buf = mmt_signed_atsc3_message_payload_parse(mmtp_signalling_packet, mmt_signalling_message_header_and_payload, udp_packet);
+        buf = mmt_signed_atsc3_message_payload_parse(lls_sls_mmt_monitor, mmtp_signalling_packet, mmt_signalling_message_header_and_payload, udp_packet);
         mmt_signalling_message_header_and_payload->message_header.MESSAGE_id_type = SIGNED_MMT_ATSC3_MESSAGE_ID;
 //
 //        //jjustman-2020-12-03: TODO: perform any additional processing based upon the internal atsc3_message_content_type
@@ -1489,7 +1498,7 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 	return buf;
 }
 
-uint8_t* mmt_signed_atsc3_message_payload_parse(mmtp_signalling_packet_t* mmtp_signalling_packet, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
+uint8_t* mmt_signed_atsc3_message_payload_parse(lls_sls_mmt_monitor_t* lls_sls_mmt_monitor, mmtp_signalling_packet_t* mmtp_signalling_packet, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet) {
     if(!__mmt_signalling_message_parse_length_long(udp_packet, mmt_signalling_message_header_and_payload)) {
         __MMSM_WARN("mpt_message_parse: __mmt_signalling_message_parse_length_long failed to parse, udp_packet bytes remaining: %d",
                     block_Remaining_size(udp_packet));
@@ -1500,30 +1509,52 @@ uint8_t* mmt_signed_atsc3_message_payload_parse(mmtp_signalling_packet_t* mmtp_s
     
     mmt_atsc3_signed_message_payload_t* mmt_atsc3_signed_message_payload = &mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_signed_message_payload;
     
-    uint8_t* message_instance_start = block_Get(udp_packet);
-    uint8_t mmt_signalling_message_parse_result = mmt_signalling_message_parse_id_type(mmtp_signalling_packet, udp_packet);
-    uint8_t* message_instance_end = block_Get(udp_packet);
-    
-    uint32_t interior_message_length = message_instance_end - message_instance_start;
-    
-    mmt_atsc3_signed_message_payload->message_instance_binary = block_Duplicate_from_ptr(message_instance_start, interior_message_length);
-    block_Rewind(mmt_atsc3_signed_message_payload->message_instance_binary);
-    
+    uint8_t* message_instance_start = block_Get(udp_packet) - 7; //hack, as we already consumed 2+1+4 (7) bytes from the message_id/version_length field in _this_ signed message
+
+	uint8_t mmt_signalling_message_parse_result = mmt_signalling_message_parse_id_type(lls_sls_mmt_monitor, mmtp_signalling_packet, udp_packet);
+
     mmt_atsc3_signed_message_payload->atsc3_signature_length = block_Read_uint16_ntohs(udp_packet);
-    mmt_atsc3_signed_message_payload->atsc3_signature_byte = block_Read_uint8_varlen(udp_packet, mmt_atsc3_signed_message_payload->atsc3_signature_length);
 
+	//signature length is included in message to be signed...
+	uint8_t* message_instance_end = block_Get(udp_packet);
+	mmt_atsc3_signed_message_payload->atsc3_signature_byte = block_Read_uint8_varlen(udp_packet, mmt_atsc3_signed_message_payload->atsc3_signature_length);
 	mmt_atsc3_signed_message_payload->atsc3_signature_block_t = block_Duplicate_from_ptr(mmt_atsc3_signed_message_payload->atsc3_signature_byte, mmt_atsc3_signed_message_payload->atsc3_signature_length);
-
 	block_Rewind(mmt_atsc3_signed_message_payload->atsc3_signature_block_t);
-    
-    __MMSM_WARN("TODO: implement mmt_signed_atsc3_message_payload_parse binary validation, total_len: %d, mmt_signalling_message_parse_result: %d, message_instance_binary: %p, len: %d, atsc3_signature_binary: %p, len: %d, udp_packet remaining: %d",
-                mmt_signalling_message_header_and_payload->message_header.length,
-                mmt_signalling_message_parse_result,
-                block_Get(mmt_atsc3_signed_message_payload->message_instance_binary),
-                block_Remaining_size(mmt_atsc3_signed_message_payload->message_instance_binary),
-                block_Get(mmt_atsc3_signed_message_payload->atsc3_signature_block_t),
-                block_Remaining_size(mmt_atsc3_signed_message_payload->atsc3_signature_block_t),
-                block_Remaining_size(udp_packet));
+
+	uint32_t interior_message_length = message_instance_end - message_instance_start;
+
+	mmt_atsc3_signed_message_payload->message_instance_binary = block_Duplicate_from_ptr(message_instance_start, interior_message_length);
+
+	block_Rewind(mmt_atsc3_signed_message_payload->message_instance_binary);
+
+	atsc3_cms_entity_t* atsc3_cms_entity = atsc3_cms_entity_new();
+	atsc3_cms_entity->signature = block_Duplicate(mmt_atsc3_signed_message_payload->atsc3_signature_block_t);
+	atsc3_cms_entity->raw_binary_payload = block_Duplicate(mmt_atsc3_signed_message_payload->message_instance_binary);
+
+	atsc3_cms_validation_context_t* atsc3_cms_validation_context = atsc3_cms_validation_context_new(atsc3_cms_entity);
+
+	if(lls_sls_mmt_monitor->transients.atsc3_certification_data) {
+		atsc3_cms_validation_context->transients.atsc3_certification_data = lls_sls_mmt_monitor->transients.atsc3_certification_data;
+	}
+
+	atsc3_cms_validation_context_t* atsc3_cms_validation_context_ret = atsc3_cms_validate_from_context(atsc3_cms_validation_context);
+
+	//jjustman-2022-09-01 - TODO: do not return a failed signed mmt signalling message
+	if(atsc3_cms_validation_context_ret) {
+		__MMSM_WARN("mmt SLS validation passed")
+	} else  {
+		__MMSM_WARN("failed implement mmt_signed_atsc3_message_payload_parse binary validation, total_len: %d, mmt_signalling_message_parse_result: %d, message_instance_binary: %p, len: %d, atsc3_signature_binary: %p, len: %d, udp_packet remaining: %d",
+					mmt_signalling_message_header_and_payload->message_header.length,
+					mmt_signalling_message_parse_result,
+					block_Get(mmt_atsc3_signed_message_payload->message_instance_binary),
+					block_Remaining_size(mmt_atsc3_signed_message_payload->message_instance_binary),
+					block_Get(mmt_atsc3_signed_message_payload->atsc3_signature_block_t),
+					block_Remaining_size(mmt_atsc3_signed_message_payload->atsc3_signature_block_t),
+					block_Remaining_size(udp_packet));
+	}
+
+	atsc3_cms_validation_context_free(&atsc3_cms_validation_context);
+
     
     return message_instance_end;
 }

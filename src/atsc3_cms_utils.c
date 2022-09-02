@@ -228,6 +228,11 @@ atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_valida
 
 		cms = d2i_CMS_bio(signature_binary_der_in, &cms);
 
+		if (!cms) {
+			_ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context:CMS_read_CMS: failed!");
+			goto err;
+		}
+
 		/* convert our block_t raw cms payload to BIO mem buff for input */
 		block_Rewind(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
 		uint8_t* payload_binary_in_mem_buf = block_Get(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
@@ -282,10 +287,6 @@ atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_valida
 	if (!CMS_verify(cms, pcerts, st_root, (use_extracted_smime_payload ? extracted_smime_payload : payload_binary_in), extracted_payload_out, cms_verify_flags)) {
 	   _ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context:CMS_verify: verification failure");
 		atsc3_cms_validation_context->cms_signature_valid = false;
-#ifdef ATSC3_CMS_UTILS_DUMP_PAYLOADS_FOR_OPENSSL_DEBUGGING
-		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->signature, "raw_binary_payload_signature.der");
-		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload, "raw_binary_payload.data");
-#endif
 	} else {
 		_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: verification successful");
 		atsc3_cms_validation_context->cms_signature_valid = true;
@@ -307,6 +308,11 @@ err:
 
 	if (!atsc3_cms_validation_context->cms_signature_valid) {
 		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context: error verifying data, errors:");
+
+#ifdef ATSC3_CMS_UTILS_DUMP_PAYLOADS_FOR_OPENSSL_DEBUGGING
+		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->signature, "raw_binary_payload_signature.der");
+		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload, "raw_binary_payload.data");
+#endif
 		ERR_print_errors_fp(stdout);
 		atsc3_cms_validation_context_return = NULL;
 	}

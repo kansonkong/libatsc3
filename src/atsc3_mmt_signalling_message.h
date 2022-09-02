@@ -79,6 +79,7 @@ extern "C" {
 #include "atsc3_mmtp_parser.h"
 #include "atsc3_lls_types.h"
 
+
 //#include "atsc3_mmt_context_signalling_information_depacketizer.h"
 #include "atsc3_mmt_context_mfu_depacketizer.h"
 
@@ -104,8 +105,12 @@ raw base64 payload:
 mmtp_signalling_packet_t* mmtp_signalling_packet_parse_and_free_packet_header_from_block_t(mmtp_packet_header_t** mmtp_packet_header_p, block_t* udp_packet);
 
 mmtp_signalling_packet_t* mmtp_signalling_packet_parse_from_block_t(mmtp_packet_header_t* mmtp_packet_header, block_t* udp_packet);
+
 //parse mmtp_signalling_packet_t, calls mmt_signalling_message_parse_id_type, return -1 on failure
 int8_t mmt_signalling_message_parse_packet(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
+
+//for signed MMT validation with "pseudo" context from lls_sls_mmt_monitor
+int8_t mmt_signalling_message_parse_packet_with_sls_monitor(lls_sls_mmt_monitor_t* lls_sls_mmt_monitor, mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet);
     
 //context callbacks
 bool mmt_signalling_message_update_lls_sls_mmt_session(mmtp_signalling_packet_t* mmtp_signalling_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session);
@@ -136,7 +141,7 @@ void mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_dump_wi
 /**
  * Internal MMT-SI processing methods
  */
-uint8_t mmt_signalling_message_parse_id_type(mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
+uint8_t mmt_signalling_message_parse_id_type(lls_sls_mmt_monitor_t* lls_sls_mmt_monitor, mmtp_signalling_packet_t* mmtp_signalling_packet, block_t* udp_packet_block);
 
 mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload_create(uint16_t message_id, uint8_t version);
 
@@ -144,7 +149,7 @@ uint8_t* pa_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signa
 uint8_t* mpi_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet_block);
 uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet_block);
 uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet_block);
-uint8_t* mmt_signed_atsc3_message_payload_parse(mmtp_signalling_packet_t* mmtp_signalling_packet, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet_block);
+uint8_t* mmt_signed_atsc3_message_payload_parse(lls_sls_mmt_monitor_t* lls_sls_mmt_monitor, mmtp_signalling_packet_t* mmtp_signalling_packet, mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet_block);
 
 uint8_t* mmt_scte35_message_payload_parse(mmt_signalling_message_header_and_payload_t* mmt_signalling_message_header_and_payload, block_t* udp_packet_block);
 
