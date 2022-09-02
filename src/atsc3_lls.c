@@ -235,7 +235,7 @@ bool atsc3_lls_SignedMultiTable_verify_cms_message(lls_slt_monitor_t* lls_slt_mo
 	atsc3_cms_entity->raw_binary_payload = block_Duplicate(lls_table->signed_multi_table.raw_signed_multi_table_for_signature);
 
 	atsc3_cms_validation_context_t* atsc3_cms_validation_context = atsc3_cms_validation_context_new(atsc3_cms_entity);
-	//atsc3_cms_validation_context_set_cms_noverify(atsc3_cms_validation_context, true);
+
 	if(lls_slt_monitor->lls_latest_certification_data_table) {
 		atsc3_cms_validation_context->transients.atsc3_certification_data = &lls_slt_monitor->lls_latest_certification_data_table->certification_data;
 	}

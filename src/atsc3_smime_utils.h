@@ -193,8 +193,9 @@ smime signature from A/360 for SLS validation, sample from enensys - 2020-11-17:
  
  */
 
-#include "atsc3_utils.h"
-#include "atsc3_logging_externs.h"
+#include <atsc3_utils.h>
+#include <atsc3_logging_externs.h>
+#include <atsc3_cms_utils.h>
 
 #include <openssl/pem.h>
 #include <openssl/cms.h>
@@ -207,41 +208,29 @@ smime signature from A/360 for SLS validation, sample from enensys - 2020-11-17:
 extern "C" {
 #endif
 
-extern char* ATSC3_SMIME_UTILS_CDT_A3SA_ROOT_2020_CERT;
-extern char* ATSC3_SMIME_UTILS_BEGIN_CERTIFICATE;
-extern char* ATSC3_SMIME_UTILS_END_CERTIFICATE;
-
 typedef struct atsc3_smime_entity {
+
+	atsc3_cms_entity_t* 	atsc3_cms_entity;
+
 	char*	mime_version;
 	char*	content_type;
 	char*	protocol;
 	char*	micalg;
 	char*	boundary;
 	
-	char*		raw_smime_payload_filename;
-	block_t*	raw_smime_payload;
+	char*					raw_smime_payload_filename;
+	block_t*				raw_smime_payload;
 	
-	block_t*	cms_verified_extracted_mime_entity;
-	block_t*	extracted_pkcs7_signature;
-	
+	block_t*				cms_verified_extracted_mime_entity;
+
 } atsc3_smime_entity_t;
 
 
 typedef struct atsc3_smime_validation_context {
-	//for NON PRODUCTION usage or without CA ROOT pin
-	//	if true, will set flags for CMS_verify to CMS_BINARY | CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL | CMS_NO_ATTR_VERIFY
-	bool 					cms_noverify;
-	
-	//for	CMS_NO_CONTENT_VERIFY
-	bool					cms_no_content_verify;
-	
-	atsc3_smime_entity_t* 	atsc3_smime_entity;
-	
-	//other CDT information here...
-	block_t*				certificate_payload;
-	
-	bool 					cms_signature_valid;
-		
+
+	atsc3_smime_entity_t* 				atsc3_smime_entity;
+	atsc3_cms_validation_context_t* 	atsc3_cms_validation_context;
+
 } atsc3_smime_validation_context_t;
 
 atsc3_smime_entity_t* atsc3_smime_entity_new();

@@ -211,16 +211,21 @@ cms signature from A/360 for SLS validation, sample from enensys - 2020-11-17:
 extern "C" {
 #endif
 
-extern char* ATSC3_CMS_UTILS_CDT_A3SA_ROOT_2020_CERT;
-extern char* ATSC3_CMS_UTILS_BEGIN_CERTIFICATE;
-extern char* ATSC3_CMS_UTILS_END_CERTIFICATE;
+#define ATSC3_CMS_UTILS_DUMP_PAYLOADS_FOR_OPENSSL_DEBUGGING
+
+/*
+ ./openssl cms -verify -purpose any -CAfile ~/Desktop/2022-08-29/cache/root.pem -certfile ~/Desktop/2022-08-29/cache/cert_payload_SKI_F629.pem -binary -in ~/Desktop/2022-08-29/cache/raw_binary_payload_signature.der -inform der -content ~/Desktop/2022-08-29/cache/raw_binary_payload.data > /dev/null
+
+CMS Verification successful
+ *
+ */
 
 typedef struct atsc3_cms_entity {
 	block_t*	raw_binary_payload;
 	block_t*	signature;
 
-//	block_t*	cms_verified_extracted_mime_entity;
-//	block_t*	extracted_pkcs7_signature;
+	block_t*	cms_verified_extracted_payload;
+	block_t*	extracted_pkcs7_signature;
 	
 } atsc3_cms_entity_t;
 
@@ -240,26 +245,21 @@ typedef struct atsc3_cms_validation_context {
 	} transients;
 	
 	bool 					cms_signature_valid;
-		
+
 } atsc3_cms_validation_context_t;
 
 atsc3_cms_entity_t* atsc3_cms_entity_new();
-
-atsc3_cms_entity_t* atsc3_cms_entity_new_parse_from_file(const char* multipart_entity_filename);
 
 void atsc3_cms_entity_free(atsc3_cms_entity_t** atsc3_cms_entity_p);
 
 atsc3_cms_validation_context_t* atsc3_cms_validation_context_new(atsc3_cms_entity_t* atsc3_cms_entity);
 
-atsc3_cms_validation_context_t* atsc3_cms_validation_context_certificate_payload_parse_from_file(atsc3_cms_validation_context_t* atsc3_cms_validation_context, const char* signing_certificate_filename);
-atsc3_cms_validation_context_t* atsc3_cms_validation_context_certificate_payload_parse_from_file_with_root_fallback(atsc3_cms_validation_context_t* atsc3_cms_validation_context, const char* signing_certificate_filename);
-
 void atsc3_cms_validation_context_set_cms_noverify(atsc3_cms_validation_context_t* atsc3_cms_validation_context, bool noverify_flag);
 void atsc3_cms_validation_context_set_cms_no_content_verify(atsc3_cms_validation_context_t* atsc3_cms_validation_context, bool no_content_verify_flag);
 
-void atsc3_cms_validation_context_free(atsc3_cms_validation_context_t** atsc3_cms_validation_context_p);
-
 atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_validation_context_t* atsc3_cms_validation_context);
+
+void atsc3_cms_validation_context_free(atsc3_cms_validation_context_t** atsc3_cms_validation_context_p);
 
 #if defined (__cplusplus)
 }
