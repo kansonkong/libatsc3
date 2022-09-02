@@ -10,7 +10,6 @@
 #include <string.h>
 #include "atsc3_pcap_type.h"
 
-
 int _ATSC3_PCAP_TYPE_DEBUG_ENABLED = 0;
 int _ATSC3_PCAP_TYPE_TRACE_ENABLED = 0;
 
@@ -20,6 +19,9 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_new() {
 	//jjustman-2020-08-11 - pre-allocate our block_t for ~MAX_ATSC3_ETHERNET_PHY_FRAME_LENGTH 1518 bytes and then use block_Resize to adjust as needed (will null out slab alloc past p_size)
 	atsc3_pcap_replay_context->atsc3_pcap_packet_instance.current_pcap_packet = block_Alloc(MAX_ATSC3_ETHERNET_PHY_FRAME_LENGTH);
 
+    if(getenv(ENV_ATSC3_PCAP_TYPE_INFO_ENABLE_PCAP_READ_PACKET_COUNT_LOGGING)) {
+        atsc3_pcap_replay_context->ATSC3_PCAP_TYPE_INFO_ENABLE_PCAP_READ_PACKET_COUNT_LOGGING = true;
+    }
 	return atsc3_pcap_replay_context;
 }
 /**
@@ -119,8 +121,10 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 	if(!atsc3_pcap_replay_context_to_iterate->has_read_atsc3_pcap_global_header) {
 		fread((void*)&atsc3_pcap_replay_context_to_iterate->atsc3_pcap_global_header, ATSC3_PCAP_GLOBAL_HEADER_SIZE_BYTES, 1, atsc3_pcap_replay_context_to_iterate->pcap_fp);
 		atsc3_pcap_replay_context_to_iterate->has_read_atsc3_pcap_global_header = true;
+
+		//jjustman-2022-08-29 - TODO - fix me?
 		if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_global_header.magic_number == ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION) {
-			atsc3_pcap_replay_context_to_iterate->atsc3_pcap_needs_endian_correction = true;
+			atsc3_pcap_replay_context_to_iterate->atsc3_pcap_needs_endian_correction = true; //true
 		}
 	}
     //sizeof(atsc3_pcap_packet_header_t) ->
@@ -128,10 +132,10 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 
 	if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_needs_endian_correction) {
 		//de-munge as needed
-		atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_sec = ntohl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_sec);
-		atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_usec = ntohl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_usec);
-		atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len = ntohl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len);
-		atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.orig_len = ntohl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.orig_len);
+		atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_sec = htonl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_sec);
+		atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_usec = htonl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.ts_usec);
+		atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len = htonl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len);
+		atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.orig_len = htonl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.orig_len);
 	}
 
 	//keep track of our "last" packet ts
@@ -147,18 +151,19 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 		atsc3_pcap_replay_context_to_iterate->first_packet_ts_timeval.tv_usec = atsc3_pcap_replay_context_to_iterate->current_packet_ts_usec;
 	}
 
-	//jjustman-2020-01-16 - fixme? should just be packet header size?
 	atsc3_pcap_replay_context_to_iterate->pcap_file_pos += sizeof(atsc3_pcap_global_header_t) + sizeof(atsc3_pcap_packet_header_t);
 
     //jjustman-2021-07-07 - if incl_len == 0, we are probably EOF
     if(!atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len) {
         _ATSC3_PCAP_TYPE_ERROR("atsc3_pcap_replay_iterate_packet: atsc3_pcap_packet_header.incl_len is: %d, ftell is: %ld", 0, ftell(atsc3_pcap_replay_context_to_iterate->pcap_fp));
-        return NULL;
+		return NULL;
     }
 
 	//jjustman-2020-11-23 - if atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len is greater tahn 262114, we probably have a corrupt frame and should bail
 	if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len > 262114) {
         _ATSC3_PCAP_TYPE_ERROR("atsc3_pcap_replay_iterate_packet: atsc3_pcap_packet_header.incl_len is: %d > 262114 , ftell is: %ld", atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len, ftell(atsc3_pcap_replay_context_to_iterate->pcap_fp));
+
+		//jjustman-2020-01-16 - fixme? should just be packet header size?
 		return NULL;
 	}
 
@@ -183,7 +188,13 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 	fread((void*)atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet->p_buffer, atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len, 1, atsc3_pcap_replay_context_to_iterate->pcap_fp);
 
 	atsc3_pcap_replay_context_to_iterate->pcap_file_pos += atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len;
+    
+    
 	atsc3_pcap_replay_context_to_iterate->pcap_read_packet_count++;
+    
+    if(atsc3_pcap_replay_context_to_iterate->ATSC3_PCAP_TYPE_INFO_ENABLE_PCAP_READ_PACKET_COUNT_LOGGING) {
+        _ATSC3_PCAP_TYPE_INFO("pcap packet number: %d", atsc3_pcap_replay_context_to_iterate->pcap_read_packet_count);
+    }
 
 	return atsc3_pcap_replay_context_to_iterate;
 }

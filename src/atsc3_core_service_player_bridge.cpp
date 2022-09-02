@@ -45,7 +45,7 @@ recursive_mutex& atsc3_core_service_player_bridge_get_context_mutex() {
 //jjustman-2019-10-03 - context event callbacks...
 lls_slt_monitor_t* lls_slt_monitor = NULL;
 //context for MMT - mmtp/sls flow management
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = NULL;
+atsc3_mmt_mfu_context_t*    atsc3_mmt_mfu_context = NULL;
 //context for LMT
 atsc3_link_mapping_table*   atsc3_link_mapping_table_last = NULL;
 uint32_t                    atsc3_link_mapping_table_missing_dropped_packets = 0;
@@ -1112,7 +1112,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
 
             if(mmtp_signalling_packet->si_fragmentation_indicator == 0x0) {
                 //process this SI message in-line, no need for re-assembly
-                mmtp_si_parsed_message_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, udp_packet->data);
+                mmtp_si_parsed_message_count = mmt_signalling_message_parse_packet_with_sls_monitor(lls_slt_monitor->lls_sls_mmt_monitor, mmtp_signalling_packet, udp_packet->data);
 
                 //but clear out any possible mmtp_signalling_packets being queued for re-assembly in mmtp_packet_id_packets_container
                 mmtp_packet_id_packets_container_free_mmtp_signalling_packet(mmtp_packet_id_packets_container);
@@ -1266,7 +1266,7 @@ void atsc3_core_service_bridge_process_packet_phy(block_t* packet) {
                                      mmtp_signalling_packet->udp_packet_inner_msg_payload->p_size,
                                      mmtp_signalling_packet->udp_packet_inner_msg_payload->p_buffer);
 
-                        mmtp_si_parsed_message_count = mmt_signalling_message_parse_packet(mmtp_signalling_packet, mmtp_signalling_packet->udp_packet_inner_msg_payload);
+                        mmtp_si_parsed_message_count = mmt_signalling_message_parse_packet_with_sls_monitor(lls_slt_monitor->lls_sls_mmt_monitor, mmtp_signalling_packet, mmtp_signalling_packet->udp_packet_inner_msg_payload);
 
                     } else {
                         //noop: continue to accumulate

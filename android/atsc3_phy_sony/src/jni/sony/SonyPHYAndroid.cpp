@@ -24,7 +24,7 @@ atomic_bool SonyPHYAndroid::cb_should_discard;
 int SonyPHYAndroid::Last_tune_freq = -1;
 
 int _SONY_PHY_ANDROID_INFO_ENABLED = 1;
-int _SONY_PHY_ANDROID_DEBUG_ENABLED = 1;
+int _SONY_PHY_ANDROID_DEBUG_ENABLED = 0;
 int _SONY_PHY_ANDROID_TRACE_ENABLED = 0;
 
 //sony methods
@@ -143,11 +143,6 @@ int SonyPHYAndroid::stop() {
     processThreadShouldRun = false;
     processAlpThreadShouldRun = false;
 
-    //shut down status thread first...
-    if(this->captureThreadIsRunning) {
-        captureThreadShouldRun = false;
-    }
-
     //tear down status thread first, as its the most 'problematic' with the Sony i2c i/f processing
     while(this->statusThreadIsRunning) {
         usleep(1000);
@@ -187,10 +182,11 @@ int SonyPHYAndroid::stop() {
     //process ALP thread
 
     if(processAlpThreadIsRunning) {
-        _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: setting processThreadShouldRun: false");
+        tlv_buffer_queue_for_alp_extraction_notification.notify_one();
+        _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: spin on processAlpThreadIsRunning, sending notify_one on tlv_buffer_queue_for_alp_extraction_notification");
         while(this->processAlpThreadIsRunning) {
             usleep(1000);
-            _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: this->processThreadIsRunning: %d", this->processThreadIsRunning);
+            _SONY_PHY_ANDROID_DEBUG("SonyPHYAndroid::stop: this->processAlpThreadIsRunning: %d", this->processAlpThreadIsRunning);
         }
     }
 
@@ -198,6 +194,8 @@ int SonyPHYAndroid::stop() {
     if(processAlpThreadHandle.joinable()) {
         processAlpThreadHandle.join();
     }
+
+    _SONY_PHY_ANDROID_INFO("SonyPHYAndroid::stop:exit");
 
     return 0;
 };
@@ -1288,8 +1286,11 @@ int SonyPHYAndroid::tune(int freqKhz, int single_plp) {
     unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
 
     //jjustman-2021-03-10 - also acquire our atsc3_sl_tlv_block_mutex so we can safely discard any pending TLV frames
+    if(!cb_tlv) {
+        cb_tlv = CircularBufferCreate(TLV_CIRCULAR_BUFFER_SIZE);
+    } else {
+        //jjustman-2021-01-19 - clear out our current cb on re-tune
 
-    if(cb_tlv) {
         //forcibly flush any in-flight TLV packets in cb here by calling, need (cb_should_discard == true),
         // as our type is atomic_bool and we can't printf its value here due to:
         //                  call to implicitly-deleted copy constructor of 'std::__ndk1::atomic_bool' (aka 'atomic<bool>')
@@ -1301,6 +1302,8 @@ int SonyPHYAndroid::tune(int freqKhz, int single_plp) {
     atsc3_core_service_application_bridge_reset_context();
 
     AcquireChannelRequest acquireChannelRequest = { 0, 6000, (u32)freqKhz, 0, 5};
+	_SONY_PHY_ANDROID_INFO("SonyPHYAndroid::tune - acquireChannelRequest: freq: %d, mode: %d",
+						   acquireChannelRequest.frequency, acquireChannelRequest.mode);
 
     acquireChannelRequest.error = DL_Demodulator_acquireChannel(DC, &acquireChannelRequest, 0, 0);
     if (!acquireChannelRequest.error) {
@@ -1312,9 +1315,6 @@ int SonyPHYAndroid::tune(int freqKhz, int single_plp) {
                                acquireChannelRequest.mode, acquireChannelRequest.frequency,
                                acquireChannelRequest.bandwidth, acquireChannelRequest.error);
     }
-
-//    usleep(1000000);
-
 
     /*
      * Byte		chip;
@@ -1332,20 +1332,13 @@ int SonyPHYAndroid::tune(int freqKhz, int single_plp) {
   //   */
 
     //setup shared memory for cb callback (or reset if already allocated)
-    if(!cb_tlv) {
-        cb_tlv = CircularBufferCreate(TLV_CIRCULAR_BUFFER_SIZE);
-    } else {
-        //jjustman-2021-01-19 - clear out our current cb on re-tune
-        CircularBufferReset(cb_tlv);
-        //just in case any last pending SDIO transactions arent completed yet...
-    }
+
 
 
     //atsc3_sl_tlv_block_mutex.unlock();
     //CircularBufferMutex_local.unlock();
 
     //jjustman-2021-01-19 - allow for cb to start acumulating TLV frames
-    //TolkaPHYAndroid::cb_should_discard = false;
 
     if(!this->captureThreadIsRunning) {
         captureThreadShouldRun = true;
@@ -1435,7 +1428,7 @@ int SonyPHYAndroid::tune(int freqKhz, int single_plp) {
     DL_Demodulator_setPLPID(DC, &mPlpData, 0, 0);
     plp_configuration_data = mPlpData;
 
-    usleep(100000);
+    usleep(1000000);
     cb_should_discard = false;
     return ret;
 }
@@ -1452,7 +1445,7 @@ int SonyPHYAndroid::captureThread()
     this->releasePinnedProducerThreadAsNeeded();
     this->captureThreadIsRunning = false;
 
-    _SONY_PHY_ANDROID_INFO("TolkaPHYAndroid::CaptureThread complete");
+    _SONY_PHY_ANDROID_INFO("SonyPHYAndroid::CaptureThread complete");
 
     return 0;
 }
@@ -1749,9 +1742,10 @@ Java_org_ngbp_libatsc3_middleware_android_phy_SonyPHYAndroid_get_1firmware_1vers
 //jjustman-2022-05-24 - hacks
 
 //URB 153408 -> ~ 300 -> /4 -.
+//jjustman-2022-08-16 - was 128 x 4
 static volatile int     isCaptStarted = 0;
-static unsigned int     reqsize = 128;  // Request size in number of packets
-static unsigned int     queuedepth = 4;   // Number of requests to queue
+static unsigned int     reqsize = 64;  // Request size in number of packets
+static unsigned int     queuedepth = 8;   // Number of requests to queue
 static unsigned int     pktsize = 512;     // Maximum packet size for the endpoint
 static unsigned int     success_count = 0;  // Number of successful transfers
 static unsigned int     failure_count = 0;  // Number of failed transfers
@@ -1923,7 +1917,7 @@ static void readFromUsbDemodEndpointRxTs() {
 
 
     isCaptStarted = 0;
-    _SONY_PHY_ANDROID_WARN("SL_Fx3s_RxDataStart: thread complete and returning");
+    _SONY_PHY_ANDROID_WARN("SonyPHYAndroid: thread complete and returning");
     return;
 }
 
@@ -1940,13 +1934,10 @@ int SonyPHYAndroid::processThread()
     {
         //_Sony_PHY_ANDROID_DEBUG("SonyPHYAndroid::ProcessThread: getDataSize is: %d", CircularBufferGetDataSize(cb));
 
-        //unique_lock<mutex> CircularBufferMutex_local(CircularBufferMutex);
-
         while(CircularBufferGetDataSize(this->cb_tlv) >= TLV_CIRCULAR_BUFFER_MIN_PROCESS_SIZE) {
             processTLVFromCallbackInvocationCount++;
             this->processTLVFromCallback();
         }
-        //CircularBufferMutex_local.unlock();
 
         //jjustman - try increasing to 50ms? shortest atsc3 subframe?
         usleep(33000); //jjustman-2022-02-16 - peg us at 16.67ms/2 ~ 8ms
@@ -2010,8 +2001,10 @@ int SonyPHYAndroid::statusThread() {
                                                                           sonyPHYAndroid->alp_total_LMTs_recv);
         }
 
-        usleep(500000);
+        usleep(1000000);
     }
+	this->statusThreadIsRunning = false;
+    return 0;
 }
 
 block_t* current_reassembeled_baseband_alp_frame = nullptr;
@@ -2198,7 +2191,7 @@ int SonyPHYAndroid::processAlpFromCircularBufferThread() {
             condition_lock.unlock();
         }
 
-        while(local_extraction_tlv_buffer_queue_for_alp_frames.size()) {
+        while(processAlpThreadShouldRun && local_extraction_tlv_buffer_queue_for_alp_frames.size()) {
 
             block_t* atsc3_baseband_alp_payload = local_extraction_tlv_buffer_queue_for_alp_frames.front();
             local_extraction_tlv_buffer_queue_for_alp_frames.pop();

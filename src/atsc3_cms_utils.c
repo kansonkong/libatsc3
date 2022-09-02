@@ -9,69 +9,12 @@
 #include "atsc3_cms_utils.h"
 
 int _ATSC3_CMS_UTILS_INFO_ENABLED  = 1;
-int _ATSC3_CMS_UTILS_DEBUG_ENABLED = 0;
+int _ATSC3_CMS_UTILS_DEBUG_ENABLED = 1;
 int _ATSC3_CMS_UTILS_TRACE_ENABLED = 0;
-
-char* ATSC3_CMS_UTILS_BEGIN_CERTIFICATE = "\n-----BEGIN CERTIFICATE-----\n";
-char* ATSC3_CMS_UTILS_END_CERTIFICATE = "\n-----END CERTIFICATE-----\n";
-
-char* ATSC3_CMS_UTILS_CDT_A3SA_ROOT_2020_CERT = "-----BEGIN CERTIFICATE-----\n"
-"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\n"
-"siGVF4KJUIw=\n"
-"-----END CERTIFICATE-----";
 
 atsc3_cms_entity_t* atsc3_cms_entity_new() {
 	atsc3_cms_entity_t* atsc3_cms_entity = calloc(1, sizeof(atsc3_cms_entity_t));
 	
-	return atsc3_cms_entity;
-}
-
-atsc3_cms_entity_t* atsc3_cms_entity_new_parse_from_file(const char* multipart_entity_filename) {
-	atsc3_cms_entity_t* atsc3_cms_entity = atsc3_cms_entity_new();
-//
-//	atsc3_cms_entity->raw_cms_payload_filename = strlcopy(multipart_entity_filename);
-//	atsc3_cms_entity->raw_cms_payload = block_Read_from_filename(multipart_entity_filename);
-//
-//	if(!atsc3_cms_entity->raw_cms_payload) {
-//		_ATSC3_CMS_UTILS_ERROR("atsc3_cms_entity_new_parse_from_file: unable to read raw cms payload from: %s", multipart_entity_filename);
-//		return NULL;
-//	}
-//	block_Rewind(atsc3_cms_entity->raw_cms_payload);
-//
-//	//parse header
-//	//parse mime entity
-//	//parse signature
-//
 	return atsc3_cms_entity;
 }
 
@@ -80,13 +23,20 @@ void atsc3_cms_entity_free(atsc3_cms_entity_t** atsc3_cms_entity_p) {
 		atsc3_cms_entity_t* atsc3_cms_entity = *atsc3_cms_entity_p;
 		if(atsc3_cms_entity) {
 
+			if(atsc3_cms_entity->raw_binary_payload) {
+				block_Destroy(&atsc3_cms_entity->raw_binary_payload);
+			}
 
 			if(atsc3_cms_entity->signature) {
 				block_Destroy(&atsc3_cms_entity->signature);
 			}
 
-			if(atsc3_cms_entity->raw_binary_payload) {
-				block_Destroy(&atsc3_cms_entity->raw_binary_payload);
+			if(atsc3_cms_entity->cms_verified_extracted_payload) {
+				block_Destroy(&atsc3_cms_entity->cms_verified_extracted_payload);
+			}
+
+			if(atsc3_cms_entity->extracted_pkcs7_signature) {
+				block_Destroy(&atsc3_cms_entity->extracted_pkcs7_signature);
 			}
 
 			free(atsc3_cms_entity);
@@ -112,10 +62,8 @@ void atsc3_cms_validation_context_free(atsc3_cms_validation_context_t** atsc3_cm
 			if(atsc3_cms_validation_context->atsc3_cms_entity) {
 				atsc3_cms_entity_free(&atsc3_cms_validation_context->atsc3_cms_entity);
 			}
-			
-			if(atsc3_cms_validation_context->certificate_payload) {
-				block_Destroy(&atsc3_cms_validation_context->certificate_payload);
-			}
+
+			atsc3_cms_validation_context->transients.atsc3_certification_data = NULL;
 			
 			free(atsc3_cms_validation_context);
 			atsc3_cms_validation_context = NULL;
@@ -129,7 +77,7 @@ void atsc3_cms_validation_context_free(atsc3_cms_validation_context_t** atsc3_cm
 void atsc3_cms_validation_context_set_cms_noverify(atsc3_cms_validation_context_t* atsc3_cms_validation_context, bool noverify_flag) {
 	atsc3_cms_validation_context->cms_noverify = noverify_flag;
 	if(atsc3_cms_validation_context->cms_noverify) {
-		_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validation_context_set_cms_noverify: context: %p, setting noverify to TRUE!", atsc3_cms_validation_context);
+		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validation_context_set_cms_noverify: context: %p, setting noverify to TRUE! DO NOT DO THIS!", atsc3_cms_validation_context);
 	}
 }
 
@@ -140,100 +88,33 @@ void atsc3_cms_validation_context_set_cms_no_content_verify(atsc3_cms_validation
 	}
 }
 
-
-atsc3_cms_validation_context_t* atsc3_cms_validation_context_certificate_payload_parse_from_file(atsc3_cms_validation_context_t* atsc3_cms_validation_context, const char* signing_certificate_filename) {
-	if(atsc3_cms_validation_context->certificate_payload) {
-		block_Destroy(&atsc3_cms_validation_context->certificate_payload);
-	}
-	
-	if(signing_certificate_filename) {
-		atsc3_cms_validation_context->certificate_payload = block_Read_from_filename(signing_certificate_filename);
-	} else {
-		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validation_context_certificate_payload_parse_from_file: no signing_certificate_filename provided, using empty cert!");
-		atsc3_cms_validation_context->certificate_payload = block_Alloc(0);
-	}
-	
-	if(!atsc3_cms_validation_context->certificate_payload) {
-		_ATSC3_CMS_UTILS_ERROR("atsc3_cms_validation_context_certificate_payload_parse_from_file: unable to read signing_certificate_filename from: %s", signing_certificate_filename);
-		return NULL;
-	}
-	block_Rewind(atsc3_cms_validation_context->certificate_payload);
-	
-	return atsc3_cms_validation_context;
-}
-
-/*
- 
- From LLS: CDT emission
- 
- Data:
-	   Version: 3 (0x2)
-	   Serial Number: 11185070432223617944 (0x9b395a4c0c69e398)
-   Signature Algorithm: sha256WithRSAEncryption
-	   Issuer: C=US, O=A3SA, OU=Root 2020, CN=A3SA Root 2020
-	   Validity
-		   Not Before: Sep 18 01:58:07 2020 GMT
-		   Not After : Sep 17 01:58:07 2025 GMT
-	   Subject: C=US, O=A3SA, OU=Root 2020, CN=A3SA Root 2020
- */
-atsc3_cms_validation_context_t* atsc3_cms_validation_context_certificate_payload_parse_from_file_with_root_fallback(atsc3_cms_validation_context_t* atsc3_cms_validation_context, const char* signing_certificate_filename) {
-	if(atsc3_cms_validation_context->certificate_payload) {
-		block_Destroy(&atsc3_cms_validation_context->certificate_payload);
-	}
-	
-	if(signing_certificate_filename) {
-		atsc3_cms_validation_context->certificate_payload = block_Read_from_filename(signing_certificate_filename);
-	} else {
-		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validation_context_certificate_payload_parse_from_file_with_root_fallback: no signing_certificate_filename provided, using root fallback cert!");
-		atsc3_cms_validation_context->certificate_payload = block_Alloc(strlen(ATSC3_CMS_UTILS_CDT_A3SA_ROOT_2020_CERT) + 1);
-		block_Write(atsc3_cms_validation_context->certificate_payload, (const uint8_t*)ATSC3_CMS_UTILS_CDT_A3SA_ROOT_2020_CERT, strlen(ATSC3_CMS_UTILS_CDT_A3SA_ROOT_2020_CERT));
-	}
-		
-	
-	if(!atsc3_cms_validation_context->certificate_payload) {
-		_ATSC3_CMS_UTILS_ERROR("atsc3_cms_validation_context_certificate_payload_parse_from_file_with_root_fallback: unable to read signing_certificate_filename from: %s", signing_certificate_filename);
-		return NULL;
-	}
-	block_Rewind(atsc3_cms_validation_context->certificate_payload);
-	
-	return atsc3_cms_validation_context;
-}
-
-/*
- 
- 1.) read in full cms payload
-
-	mbms_toi_filename = alc_packet_dump_to_object_get_filename_tsi_toi(udp_flow, 0, mbms_toi);
-
-	block_Read_from_filename
- 
- 2.) extract out cms / multipart signature
- 
- 3.) process fragments as usual
-
-	-> atsc3_mime_multipart_related_parser
- 
-	atsc3_sls_metadata_fragments_pending = atsc3_mbms_envelope_to_sls_metadata_fragments_parse_from_fdt_fp(fp_mbms);
-
- 
- 
- */
-
 atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_validation_context_t* atsc3_cms_validation_context) {
 	atsc3_cms_validation_context_t* atsc3_cms_validation_context_return = atsc3_cms_validation_context;
-	
+
+	if(!atsc3_cms_validation_context->transients.atsc3_certification_data) {
+		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validation_context->transients.atsc3_certification_data is NULL, returning NULL!");
+		return NULL;
+	}
+
+	if(!atsc3_cms_validation_context->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count) {
+		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validation_context->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count is 0, may not resolve entity cert");
+		return NULL;
+	}
+
 	BIO 	*signature_binary_der_in = NULL;
 	BIO 	*payload_binary_in = NULL;
 
+	//for smime validation
+	BIO 	*signed_multipart_payload_in = NULL;
+	BIO 	*extracted_smime_payload = NULL;
+	bool 	use_extracted_smime_payload = false;
+
 	BIO 	*extracted_payload_out = NULL;
 	long 	extracted_payload_out_len = 0;
-	
-	BIO 	*cacert_cdt_payload_in = NULL;
 
 	X509_STORE 	*st_root = NULL;
 	X509 		*cacert_root = NULL;
-	
-	X509 		*cacert_cdt = NULL;
+	X509 		*cacert_intermediate = NULL;
 	
 	STACK_OF(X509) *pcerts = NULL;
 	CMS_ContentInfo *cms = NULL;
@@ -247,11 +128,29 @@ atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_valida
 	OpenSSL_add_all_digests();
 	ERR_load_crypto_strings();
 
+
+	struct to_free_bio_and_x509_refs_s {
+		block_t* fixup_cdt_table_block;
+		BIO*	bio_ptr;
+		X509*	x509_ptr;
+	} to_free_bio_and_509_refs[atsc3_cms_validation_context->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count] ;
+
+
+	memset(&to_free_bio_and_509_refs, 0, atsc3_cms_validation_context->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count * sizeof(struct to_free_bio_and_x509_refs_s));
+
 	/* jjustman-2020-11-17: TODO: pin ROOT CA  */
 	st_root = X509_STORE_new();
+	X509_STORE_set_purpose(st_root, X509_PURPOSE_ANY);
 	
 	/*
-	 cacert_root = PEM_read_bio_X509(tbio, NULL, 0, NULL);
+	 * add our:
+	 * 	ATSC3_A360_CERTIFICATES_PEARL_A3SA_ROOT_CERT_SN_0569 and
+	 * 	ATSC3_A360_CERTIFICATES_PEARL_A3SA_INTERMEDIATE_SIGNING_CA_2_SN_A0D3
+	 *
+	 */
+	BIO * cacert_root_bio = BIO_new_mem_buf(ATSC3_A360_CERTIFICATES_PEARL_A3SA_ROOT_CERT_SN_0569, strlen(ATSC3_A360_CERTIFICATES_PEARL_A3SA_ROOT_CERT_SN_0569));
+
+	cacert_root = PEM_read_bio_X509(cacert_root_bio, NULL, 0, NULL);
 	 if (!cacert_root) {
 		goto err;
 	 }
@@ -259,71 +158,115 @@ atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_valida
 	 if (!X509_STORE_add_cert(st_root, cacert_root)) {
 		goto err;
 	 }
-	 */
+
+	BIO * cacert_ca_chain_signing_ca_2 = BIO_new_mem_buf(ATSC3_A360_CERTIFICATES_PEARL_A3SA_INTERMEDIATE_SIGNING_CA_2_SN_A0D3, strlen(ATSC3_A360_CERTIFICATES_PEARL_A3SA_INTERMEDIATE_SIGNING_CA_2_SN_A0D3));
+	cacert_intermediate = PEM_read_bio_X509(cacert_ca_chain_signing_ca_2, NULL, 0, NULL);
+	if (!cacert_intermediate) {
+		goto err;
+	}
+
+	if (!X509_STORE_add_cert(st_root, cacert_intermediate)) {
+		goto err;
+	}
 
 	//intermediate certs from CDT table or testing
 	pcerts = sk_X509_new_null();
-	
-	block_Rewind(atsc3_cms_validation_context->certificate_payload);
-	uint8_t* cert_cdt_in_bio_mem_buf = block_Get(atsc3_cms_validation_context->certificate_payload);
-	uint32_t cert_cdt_in_bio_mem_buf_len = block_Remaining_size(atsc3_cms_validation_context->certificate_payload);
 
-	cacert_cdt_payload_in = BIO_new_mem_buf(cert_cdt_in_bio_mem_buf, cert_cdt_in_bio_mem_buf_len);
-	_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: BIO_new_mem_buf: cacert_cdt_payload_in in: %p, cert_cdt_in_bio_mem_buf_len: %d, cert_cdt_in_bio_mem_buf:\n%s",
-							cacert_cdt_payload_in, cert_cdt_in_bio_mem_buf_len, cert_cdt_in_bio_mem_buf);
+	for (int i = 0; i < atsc3_cms_validation_context->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count; i++) {
+		atsc3_certification_data_to_be_signed_data_certificates_t *atsc3_certification_data_to_be_signed_data_certificates = atsc3_cms_validation_context->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i];
+		block_Rewind(atsc3_certification_data_to_be_signed_data_certificates->base64_payload);
+		block_t* fixup_cdt_table_entry_blockt = block_Alloc(1024);
 
-	if (!cacert_cdt_payload_in) {
-	   goto err;
+		block_Write(fixup_cdt_table_entry_blockt, (const uint8_t*) ATSC3_A360_CERTIFICATE_UTILS_BEGIN_CERTIFICATE, strlen(ATSC3_A360_CERTIFICATE_UTILS_BEGIN_CERTIFICATE));
+		block_AppendFromSrciPosToSizeAndMoveIptrs(fixup_cdt_table_entry_blockt, atsc3_certification_data_to_be_signed_data_certificates->base64_payload, block_Remaining_size(atsc3_certification_data_to_be_signed_data_certificates->base64_payload));
+		block_Write(fixup_cdt_table_entry_blockt, (const uint8_t*) ATSC3_A360_CERTIFICATE_UTILS_END_CERTIFICATE, strlen(ATSC3_A360_CERTIFICATE_UTILS_END_CERTIFICATE));
+		block_Rewind(fixup_cdt_table_entry_blockt);
+
+		uint8_t* cert_cdt_in_bio_mem_buf = block_Get(fixup_cdt_table_entry_blockt);
+		uint32_t cert_cdt_in_bio_mem_buf_len = block_Remaining_size(fixup_cdt_table_entry_blockt);
+
+		BIO * to_be_signed_payload = BIO_new_mem_buf(cert_cdt_in_bio_mem_buf, cert_cdt_in_bio_mem_buf_len);
+		X509* to_be_signed_x509 = PEM_read_bio_X509(to_be_signed_payload, NULL, 0, NULL);
+
+		//for memory cleanup...
+		to_free_bio_and_509_refs[i].fixup_cdt_table_block = fixup_cdt_table_entry_blockt;
+		to_free_bio_and_509_refs[i].bio_ptr = to_be_signed_payload;
+		to_free_bio_and_509_refs[i].x509_ptr = to_be_signed_x509;
+
+#ifdef ATSC3_CMS_UTILS_DUMP_PAYLOADS_FOR_OPENSSL_DEBUGGING
+		char cms_entity_to_sign_filename_string[32 + 1] = {0};
+
+		snprintf((char*)&cms_entity_to_sign_filename_string, 32, "cert_to_sign.%d.pem", i);
+		block_Write_to_filename(fixup_cdt_table_entry_blockt, cms_entity_to_sign_filename_string);
+#endif
+
+		if (!to_be_signed_x509) {
+			_ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context: index: %d failed to parse as PEM_read_bio_X509! to_be_signed_payload: %p",
+								  i, to_be_signed_payload);
+			goto err;
+		}
+
+		sk_X509_push(pcerts, to_be_signed_x509);
 	}
 
-	cacert_cdt = PEM_read_bio_X509(cacert_cdt_payload_in, NULL, 0, NULL);
-	
-	if (!cacert_cdt) {
-		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context: PEM_read_bio_X509 failed, cacert_cdt_payload_in: %p, PEM_read_X509 returned: %p",
-								cacert_cdt_payload_in, cacert_cdt);
-	   goto err;
+	//if we have a detatched signature, process it separately as a DER (for LLS SignedMultiTable)
+	if(atsc3_cms_validation_context->atsc3_cms_entity->signature) {
+		/* convert our block_t raw cms payload to BIO mem buff for input */
+		block_Rewind(atsc3_cms_validation_context->atsc3_cms_entity->signature);
+		uint8_t *signature_binary_der_in_mem_buf = block_Get(atsc3_cms_validation_context->atsc3_cms_entity->signature);
+		uint32_t signature_binary_der_in_mem_buf_len = block_Remaining_size(atsc3_cms_validation_context->atsc3_cms_entity->signature);
+
+		signature_binary_der_in = BIO_new_mem_buf(signature_binary_der_in_mem_buf, signature_binary_der_in_mem_buf_len);
+		_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: BIO_new_mem_buf: signed_payload_in in: %p, signed_payload_in_bio_mem_buf_len: %d, signed_payload_in_bio_mem_buf:\n%s",
+							   signature_binary_der_in, signature_binary_der_in_mem_buf_len, signature_binary_der_in_mem_buf);
+
+		if (!signature_binary_der_in) {
+			goto err;
+		}
+
+		/* parse DER signature portion of the CMS message */
+
+		cms = d2i_CMS_bio(signature_binary_der_in, &cms);
+
+		if (!cms) {
+			_ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context:CMS_read_CMS: failed!");
+			goto err;
+		}
+
+		/* convert our block_t raw cms payload to BIO mem buff for input */
+		block_Rewind(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
+		uint8_t* payload_binary_in_mem_buf = block_Get(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
+		uint32_t payload_binary_in_mem_buf_len = block_Remaining_size(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
+
+		payload_binary_in = BIO_new_mem_buf(payload_binary_in_mem_buf, payload_binary_in_mem_buf_len);
+		_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: BIO_new_mem_buf: payload_binary_in in: %p, payload_binary_in_mem_buf_len: %d, payload_binary_in_mem_buf:\n%s",
+							   payload_binary_in, payload_binary_in_mem_buf_len, payload_binary_in_mem_buf);
+
+		if (!payload_binary_in) {
+			goto err;
+		}
+	} else {
+		//assume as CMS multipart message
+
+		block_Rewind(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
+		uint8_t* signed_payload_in_bio_mem_buf = block_Get(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
+		uint32_t signed_payload_in_bio_mem_buf_len = block_Remaining_size(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
+
+		signed_multipart_payload_in = BIO_new_mem_buf(signed_payload_in_bio_mem_buf, signed_payload_in_bio_mem_buf_len);
+		_ATSC3_CMS_UTILS_DEBUG("atsc3_smime_validate_from_context: BIO_new_mem_buf: signed_payload_in in: %p, signed_payload_in_bio_mem_buf_len: %d, signed_payload_in_bio_mem_buf:\n%s",
+								 signed_multipart_payload_in, signed_payload_in_bio_mem_buf_len, signed_payload_in_bio_mem_buf);
+
+		if (!signed_multipart_payload_in) {
+			goto err;
+		}
+
+		cms = SMIME_read_CMS(signed_multipart_payload_in, &extracted_smime_payload);
+		use_extracted_smime_payload = true;
 	}
-	sk_X509_push(pcerts, cacert_cdt);
-
-//	if (!X509_STORE_add_cert(st, cacert)) {
-//	   goto err;
-//	}
-	
-
-	/* convert our block_t raw cms payload to BIO mem buff for input */
-	block_Rewind(atsc3_cms_validation_context->atsc3_cms_entity->signature);
-	uint8_t* signature_binary_der_in_mem_buf = block_Get(atsc3_cms_validation_context->atsc3_cms_entity->signature);
-	uint32_t signature_binary_der_in_mem_buf_len = block_Remaining_size(atsc3_cms_validation_context->atsc3_cms_entity->signature);
-
-	signature_binary_der_in = BIO_new_mem_buf(signature_binary_der_in_mem_buf, signature_binary_der_in_mem_buf_len);
-	_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: BIO_new_mem_buf: signed_payload_in in: %p, signed_payload_in_bio_mem_buf_len: %d, signed_payload_in_bio_mem_buf:\n%s",
-						   signature_binary_der_in, signature_binary_der_in_mem_buf_len, signature_binary_der_in_mem_buf);
-
-	if (!signature_binary_der_in) {
-	   goto err;
-	}
-	
-	/* parse DER signature portion of the CMS message */
-	
-	cms = d2i_CMS_bio(signature_binary_der_in, &cms);
 
 	if (!cms) {
 		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context:CMS_read_CMS: failed!");
 	   goto err;
-	}
-
-
-	/* convert our block_t raw cms payload to BIO mem buff for input */
-	block_Rewind(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
-	uint8_t* payload_binary_in_mem_buf = block_Get(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
-	uint32_t payload_binary_in_mem_buf_len = block_Remaining_size(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
-
-	payload_binary_in = BIO_new_mem_buf(payload_binary_in_mem_buf, payload_binary_in_mem_buf_len);
-	_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: BIO_new_mem_buf: payload_binary_in in: %p, payload_binary_in_mem_buf_len: %d, payload_binary_in_mem_buf:\n%s",
-						   payload_binary_in, payload_binary_in_mem_buf_len, payload_binary_in_mem_buf);
-
-	if (!payload_binary_in) {
-		goto err;
 	}
 
 	extracted_payload_out = BIO_new(BIO_s_mem());
@@ -336,74 +279,105 @@ atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_valida
 	if(atsc3_cms_validation_context->cms_no_content_verify) {
 		cms_verify_flags = CMS_BINARY | CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL | CMS_NO_ATTR_VERIFY | CMS_NO_CONTENT_VERIFY;
 	} else if(atsc3_cms_validation_context->cms_noverify) {
-		cms_verify_flags = CMS_BINARY | CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL | CMS_NO_ATTR_VERIFY | CMS_CRLFEOL;
+		cms_verify_flags = CMS_BINARY | CMS_NOVERIFY | CMS_NO_SIGNER_CERT_VERIFY | CMS_NOCRL | CMS_NO_ATTR_VERIFY;
 	} else {
 		cms_verify_flags = CMS_BINARY;
 	}
 	
-	if (!CMS_verify(cms, pcerts, st_root, payload_binary_in, extracted_payload_out, cms_verify_flags)) {
+	if (!CMS_verify(cms, pcerts, st_root, (use_extracted_smime_payload ? extracted_smime_payload : payload_binary_in), extracted_payload_out, cms_verify_flags)) {
 	   _ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context:CMS_verify: verification failure");
 		atsc3_cms_validation_context->cms_signature_valid = false;
-
-		block_Write_to_filename(atsc3_cms_validation_context->certificate_payload, "cert_payload.pem");
-
-		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->signature, "raw_binary_payload_signature.der");
-		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload, "raw_binary_payload.data");
 	} else {
 		_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: verification successful");
 		atsc3_cms_validation_context->cms_signature_valid = true;
+		//copy this to our context->cms_entity->cms_verified_extracted_mime_entity
+		char *extracted_payload_out_char_p = NULL;
+		extracted_payload_out_len = BIO_get_mem_data(extracted_payload_out, &extracted_payload_out_char_p);
+
+		atsc3_cms_validation_context->atsc3_cms_entity->cms_verified_extracted_payload = block_Alloc(extracted_payload_out_len);
+		block_Write(atsc3_cms_validation_context->atsc3_cms_entity->cms_verified_extracted_payload, (uint8_t*) extracted_payload_out_char_p, extracted_payload_out_len);
+		block_Rewind(atsc3_cms_validation_context->atsc3_cms_entity->cms_verified_extracted_payload);
+
+		_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: BIO_get_mem_data: extracted_payload_out_len: %d, extracted_payload_out_char_p:\n%s",
+							   atsc3_cms_validation_context->atsc3_cms_entity->cms_verified_extracted_payload->p_size,
+							   atsc3_cms_validation_context->atsc3_cms_entity->cms_verified_extracted_payload->p_buffer);
 	}
 
-//	//copy this to our context->cms_entity->cms_verified_extracted_mime_entity
-//	char *extracted_payload_out_char_p = NULL;
-//	extracted_payload_out_len = BIO_get_mem_data(extracted_payload_out, &extracted_payload_out_char_p);
-//
-//	atsc3_cms_validation_context->atsc3_cms_entity->cms_verified_extracted_mime_entity = block_Alloc(extracted_payload_out_len);
-//	block_Write(atsc3_cms_validation_context->atsc3_cms_entity->cms_verified_extracted_mime_entity, (uint8_t*) extracted_payload_out_char_p, extracted_payload_out_len);
-//	block_Rewind(atsc3_cms_validation_context->atsc3_cms_entity->cms_verified_extracted_mime_entity);
-//
-//	_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: BIO_get_mem_data: extracted_payload_out_len: %d, extracted_payload_out_char_p:\n%s",
-//							 atsc3_cms_validation_context->atsc3_cms_entity->cms_verified_extracted_mime_entity->p_size,
-//							 atsc3_cms_validation_context->atsc3_cms_entity->cms_verified_extracted_mime_entity->p_buffer);
 
 err:
 
 	if (!atsc3_cms_validation_context->cms_signature_valid) {
 		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context: error verifying data, errors:");
+
+#ifdef ATSC3_CMS_UTILS_DUMP_PAYLOADS_FOR_OPENSSL_DEBUGGING
+		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->signature, "raw_binary_payload_signature.der");
+		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload, "raw_binary_payload.data");
+#endif
 		ERR_print_errors_fp(stdout);
 		atsc3_cms_validation_context_return = NULL;
 	}
 
-	if(signature_binary_der_in) {
-		BIO_free(signature_binary_der_in);
-	}
-
-	if(payload_binary_in) {
-		BIO_free(payload_binary_in);
+	//cleanup in reverse order
+	if(cms) {
+		CMS_ContentInfo_free(cms);
 	}
 
 	if(extracted_payload_out) {
 		BIO_free(extracted_payload_out);
 	}
 
-	if(cacert_cdt_payload_in) {
-		BIO_free(cacert_cdt_payload_in);
+	if(extracted_smime_payload) {
+		BIO_free(extracted_smime_payload);
 	}
 
-	if(st_root) {
-		X509_STORE_free(st_root);
+	if(signed_multipart_payload_in) {
+		BIO_free(signed_multipart_payload_in);
+	}
+
+	if(payload_binary_in) {
+		BIO_free(payload_binary_in);
+	}
+
+	if(signature_binary_der_in) {
+		BIO_free(signature_binary_der_in);
+	}
+
+	//clear out our intermediates/entity certs
+
+
+	for(int i= 0; i < atsc3_cms_validation_context->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count; i++) {
+		if(to_free_bio_and_509_refs[i].fixup_cdt_table_block) {
+			block_Destroy(&to_free_bio_and_509_refs[i].fixup_cdt_table_block);
+		}
+		if(to_free_bio_and_509_refs[i].bio_ptr) {
+			BIO_free(to_free_bio_and_509_refs[i].bio_ptr);
+			to_free_bio_and_509_refs[i].bio_ptr = NULL;
+		}
+		if(to_free_bio_and_509_refs[i].x509_ptr) {
+			X509_free(to_free_bio_and_509_refs[i].x509_ptr);
+			to_free_bio_and_509_refs[i].x509_ptr = NULL;
+		}
+	}
+
+	if(cacert_ca_chain_signing_ca_2) {
+		BIO_free(cacert_ca_chain_signing_ca_2);
+	}
+
+	if(cacert_intermediate) {
+		X509_free(cacert_intermediate);
+	}
+
+	if(cacert_root_bio) {
+		BIO_free(cacert_root_bio);
 	}
 
 	if(cacert_root) {
 		X509_free(cacert_root);
 	}
 
-	if(cacert_cdt) {
-		X509_free(cacert_cdt);
-	}
 
-	if(cms) {
-		CMS_ContentInfo_free(cms);
+	if(st_root) {
+		X509_STORE_free(st_root);
 	}
 
 

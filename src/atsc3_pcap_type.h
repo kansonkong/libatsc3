@@ -58,13 +58,14 @@ bytes	Name
 extern "C" {
 #endif
 
-#define ATSC3_PCAP_GLOBAL_HEADER_SIZE_BYTES 			24
-#define ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER 			0xA1B2C3D4
-#define ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION 0xD4C3B2A1
-#define ATSC3_PCAP_GLOBAL_HEADER_MAJOR_VERSION_NUMBER	2
-#define ATSC3_PCAP_GLOBAL_HEADER_MINOR_VERSION_NUMBER	4
-#define ATSC3_PCAP_GLOBAL_HEADER_SNAPLEN				65535
-#define ATSC3_PCAP_GLOBAL_HEADER_NETWORK				1
+#define ATSC3_PCAP_GLOBAL_HEADER_SIZE_BYTES 									24
+#define ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER 									0xA1B2C3D4
+#define ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION 	0xD4C3B2A1
+#define ATSC3_PCAP_GLOBAL_HEADER_MAJOR_VERSION_NUMBER							2
+#define ATSC3_PCAP_GLOBAL_HEADER_MINOR_VERSION_NUMBER							4
+#define ATSC3_PCAP_GLOBAL_HEADER_SNAPLEN										65535
+#define ATSC3_PCAP_GLOBAL_HEADER_NETWORK										1
+#define ATSC3_PCAP_GLOBAL_HEADER_NETWORK_ALP_DEMUXED_TYPE						0x00000121
 
 	//global header length: 24 bytes
 #pragma pack(push, 1)
@@ -110,6 +111,8 @@ typedef struct atsc3_pcap_packet_ethernet_header {
 #define ATSC3_PCAP_MIN_GLOBAL_AND_PACKET_HEADER_LENGTH 24+16
 #define ATSC3_PCAP_MIN_GLOBAL_AND_PACKET_AND_ETH_HEADER_LENGTH 24+16+14
 
+#define ENV_ATSC3_PCAP_TYPE_INFO_ENABLE_PCAP_READ_PACKET_COUNT_LOGGING "ATSC3_PCAP_TYPE_INFO_ENABLE_PCAP_READ_PACKET_COUNT_LOGGING"
+
 typedef struct atsc3_pcap_packet_instance {
 	atsc3_pcap_packet_header_t		atsc3_pcap_packet_header;
 
@@ -130,7 +133,8 @@ typedef struct atsc3_pcap_replay_context {
 	bool							atsc3_pcap_needs_endian_correction; //only if atsc3_pcap_global_header looks like ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION
 
 	uint32_t						pcap_read_packet_count;
-
+    bool                            ATSC3_PCAP_TYPE_INFO_ENABLE_PCAP_READ_PACKET_COUNT_LOGGING;
+ 
 	atsc3_pcap_packet_instance_t	atsc3_pcap_packet_instance;
 
 	struct timeval 					first_wallclock_timeval;

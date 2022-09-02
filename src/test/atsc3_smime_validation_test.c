@@ -33,16 +33,16 @@ int parse_signed_sls_with_test_certificate_noverify(const char* sls_fragment_fil
 	_ATSC3_SMIME_UTILS_TEST_INFO("###");
 	_ATSC3_SMIME_UTILS_TEST_INFO("--- Test Result for sls_fragment_filename: %s, signing_certificate_filename: %s", sls_fragment_filename, signing_certificate_filename);
 
-	if(!atsc3_smime_validation_context_ret && !atsc3_smime_validation_context->cms_signature_valid) {
+	if(!atsc3_smime_validation_context_ret && !atsc3_smime_validation_context->atsc3_cms_validation_context->cms_signature_valid) {
 		_ATSC3_SMIME_UTILS_TEST_INFO("parse_signed_sls_with_test_certificate_noverify failed: from sls_fragment_filename: %s, signing_certificate_filename: %s failed!", sls_fragment_filename, signing_certificate_filename);
 		ret = -1;
-	} else if(!atsc3_smime_validation_context_ret || !atsc3_smime_validation_context->cms_signature_valid) {
-		_ATSC3_SMIME_UTILS_TEST_ERROR("parse_signed_sls_with_test_certificate_noverify RETURN mismatch (%p) with cms_signature_valid: (%d), from: sls_fragment_filename: %s, signing_certificate_filename: %s failed!",
+	} else if(!atsc3_smime_validation_context_ret || !atsc3_smime_validation_context->atsc3_cms_validation_context->cms_signature_valid) {
+		_ATSC3_SMIME_UTILS_TEST_ERROR("parse_signed_sls_with_test_certificate_noverify RETURN mismatch (%p) with cms_signature_valid: NULL, from: sls_fragment_filename: %s, signing_certificate_filename: %s failed!",
 									  atsc3_smime_validation_context_ret,
-									  atsc3_smime_validation_context->cms_signature_valid,
-									  sls_fragment_filename, signing_certificate_filename);
+									  sls_fragment_filename,
+									  signing_certificate_filename);
 		ret = -31337;
-	} else if(atsc3_smime_validation_context_ret && atsc3_smime_validation_context->cms_signature_valid) {
+	} else if(atsc3_smime_validation_context_ret && atsc3_smime_validation_context->atsc3_cms_validation_context->cms_signature_valid) {
 		_ATSC3_SMIME_UTILS_TEST_TRACE("parse_signed_sls_with_test_certificate_noverify success: from: sls_fragment_filename: %s, signing_certificate_filename: %s, cms_verified_extracted_mime_entity_len: %d, cms_verified_extracted_mime_entity:\n%s",
 									 sls_fragment_filename, signing_certificate_filename,
 									 atsc3_smime_validation_context->atsc3_smime_entity->cms_verified_extracted_mime_entity->p_size,

@@ -222,7 +222,9 @@ intermediate_lls: 	atsc3_lls.o \
 					atsc3_lls_types.o \
 					atsc3_lls_sls_parser.o \
 					atsc3_lls_alc_utils.o \
-					atsc3_aeat_types.o
+					atsc3_aeat_types.o \
+					atsc3_a360_certificates.o \
+					atsc3_cms_utils.o
 
 intermediate_lls_asan: 	atsc3_lls_asan.o \
 						atsc3_lls_types_asan.o \
@@ -464,6 +466,12 @@ atsc3_aeat_types.o: atsc3_aeat_types.h atsc3_aeat_types.c
 
 atsc3_aeat_types_asan.o: atsc3_aeat_types.h atsc3_aeat_types.c
 	$(CC) $(ASAN) $(CFLAGS) $(DEBUG)  -c atsc3_aeat_types.c -o atsc3_aeat_types_asan.o
+
+atsc3_a360_certificates.o: atsc3_a360_certificates.h atsc3_a360_certificates.c
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_a360_certificates.c
+
+atsc3_cms_utils.o: atsc3_cms_utils.h atsc3_cms_utils.c
+	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_cms_utils.c
 
 atsc3_aeat_parser.o: atsc3_aeat_parser.h atsc3_aeat_parser.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_aeat_parser.c
@@ -806,6 +814,8 @@ libatsc3.o: atsc3_lls.o \
 		atsc3_lls_types.o \
 		atsc3_lls_slt_parser.o \
 		atsc3_lls_sls_parser.o \
+		atsc3_a360_certificates.o \
+		atsc3_cms_utils.o \
 		atsc3_alp_types.o \
 		atsc3_alp_parser.o \
 		atsc3_stltp_depacketizer_context.o \
@@ -874,9 +884,7 @@ libatsc3.o: atsc3_lls.o \
 		atsc3_isobmff_box_parser_tools.o \
 		atsc3_mmt_context_signalling_information_callbacks_internal.o \
 		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o \
-		atsc3_smime_utils.o \
-		atsc3_cms_utils.o
-
+		atsc3_smime_utils.o
 
 #		atsc3_srt_live_receiver.o \
 #		SRTRxSTLTPVirtualPHY.o 
@@ -884,6 +892,8 @@ libatsc3.o: atsc3_lls.o \
 	ld  -o libatsc3.o -r \
 		atsc3_lls.o \
 		atsc3_lls_types.o \
+		atsc3_a360_certificates.o \
+		atsc3_cms_utils.o \
 		atsc3_lls_slt_parser.o \
 		atsc3_lls_sls_parser.o \
 		atsc3_alp_types.o \
@@ -954,9 +964,7 @@ libatsc3.o: atsc3_lls.o \
 		atsc3_isobmff_box_parser_tools.o \
 		atsc3_mmt_context_signalling_information_callbacks_internal.o \
 		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o \
-		atsc3_smime_utils.o \
-		atsc3_cms_utils.o
-
+		atsc3_smime_utils.o
 
 #		atsc3_srt_live_receiver.o \
 #		SRTRxSTLTPVirtualPHY.o 
@@ -964,6 +972,8 @@ libatsc3.o: atsc3_lls.o \
 libatsc3_asan.o: \
 		atsc3_lls_asan.o \
 		atsc3_lls_types_asan.o \
+		atsc3_a360_certificates.o \
+		atsc3_cms_utils.o \
 		atsc3_lls_slt_parser_asan.o \
 		atsc3_lls_sls_parser_asan.o \
 		atsc3_lls_alc_utils_asan.o \
@@ -1035,11 +1045,12 @@ libatsc3_asan.o: \
 		atsc3_mmt_context_signalling_information_callbacks_internal.o \
 		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o \
 		atsc3_smime_utils.o \
-		atsc3_cms_utils.o
 		
 	ld  -o libatsc3_asan.o -r \
 		atsc3_lls_asan.o \
 		atsc3_lls_types_asan.o \
+		atsc3_a360_certificates.o \
+		atsc3_cms_utils.o \
 		atsc3_lls_slt_parser_asan.o \
 		atsc3_lls_sls_parser_asan.o \
 		atsc3_lls_alc_utils_asan.o \
@@ -1110,9 +1121,7 @@ libatsc3_asan.o: \
 		atsc3_isobmff_box_parser_tools.o \
 		atsc3_mmt_context_signalling_information_callbacks_internal.o \
 		atsc3_mmt_context_mfu_depacketizer_callbacks_noop.o \
-		atsc3_smime_utils.o \
-		atsc3_cms_utils.o
-
+		atsc3_smime_utils.o
 
 # MIT-compatable linkage (no bento4) by default...
 atsc3_isobmff_tools.o: atsc3_isobmff_tools.h atsc3_isobmff_tools.cpp
@@ -1422,6 +1431,8 @@ test/atsc3_pcap_replay_test: test/atsc3_pcap_replay_test.c atsc3_pcap_type.o ats
 
 test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 										atsc3_utils.o \
+										atsc3_cms_utils.o \
+										atsc3_a360_certificates.o \
 										atsc3_gzip.o \
 										atsc3_pcre2_regex_utils.h \
 										atsc3_pcre2_regex_utils.o \
@@ -1457,12 +1468,13 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 										avltree.o \
 										strnstr.o \
 										atsc3_smime_utils.o \
-										atsc3_cms_utils.o \
 										atsc3_mmt_mfu_context_free_noop.o
 
 	$(CC) $(ASAN) $(INCLUDE_PATHS) $(CFLAGS) $(DEBUG) test/atsc3_route_dash_mpd_patch_test.c  \
 							atsc3_utils.o \
 							atsc3_gzip.o \
+							atsc3_cms_utils.o \
+							atsc3_a360_certificates.o \
 							atsc3_pcre2_regex_utils.o \
 							atsc3_route_dash_utils.o \
 							atsc3_alc_session.o \
@@ -1495,7 +1507,6 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 							avltree.o \
 							strnstr.o \
 							atsc3_smime_utils.o \
-							atsc3_cms_utils.o \
 							atsc3_mmt_mfu_context_free_noop.o \
 							$(LOCAL_LD_LIBS_OPENSSL) \
 							$(LOCAL_LD_LIBS) \
@@ -1504,6 +1515,8 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 										atsc3_utils.o \
 										atsc3_gzip.o \
+										atsc3_cms_utils.o \
+										atsc3_a360_certificates.o \
 										atsc3_pcre2_regex_utils.h \
 										atsc3_pcre2_regex_utils.o \
 										atsc3_route_dash_utils.o \
@@ -1538,11 +1551,12 @@ test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 										avltree.o \
 										strnstr.o \
 										atsc3_smime_utils.o \
-										atsc3_cms_utils.o \
 										atsc3_mmt_mfu_context_free_noop.o
 
 	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_smime_validation_test.c  \
 							atsc3_utils.o \
+							atsc3_cms_utils.o \
+							atsc3_a360_certificates.o \
 							atsc3_gzip.o \
 							atsc3_pcre2_regex_utils.o \
 							atsc3_route_dash_utils.o \
@@ -1576,7 +1590,6 @@ test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
 							avltree.o \
 							strnstr.o \
 							atsc3_smime_utils.o \
-							atsc3_cms_utils.o \
 							atsc3_mmt_mfu_context_free_noop.o \
 							$(LOCAL_LD_LIBS_OPENSSL) \
 							$(LOCAL_LD_LIBS) \
