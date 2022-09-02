@@ -15,7 +15,7 @@ build for linux:
 
 ## Aug, 2022 Release: Signed MultiTable and Signed SLS validation
 
-New features for Signed LLS and Signed SLS validation and processing for A/360 security support.
+New features for Signed LLS and Signed SLS validation and processing for A/360 security support - including both MMT and ROUTE/DASH.
 
 ## Nov, 2021 Release: New ATSC3 Sample and TV App repos, local android sample app removed
 
