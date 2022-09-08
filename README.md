@@ -13,6 +13,10 @@ build for linux:
 
 > cd src; ./build_linux.sh 
 
+## Sept, 2022 Update: Wireshark ATSC3 Dissector Support
+
+Work in progress: https://github.com/jjustman/wireshark-atsc3.git
+
 ## Aug, 2022 Release: Signed MultiTable and Signed SLS validation
 
 New features for Signed LLS and Signed SLS validation and processing for A/360 security support - including both MMT and ROUTE/DASH.
