@@ -15,7 +15,9 @@ build for linux:
 
 ## Sept, 2022 Update: Wireshark ATSC3 Dissector Support
 
-Work in progress: https://github.com/jjustman/wireshark-atsc3.git
+Work in progress - Initial support for LLS, ROUTE and MMT protocol analysis in Wireshark
+
+https://github.com/jjustman/wireshark-atsc3.git
 
 ## Aug, 2022 Release: Signed MultiTable and Signed SLS validation
 
