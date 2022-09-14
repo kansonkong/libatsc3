@@ -615,7 +615,7 @@ int main(int argc,char **argv) {
            println("%s - DEMUXED pcap replay test harness for atsc3 mmt STPP extraction - output will be in mpu/", argv[0]);
            println("---");
            println("args: demuxed_pcap_file_name (dst_ip) (dst_port) (packet_id)");
-           println(" pcap_file_name: pcap demuxed file to process MMT SLS emissions - note: must have both LLS and MMT emission in demuxed flow");
+           println(" pcap_file_name: pcap demuxed file to process MMT STPP emissions - note: must have both LLS and MMT emission in demuxed flow");
            println(" (dst_ip): optional, filter to specific ip address, or * for wildcard");
            println(" (dst_port): optional, filter to specific port, or * for wildcard");
 

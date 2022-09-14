@@ -185,6 +185,8 @@ clean:
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan	
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan
+	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap
+	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap_noasan
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap
@@ -291,8 +293,6 @@ intermediate_virtual_phy: 	PcapDemuxedVirtualPHY.o \
 
 intermediate_smime:	atsc3_smime_utils.o	  
 
-intermedaite_cms_utils: atsc3_cms_utils.o
-
 libatsc3_core: libatsc3.o \
 				libatsc3_asan.o
 listener_ncurses: tools/atsc3_listener_metrics_ncurses
@@ -350,6 +350,8 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan \
+				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap \
+				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap_noasan \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap \
@@ -469,9 +471,6 @@ atsc3_aeat_types_asan.o: atsc3_aeat_types.h atsc3_aeat_types.c
 
 atsc3_a360_certificates.o: atsc3_a360_certificates.h atsc3_a360_certificates.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_a360_certificates.c
-
-atsc3_cms_utils.o: atsc3_cms_utils.h atsc3_cms_utils.c
-	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_cms_utils.c
 
 atsc3_aeat_parser.o: atsc3_aeat_parser.h atsc3_aeat_parser.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_aeat_parser.c
@@ -665,11 +664,15 @@ PcapSTLTPVirtualPHY.o: phy/virtual/PcapSTLTPVirtualPHY.h phy/virtual/PcapSTLTPVi
 # jjustman-2020-11-17 - smime utils, include headers from 
 
 atsc3_smime_utils.o: atsc3_smime_utils.h atsc3_smime_utils.c
-	$(CC) $(CFLAGS) $(CFLAGS_OPENSSL_INCLUDE) $(DEBUG)  -c atsc3_smime_utils.c -o atsc3_smime_utils.o
+	$(CC) $(CFLAGS) $(CFLAGS_OPENSSL_INCLUDE) $(DEBUG)  \
+	-c atsc3_smime_utils.c \
+	-o atsc3_smime_utils.o
 
 # jjustman-2022-08-24 - adding in openssl cms validation utils
 atsc3_cms_utils.o: atsc3_cms_utils.h atsc3_cms_utils.c
-	$(CC) $(CFLAGS) $(CFLAGS_OPENSSL_INCLUDE) $(DEBUG)  -c atsc3_cms_utils.c -o atsc3_cms_utils.o
+	$(CC) $(CFLAGS) $(CFLAGS_OPENSSL_INCLUDE) $(DEBUG)  \
+	-c atsc3_cms_utils.c \
+	-o atsc3_cms_utils.o
 
 # jjustman-2020-08-17 - todo: add in full deps here
 atsc3_srt_live_receiver.o: phy/virtual/srt/atsc3_srt_live_receiver.h \
@@ -1867,6 +1870,31 @@ listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
 
 ifeq ($(HOST), "osx")
 	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
+endif
+
+
+# jjustman-2022-09-13 - adding atsc3_mmt_context_mfu_depacketizer_test_from_demxued_pcap
+
+
+listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap: listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o
+	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap
+
+
+listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap_noasan: listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o
+	$(CXX) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap_noasan
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap_noasan
 endif
 
 
