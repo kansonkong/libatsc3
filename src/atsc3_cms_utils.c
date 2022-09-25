@@ -174,39 +174,42 @@ atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_valida
 
 	for (int i = 0; i < atsc3_cms_validation_context->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count; i++) {
 		atsc3_certification_data_to_be_signed_data_certificates_t *atsc3_certification_data_to_be_signed_data_certificates = atsc3_cms_validation_context->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.data[i];
-		block_Rewind(atsc3_certification_data_to_be_signed_data_certificates->base64_payload);
-		block_t* fixup_cdt_table_entry_blockt = block_Alloc(1024);
+        if(atsc3_certification_data_to_be_signed_data_certificates->base64_payload) {
 
-		block_Write(fixup_cdt_table_entry_blockt, (const uint8_t*) ATSC3_A360_CERTIFICATE_UTILS_BEGIN_CERTIFICATE, strlen(ATSC3_A360_CERTIFICATE_UTILS_BEGIN_CERTIFICATE));
-		block_AppendFromSrciPosToSizeAndMoveIptrs(fixup_cdt_table_entry_blockt, atsc3_certification_data_to_be_signed_data_certificates->base64_payload, block_Remaining_size(atsc3_certification_data_to_be_signed_data_certificates->base64_payload));
-		block_Write(fixup_cdt_table_entry_blockt, (const uint8_t*) ATSC3_A360_CERTIFICATE_UTILS_END_CERTIFICATE, strlen(ATSC3_A360_CERTIFICATE_UTILS_END_CERTIFICATE));
-		block_Rewind(fixup_cdt_table_entry_blockt);
+            block_Rewind(atsc3_certification_data_to_be_signed_data_certificates->base64_payload);
+            block_t* fixup_cdt_table_entry_blockt = block_Alloc(1024);
 
-		uint8_t* cert_cdt_in_bio_mem_buf = block_Get(fixup_cdt_table_entry_blockt);
-		uint32_t cert_cdt_in_bio_mem_buf_len = block_Remaining_size(fixup_cdt_table_entry_blockt);
+            block_Write(fixup_cdt_table_entry_blockt, (const uint8_t*) ATSC3_A360_CERTIFICATE_UTILS_BEGIN_CERTIFICATE, strlen(ATSC3_A360_CERTIFICATE_UTILS_BEGIN_CERTIFICATE));
+            block_AppendFromSrciPosToSizeAndMoveIptrs(fixup_cdt_table_entry_blockt, atsc3_certification_data_to_be_signed_data_certificates->base64_payload, block_Remaining_size(atsc3_certification_data_to_be_signed_data_certificates->base64_payload));
+            block_Write(fixup_cdt_table_entry_blockt, (const uint8_t*) ATSC3_A360_CERTIFICATE_UTILS_END_CERTIFICATE, strlen(ATSC3_A360_CERTIFICATE_UTILS_END_CERTIFICATE));
+            block_Rewind(fixup_cdt_table_entry_blockt);
 
-		BIO * to_be_signed_payload = BIO_new_mem_buf(cert_cdt_in_bio_mem_buf, cert_cdt_in_bio_mem_buf_len);
-		X509* to_be_signed_x509 = PEM_read_bio_X509(to_be_signed_payload, NULL, 0, NULL);
+            uint8_t* cert_cdt_in_bio_mem_buf = block_Get(fixup_cdt_table_entry_blockt);
+            uint32_t cert_cdt_in_bio_mem_buf_len = block_Remaining_size(fixup_cdt_table_entry_blockt);
 
-		//for memory cleanup...
-		to_free_bio_and_509_refs[i].fixup_cdt_table_block = fixup_cdt_table_entry_blockt;
-		to_free_bio_and_509_refs[i].bio_ptr = to_be_signed_payload;
-		to_free_bio_and_509_refs[i].x509_ptr = to_be_signed_x509;
+            BIO * to_be_signed_payload = BIO_new_mem_buf(cert_cdt_in_bio_mem_buf, cert_cdt_in_bio_mem_buf_len);
+            X509* to_be_signed_x509 = PEM_read_bio_X509(to_be_signed_payload, NULL, 0, NULL);
 
-#ifdef ATSC3_CMS_UTILS_DUMP_PAYLOADS_FOR_OPENSSL_DEBUGGING
-		char cms_entity_to_sign_filename_string[32 + 1] = {0};
+            //for memory cleanup...
+            to_free_bio_and_509_refs[i].fixup_cdt_table_block = fixup_cdt_table_entry_blockt;
+            to_free_bio_and_509_refs[i].bio_ptr = to_be_signed_payload;
+            to_free_bio_and_509_refs[i].x509_ptr = to_be_signed_x509;
 
-		snprintf((char*)&cms_entity_to_sign_filename_string, 32, "cert_to_sign.%d.pem", i);
-		block_Write_to_filename(fixup_cdt_table_entry_blockt, cms_entity_to_sign_filename_string);
-#endif
+    #ifdef ATSC3_CMS_UTILS_DUMP_PAYLOADS_FOR_OPENSSL_DEBUGGING
+            char cms_entity_to_sign_filename_string[32 + 1] = {0};
 
-		if (!to_be_signed_x509) {
-			_ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context: index: %d failed to parse as PEM_read_bio_X509! to_be_signed_payload: %p",
-								  i, to_be_signed_payload);
-			goto err;
-		}
+            snprintf((char*)&cms_entity_to_sign_filename_string, 32, "cert_to_sign.%d.pem", i);
+            block_Write_to_filename(fixup_cdt_table_entry_blockt, cms_entity_to_sign_filename_string);
+    #endif
 
-		sk_X509_push(pcerts, to_be_signed_x509);
+            if (!to_be_signed_x509) {
+                _ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context: index: %d failed to parse as PEM_read_bio_X509! to_be_signed_payload: %p",
+                                      i, to_be_signed_payload);
+                goto err;
+            }
+
+            sk_X509_push(pcerts, to_be_signed_x509);
+        }
 	}
 
 	//if we have a detatched signature, process it separately as a DER (for LLS SignedMultiTable)
@@ -217,7 +220,7 @@ atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_valida
 		uint32_t signature_binary_der_in_mem_buf_len = block_Remaining_size(atsc3_cms_validation_context->atsc3_cms_entity->signature);
 
 		signature_binary_der_in = BIO_new_mem_buf(signature_binary_der_in_mem_buf, signature_binary_der_in_mem_buf_len);
-		_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: BIO_new_mem_buf: signed_payload_in in: %p, signed_payload_in_bio_mem_buf_len: %d, signed_payload_in_bio_mem_buf:\n%s",
+		_ATSC3_CMS_UTILS_DEBUG("atsc3_cms_validate_from_context: Signature DER and Payload: BIO_new_mem_buf: signed_payload_in in: %p, signed_payload_in_bio_mem_buf_len: %d, signed_payload_in_bio_mem_buf:\n%s",
 							   signature_binary_der_in, signature_binary_der_in_mem_buf_len, signature_binary_der_in_mem_buf);
 
 		if (!signature_binary_der_in) {
@@ -253,7 +256,7 @@ atsc3_cms_validation_context_t* atsc3_cms_validate_from_context(atsc3_cms_valida
 		uint32_t signed_payload_in_bio_mem_buf_len = block_Remaining_size(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload);
 
 		signed_multipart_payload_in = BIO_new_mem_buf(signed_payload_in_bio_mem_buf, signed_payload_in_bio_mem_buf_len);
-		_ATSC3_CMS_UTILS_DEBUG("atsc3_smime_validate_from_context: BIO_new_mem_buf: signed_payload_in in: %p, signed_payload_in_bio_mem_buf_len: %d, signed_payload_in_bio_mem_buf:\n%s",
+		_ATSC3_CMS_UTILS_DEBUG("atsc3_smime_validate_from_context: CMS Multipart Message: BIO_new_mem_buf: signed_payload_in in: %p, signed_payload_in_bio_mem_buf_len: %d, signed_payload_in_bio_mem_buf:\n%s",
 								 signed_multipart_payload_in, signed_payload_in_bio_mem_buf_len, signed_payload_in_bio_mem_buf);
 
 		if (!signed_multipart_payload_in) {
@@ -310,8 +313,13 @@ err:
 		_ATSC3_CMS_UTILS_WARN("atsc3_cms_validate_from_context: error verifying data, errors:");
 
 #ifdef ATSC3_CMS_UTILS_DUMP_PAYLOADS_FOR_OPENSSL_DEBUGGING
-		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->signature, "raw_binary_payload_signature.der");
-		block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload, "raw_binary_payload.data");
+        if(atsc3_cms_validation_context->atsc3_cms_entity->signature) {
+            block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->signature, "raw_binary_payload_signature.der");
+        }
+        
+        if(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload) {
+            block_Write_to_filename(atsc3_cms_validation_context->atsc3_cms_entity->raw_binary_payload, "raw_binary_payload.data");
+        }
 #endif
 		ERR_print_errors_fp(stdout);
 		atsc3_cms_validation_context_return = NULL;

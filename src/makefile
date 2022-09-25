@@ -1514,92 +1514,102 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 							$(LOCAL_LD_LIBS_OPENSSL) \
 							$(LOCAL_LD_LIBS) \
 							-o test/atsc3_route_dash_mpd_patch_test 
-
+#
+#test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
+#										atsc3_utils.o \
+#										atsc3_gzip.o \
+#										atsc3_cms_utils.o \
+#										atsc3_a360_certificates.o \
+#										atsc3_pcre2_regex_utils.h \
+#										atsc3_pcre2_regex_utils.o \
+#										atsc3_route_dash_utils.o \
+#										atsc3_alc_session.o \
+#										atsc3_lls_mmt_utils.o \
+#										atsc3_lls_sls_monitor_output_buffer_utils.o \
+#										atsc3_lls_sls_monitor_output_buffer.o \
+#										atsc3_player_ffplay.o \
+#										atsc3_route_s_tsid.o \
+#										atsc3_lls_types.o \
+#										atsc3_lls_alc_utils.o \
+#										atsc3_fdt.o \
+#										atsc3_fdt_parser.o \
+#										atsc3_sls_metadata_fragment_types.o \
+#										atsc3_route_sls_processor.o \
+#										atsc3_mbms_envelope_parser.o \
+#										atsc3_mime_multipart_related.o \
+#										atsc3_mime_multipart_related_parser.o \
+#										atsc3_mbms_envelope_xml.o \
+#										atsc3_route_mpd.o \
+#										atsc3_route_package_utils.o \
+#										atsc3_sls_held_fragment.o \
+#										atsc3_sls_metadata_fragment_types.o \
+#										atsc3_sls_metadata_fragment_types_parser.o \
+#										atsc3_route_usbd.o \
+#										atsc3_alc_utils.o \
+#										xml.o \
+#										atsc3_ntp_utils.o \
+#										atsc3_utils_sha256.o \
+#										atsc3_route_object.o \
+#										atsc3_sls_alc_flow.o \
+#										avltree.o \
+#										strnstr.o \
+#										atsc3_smime_utils.o \
+#										atsc3_mmt_mfu_context_free_noop.o
+#
+#	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_smime_validation_test.c  \
+#							atsc3_utils.o \
+#							atsc3_cms_utils.o \
+#							atsc3_a360_certificates.o \
+#							atsc3_gzip.o \
+#							atsc3_pcre2_regex_utils.o \
+#							atsc3_route_dash_utils.o \
+#							atsc3_alc_session.o \
+#							atsc3_lls_mmt_utils.o \
+#							atsc3_lls_sls_monitor_output_buffer_utils.o \
+#							atsc3_lls_sls_monitor_output_buffer.o \
+#							atsc3_player_ffplay.o \
+#							atsc3_route_s_tsid.o \
+#							atsc3_lls.o \
+#							atsc3_lls_types.o \
+#							atsc3_lls_alc_utils.o \
+#							atsc3_fdt.o \
+#							atsc3_fdt_parser.o \
+#							atsc3_route_sls_processor.o \
+#							atsc3_mbms_envelope_parser.o \
+#							atsc3_mime_multipart_related.o \
+#							atsc3_mime_multipart_related_parser.o \
+#							atsc3_mbms_envelope_xml.o \
+#							atsc3_route_mpd.o \
+#							atsc3_route_package_utils.o \
+#							atsc3_sls_held_fragment.o \
+#							atsc3_sls_metadata_fragment_types.o \
+#							atsc3_sls_metadata_fragment_types_parser.o \
+#							atsc3_route_usbd.o \
+#							atsc3_alc_utils.o \
+#							xml.o \
+#							atsc3_ntp_utils.o \
+#							atsc3_utils_sha256.o \
+#							atsc3_route_object.o \
+#							atsc3_sls_alc_flow.o \
+#							avltree.o \
+#							strnstr.o \
+#							atsc3_smime_utils.o \
+#							atsc3_mmt_mfu_context_free_noop.o \
+#							$(LOCAL_LD_LIBS_OPENSSL) \
+#							$(LOCAL_LD_LIBS) \
+#							-o test/atsc3_smime_validation_test
+#
+							
+														 
 test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
-										atsc3_utils.o \
-										atsc3_gzip.o \
-										atsc3_cms_utils.o \
-										atsc3_a360_certificates.o \
-										atsc3_pcre2_regex_utils.h \
-										atsc3_pcre2_regex_utils.o \
-										atsc3_route_dash_utils.o \
-										atsc3_alc_session.o \
-										atsc3_lls_mmt_utils.o \
-										atsc3_lls_sls_monitor_output_buffer_utils.o \
-										atsc3_lls_sls_monitor_output_buffer.o \
-										atsc3_player_ffplay.o \
-										atsc3_route_s_tsid.o \
-										atsc3_lls_types.o \
-										atsc3_lls_alc_utils.o \
-										atsc3_fdt.o \
-										atsc3_fdt_parser.o \
-										atsc3_sls_metadata_fragment_types.o \
-										atsc3_route_sls_processor.o \
-										atsc3_mbms_envelope_parser.o \
-										atsc3_mime_multipart_related.o \
-										atsc3_mime_multipart_related_parser.o \
-										atsc3_mbms_envelope_xml.o \
-										atsc3_route_mpd.o \
-										atsc3_route_package_utils.o \
-										atsc3_sls_held_fragment.o \
-										atsc3_sls_metadata_fragment_types.o \
-										atsc3_sls_metadata_fragment_types_parser.o \
-										atsc3_route_usbd.o \
-										atsc3_alc_utils.o \
-										xml.o \
-										atsc3_ntp_utils.o \
-										atsc3_utils_sha256.o \
-										atsc3_route_object.o \
-										atsc3_sls_alc_flow.o \
-										avltree.o \
-										strnstr.o \
-										atsc3_smime_utils.o \
-										atsc3_mmt_mfu_context_free_noop.o
+										libatsc3.o
 
 	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_smime_validation_test.c  \
-							atsc3_utils.o \
-							atsc3_cms_utils.o \
-							atsc3_a360_certificates.o \
-							atsc3_gzip.o \
-							atsc3_pcre2_regex_utils.o \
-							atsc3_route_dash_utils.o \
-							atsc3_alc_session.o \
-							atsc3_lls_mmt_utils.o \
-							atsc3_lls_sls_monitor_output_buffer_utils.o \
-							atsc3_lls_sls_monitor_output_buffer.o \
-							atsc3_player_ffplay.o \
-							atsc3_route_s_tsid.o \
-							atsc3_lls_types.o \
-							atsc3_lls_alc_utils.o \
-							atsc3_fdt.o \
-							atsc3_fdt_parser.o \
-							atsc3_route_sls_processor.o \
-							atsc3_mbms_envelope_parser.o \
-							atsc3_mime_multipart_related.o \
-							atsc3_mime_multipart_related_parser.o \
-							atsc3_mbms_envelope_xml.o \
-							atsc3_route_mpd.o \
-							atsc3_route_package_utils.o \
-							atsc3_sls_held_fragment.o \
-							atsc3_sls_metadata_fragment_types.o \
-							atsc3_sls_metadata_fragment_types_parser.o \
-							atsc3_route_usbd.o \
-							atsc3_alc_utils.o \
-							xml.o \
-							atsc3_ntp_utils.o \
-							atsc3_utils_sha256.o \
-							atsc3_route_object.o \
-							atsc3_sls_alc_flow.o \
-							avltree.o \
-							strnstr.o \
-							atsc3_smime_utils.o \
-							atsc3_mmt_mfu_context_free_noop.o \
+							libatsc3.o \
 							$(LOCAL_LD_LIBS_OPENSSL) \
 							$(LOCAL_LD_LIBS) \
 							-o test/atsc3_smime_validation_test
 							
-							
-														 
 														 
 test/atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test: test/atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test.c
 	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test.c  \
