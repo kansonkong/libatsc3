@@ -104,9 +104,12 @@ mmtp_packet_header_t* mmtp_packet_header_parse_from_block_t(block_t* udp_packet)
 
 		mmtp_packet_header->mmtp_payload_type = mmtp_packet_preamble[1] & 0xF;
         
-        if(!((mmtp_packet_preamble[16] >> 7) & 0x1)) {
-        	__MMTP_PARSER_DEBUG("mmtp_demuxer: ISO23008-1: mmtp_packet_preamble byte[16] 'r' bit is not 1!");
-        }
+        //jjustman-2022-09-25 - cleanup for mmtp v==1
+        mmtp_packet_header->mmtp_reliability_flag = (mmtp_packet_preamble[16] >> 7) & 0x1;
+//        if(!((mmtp_packet_preamble[16] >> 7) & 0x1)) {
+//        	__MMTP_PARSER_DEBUG("mmtp_demuxer: ISO23008-1: mmtp_packet_preamble byte[16] 'r' bit is not 1!");
+//        }
+        
 		//TB 2 bits
 		mmtp_packet_header->mmtp_type_of_bitrate = ((mmtp_packet_preamble[16] & 0x40) >> 6) | ((mmtp_packet_preamble[16] & 0x20) >> 5);
 

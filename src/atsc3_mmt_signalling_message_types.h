@@ -1136,7 +1136,13 @@ typedef struct mmt_signaling_message_mpu_tuple {
     uint64_t mpu_presentation_time; //jjustman-2021-01-19 - for _debug, use  "...%" PRIu64
 } mmt_signalling_message_mpu_tuple_t;
 
-//mpu_timestamp_descriptor_tag is 0x0001
+
+#define MMT_CRI_DESCRIPTOR 				0x0000
+#define MMT_MPU_TIMESTAMP_DESCRIPTOR 	0x0001
+#define MMT_DEPENDENCY_DESCRIPTOR 		0x0002
+#define MMT_GFDT_DESCRIPTOR 			0x0003
+#define MMT_SI_DESCRIPTOR				0x0004
+
 
 typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
     uint16_t                               descriptor_tag;
@@ -1144,6 +1150,30 @@ typedef struct mmt_signaling_message_mpu_timestamp_descriptor {
     uint8_t                                mpu_tuple_n; //mpu_tuple_n = descriptor_length/12 = (32+64)/8
     mmt_signalling_message_mpu_tuple_t*    mpu_tuple;
 } mmt_signalling_message_mpu_timestamp_descriptor_t;
+
+#define MMT_IDENTIFIER_TYPE_MAPPING_ASSET_ID				0x00
+#define MMT_IDENTIFIER_TYPE_MAPPING_URL			 			0x01
+#define MMT_IDENTIFIER_TYPE_MAPPING_REGEX		 			0x02
+#define MMT_IDENTIFIER_TYPE_MAPPING_DASH_REPRESENTATION_ID 	0x03
+#define MMT_IDENTIFIER_TYPE_MAPPING_PRIVATE				 	0x04
+
+
+
+#define MMT_LOCATION_TYPE_SAME_MMTP_PACKET_FLOW 				0x00
+#define MMT_LOCATION_TYPE_MMTP_FLOW_UDP_IP_V4 					0x01
+#define MMT_LOCATION_TYPE_MMTP_FLOW_UDP_IP_V6					0x02
+#define MMT_LOCATION_TYPE_ES_IN_MPEG2TS_BROADCAST 				0x03
+#define MMT_LOCATION_TYPE_ES_IN_MPEG2TS_IP_BROADCAST			0x04
+#define MMT_LOCATION_TYPE_URL									0x05
+#define MMT_LOCATION_TYPE_RESERVED_PRIVATE_LOCATION_INFORMATION	0x06
+#define MMT_LOCATION_TYPE_SAME_SI_GLI							0x07
+#define MMT_LOCATION_TYPE_SAME_SI_DATA_PATH_GLI					0x08
+#define MMT_LOCATION_TYPE_SAME_IP_UDP_V4_GLI					0x09
+#define MMT_LOCATION_TYPE_SAME_IP_UDP_V4_DATA_PATH			 	0x0A
+#define MMT_LOCATION_TYPE_SAME_IP_UDP_V6_DATA_PATH 				0x0B
+#define MMT_LOCATION_TYPE_ES_IN_MPEG2TS_IPV4_BROADCAST			0x0C
+#define MMT_LOCATION_TYPE_RESERVED 								0x0D
+
 
 
 #define MP_TABLE_ASSET_ROW_ASSET_TYPE_LENGTH 4

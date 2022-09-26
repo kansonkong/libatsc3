@@ -92,12 +92,19 @@ void atsc3_smime_validation_context_free(atsc3_smime_validation_context_t** atsc
 	if(atsc3_smime_validation_context_p) {
 		atsc3_smime_validation_context_t* atsc3_smime_validation_context = *atsc3_smime_validation_context_p;
 		if(atsc3_smime_validation_context) {
-			
+
+			bool has_called_atsc3_smime_entity_free = false;
 			if(atsc3_smime_validation_context->atsc3_smime_entity) {
 				atsc3_smime_entity_free(&atsc3_smime_validation_context->atsc3_smime_entity);
+				has_called_atsc3_smime_entity_free = true;
 			}
-			
+
 			if(atsc3_smime_validation_context->atsc3_cms_validation_context) {
+				//jjustman-2022-09-25 - hack -
+				if(has_called_atsc3_smime_entity_free) {
+					atsc3_smime_validation_context->atsc3_cms_validation_context->atsc3_cms_entity = NULL;
+				}
+
 				atsc3_cms_validation_context_free(&atsc3_smime_validation_context->atsc3_cms_validation_context);
 			}
 			

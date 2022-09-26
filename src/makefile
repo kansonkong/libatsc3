@@ -185,6 +185,8 @@ clean:
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan	
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan
+	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap
+	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap_noasan
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan
 	-rm -f listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap
@@ -291,8 +293,6 @@ intermediate_virtual_phy: 	PcapDemuxedVirtualPHY.o \
 
 intermediate_smime:	atsc3_smime_utils.o	  
 
-intermedaite_cms_utils: atsc3_cms_utils.o
-
 libatsc3_core: libatsc3.o \
 				libatsc3_asan.o
 listener_ncurses: tools/atsc3_listener_metrics_ncurses
@@ -350,6 +350,8 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan \
+				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap \
+				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap_noasan \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap \
@@ -469,9 +471,6 @@ atsc3_aeat_types_asan.o: atsc3_aeat_types.h atsc3_aeat_types.c
 
 atsc3_a360_certificates.o: atsc3_a360_certificates.h atsc3_a360_certificates.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_a360_certificates.c
-
-atsc3_cms_utils.o: atsc3_cms_utils.h atsc3_cms_utils.c
-	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_cms_utils.c
 
 atsc3_aeat_parser.o: atsc3_aeat_parser.h atsc3_aeat_parser.c
 	$(CC) $(CFLAGS) $(DEBUG)  -c atsc3_aeat_parser.c
@@ -665,11 +664,15 @@ PcapSTLTPVirtualPHY.o: phy/virtual/PcapSTLTPVirtualPHY.h phy/virtual/PcapSTLTPVi
 # jjustman-2020-11-17 - smime utils, include headers from 
 
 atsc3_smime_utils.o: atsc3_smime_utils.h atsc3_smime_utils.c
-	$(CC) $(CFLAGS) $(CFLAGS_OPENSSL_INCLUDE) $(DEBUG)  -c atsc3_smime_utils.c -o atsc3_smime_utils.o
+	$(CC) $(CFLAGS) $(CFLAGS_OPENSSL_INCLUDE) $(DEBUG)  \
+	-c atsc3_smime_utils.c \
+	-o atsc3_smime_utils.o
 
 # jjustman-2022-08-24 - adding in openssl cms validation utils
 atsc3_cms_utils.o: atsc3_cms_utils.h atsc3_cms_utils.c
-	$(CC) $(CFLAGS) $(CFLAGS_OPENSSL_INCLUDE) $(DEBUG)  -c atsc3_cms_utils.c -o atsc3_cms_utils.o
+	$(CC) $(CFLAGS) $(CFLAGS_OPENSSL_INCLUDE) $(DEBUG)  \
+	-c atsc3_cms_utils.c \
+	-o atsc3_cms_utils.o
 
 # jjustman-2020-08-17 - todo: add in full deps here
 atsc3_srt_live_receiver.o: phy/virtual/srt/atsc3_srt_live_receiver.h \
@@ -1511,92 +1514,102 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 							$(LOCAL_LD_LIBS_OPENSSL) \
 							$(LOCAL_LD_LIBS) \
 							-o test/atsc3_route_dash_mpd_patch_test 
-
+#
+#test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
+#										atsc3_utils.o \
+#										atsc3_gzip.o \
+#										atsc3_cms_utils.o \
+#										atsc3_a360_certificates.o \
+#										atsc3_pcre2_regex_utils.h \
+#										atsc3_pcre2_regex_utils.o \
+#										atsc3_route_dash_utils.o \
+#										atsc3_alc_session.o \
+#										atsc3_lls_mmt_utils.o \
+#										atsc3_lls_sls_monitor_output_buffer_utils.o \
+#										atsc3_lls_sls_monitor_output_buffer.o \
+#										atsc3_player_ffplay.o \
+#										atsc3_route_s_tsid.o \
+#										atsc3_lls_types.o \
+#										atsc3_lls_alc_utils.o \
+#										atsc3_fdt.o \
+#										atsc3_fdt_parser.o \
+#										atsc3_sls_metadata_fragment_types.o \
+#										atsc3_route_sls_processor.o \
+#										atsc3_mbms_envelope_parser.o \
+#										atsc3_mime_multipart_related.o \
+#										atsc3_mime_multipart_related_parser.o \
+#										atsc3_mbms_envelope_xml.o \
+#										atsc3_route_mpd.o \
+#										atsc3_route_package_utils.o \
+#										atsc3_sls_held_fragment.o \
+#										atsc3_sls_metadata_fragment_types.o \
+#										atsc3_sls_metadata_fragment_types_parser.o \
+#										atsc3_route_usbd.o \
+#										atsc3_alc_utils.o \
+#										xml.o \
+#										atsc3_ntp_utils.o \
+#										atsc3_utils_sha256.o \
+#										atsc3_route_object.o \
+#										atsc3_sls_alc_flow.o \
+#										avltree.o \
+#										strnstr.o \
+#										atsc3_smime_utils.o \
+#										atsc3_mmt_mfu_context_free_noop.o
+#
+#	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_smime_validation_test.c  \
+#							atsc3_utils.o \
+#							atsc3_cms_utils.o \
+#							atsc3_a360_certificates.o \
+#							atsc3_gzip.o \
+#							atsc3_pcre2_regex_utils.o \
+#							atsc3_route_dash_utils.o \
+#							atsc3_alc_session.o \
+#							atsc3_lls_mmt_utils.o \
+#							atsc3_lls_sls_monitor_output_buffer_utils.o \
+#							atsc3_lls_sls_monitor_output_buffer.o \
+#							atsc3_player_ffplay.o \
+#							atsc3_route_s_tsid.o \
+#							atsc3_lls.o \
+#							atsc3_lls_types.o \
+#							atsc3_lls_alc_utils.o \
+#							atsc3_fdt.o \
+#							atsc3_fdt_parser.o \
+#							atsc3_route_sls_processor.o \
+#							atsc3_mbms_envelope_parser.o \
+#							atsc3_mime_multipart_related.o \
+#							atsc3_mime_multipart_related_parser.o \
+#							atsc3_mbms_envelope_xml.o \
+#							atsc3_route_mpd.o \
+#							atsc3_route_package_utils.o \
+#							atsc3_sls_held_fragment.o \
+#							atsc3_sls_metadata_fragment_types.o \
+#							atsc3_sls_metadata_fragment_types_parser.o \
+#							atsc3_route_usbd.o \
+#							atsc3_alc_utils.o \
+#							xml.o \
+#							atsc3_ntp_utils.o \
+#							atsc3_utils_sha256.o \
+#							atsc3_route_object.o \
+#							atsc3_sls_alc_flow.o \
+#							avltree.o \
+#							strnstr.o \
+#							atsc3_smime_utils.o \
+#							atsc3_mmt_mfu_context_free_noop.o \
+#							$(LOCAL_LD_LIBS_OPENSSL) \
+#							$(LOCAL_LD_LIBS) \
+#							-o test/atsc3_smime_validation_test
+#
+							
+														 
 test/atsc3_smime_validation_test: test/atsc3_smime_validation_test.c \
-										atsc3_utils.o \
-										atsc3_gzip.o \
-										atsc3_cms_utils.o \
-										atsc3_a360_certificates.o \
-										atsc3_pcre2_regex_utils.h \
-										atsc3_pcre2_regex_utils.o \
-										atsc3_route_dash_utils.o \
-										atsc3_alc_session.o \
-										atsc3_lls_mmt_utils.o \
-										atsc3_lls_sls_monitor_output_buffer_utils.o \
-										atsc3_lls_sls_monitor_output_buffer.o \
-										atsc3_player_ffplay.o \
-										atsc3_route_s_tsid.o \
-										atsc3_lls_types.o \
-										atsc3_lls_alc_utils.o \
-										atsc3_fdt.o \
-										atsc3_fdt_parser.o \
-										atsc3_sls_metadata_fragment_types.o \
-										atsc3_route_sls_processor.o \
-										atsc3_mbms_envelope_parser.o \
-										atsc3_mime_multipart_related.o \
-										atsc3_mime_multipart_related_parser.o \
-										atsc3_mbms_envelope_xml.o \
-										atsc3_route_mpd.o \
-										atsc3_route_package_utils.o \
-										atsc3_sls_held_fragment.o \
-										atsc3_sls_metadata_fragment_types.o \
-										atsc3_sls_metadata_fragment_types_parser.o \
-										atsc3_route_usbd.o \
-										atsc3_alc_utils.o \
-										xml.o \
-										atsc3_ntp_utils.o \
-										atsc3_utils_sha256.o \
-										atsc3_route_object.o \
-										atsc3_sls_alc_flow.o \
-										avltree.o \
-										strnstr.o \
-										atsc3_smime_utils.o \
-										atsc3_mmt_mfu_context_free_noop.o
+										libatsc3.o
 
 	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_smime_validation_test.c  \
-							atsc3_utils.o \
-							atsc3_cms_utils.o \
-							atsc3_a360_certificates.o \
-							atsc3_gzip.o \
-							atsc3_pcre2_regex_utils.o \
-							atsc3_route_dash_utils.o \
-							atsc3_alc_session.o \
-							atsc3_lls_mmt_utils.o \
-							atsc3_lls_sls_monitor_output_buffer_utils.o \
-							atsc3_lls_sls_monitor_output_buffer.o \
-							atsc3_player_ffplay.o \
-							atsc3_route_s_tsid.o \
-							atsc3_lls_types.o \
-							atsc3_lls_alc_utils.o \
-							atsc3_fdt.o \
-							atsc3_fdt_parser.o \
-							atsc3_route_sls_processor.o \
-							atsc3_mbms_envelope_parser.o \
-							atsc3_mime_multipart_related.o \
-							atsc3_mime_multipart_related_parser.o \
-							atsc3_mbms_envelope_xml.o \
-							atsc3_route_mpd.o \
-							atsc3_route_package_utils.o \
-							atsc3_sls_held_fragment.o \
-							atsc3_sls_metadata_fragment_types.o \
-							atsc3_sls_metadata_fragment_types_parser.o \
-							atsc3_route_usbd.o \
-							atsc3_alc_utils.o \
-							xml.o \
-							atsc3_ntp_utils.o \
-							atsc3_utils_sha256.o \
-							atsc3_route_object.o \
-							atsc3_sls_alc_flow.o \
-							avltree.o \
-							strnstr.o \
-							atsc3_smime_utils.o \
-							atsc3_mmt_mfu_context_free_noop.o \
+							libatsc3.o \
 							$(LOCAL_LD_LIBS_OPENSSL) \
 							$(LOCAL_LD_LIBS) \
 							-o test/atsc3_smime_validation_test
 							
-							
-														 
 														 
 test/atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test: test/atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test.c
 	$(CC) $(ASAN) $(CFLAGS) $(DEBUG) test/atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test.c  \
@@ -1867,6 +1880,31 @@ listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
 
 ifeq ($(HOST), "osx")
 	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
+endif
+
+
+# jjustman-2022-09-13 - adding atsc3_mmt_context_mfu_depacketizer_test_from_demxued_pcap
+
+
+listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap: listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o
+	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap
+
+
+listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap_noasan: listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o
+	$(CXX) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap_noasan
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap_noasan
 endif
 
 

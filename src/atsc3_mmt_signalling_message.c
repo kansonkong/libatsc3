@@ -682,6 +682,8 @@ uint8_t* mpt_message_parse(mmt_signalling_message_header_and_payload_t* mmt_sign
 
 		//peek at
 		if(row->asset_descriptors_length) {
+
+			//jjustman-2022-09-12 - TODO - replace with MMT_MPU_TIMESTAMP_DESCRIPTOR
 			if(row->asset_descriptors_payload[0] == 0x00 && row->asset_descriptors_payload[1] == 0x01) {
 				row->mmt_signalling_message_mpu_timestamp_descriptor = calloc(1, sizeof(mmt_signalling_message_mpu_timestamp_descriptor_t));
 				row->mmt_signalling_message_mpu_timestamp_descriptor->descriptor_tag = 0x0001;
@@ -1533,7 +1535,7 @@ uint8_t* mmt_signed_atsc3_message_payload_parse(lls_sls_mmt_monitor_t* lls_sls_m
 
 	atsc3_cms_validation_context_t* atsc3_cms_validation_context = atsc3_cms_validation_context_new(atsc3_cms_entity);
 
-	if(lls_sls_mmt_monitor->transients.atsc3_certification_data) {
+	if(lls_sls_mmt_monitor && lls_sls_mmt_monitor->transients.atsc3_certification_data) {
 		atsc3_cms_validation_context->transients.atsc3_certification_data = lls_sls_mmt_monitor->transients.atsc3_certification_data;
 	}
 
@@ -1541,9 +1543,16 @@ uint8_t* mmt_signed_atsc3_message_payload_parse(lls_sls_mmt_monitor_t* lls_sls_m
 
 	//jjustman-2022-09-01 - TODO: do not return a failed signed mmt signalling message
 	if(atsc3_cms_validation_context_ret) {
-		__MMSM_WARN("mmt SLS validation passed")
+		__MMSM_INFO("mmt_si validation: success - mmt_signed_atsc3_message_payload_parse binary validation, total_len: %d, mmt_signalling_message_parse_result: %d, message_instance_binary: %p, len: %d, atsc3_signature_binary: %p, len: %d, udp_packet remaining: %d",
+					mmt_signalling_message_header_and_payload->message_header.length,
+					mmt_signalling_message_parse_result,
+					block_Get(mmt_atsc3_signed_message_payload->message_instance_binary),
+					block_Remaining_size(mmt_atsc3_signed_message_payload->message_instance_binary),
+					block_Get(mmt_atsc3_signed_message_payload->atsc3_signature_block_t),
+					block_Remaining_size(mmt_atsc3_signed_message_payload->atsc3_signature_block_t),
+					block_Remaining_size(udp_packet));
 	} else  {
-		__MMSM_WARN("failed implement mmt_signed_atsc3_message_payload_parse binary validation, total_len: %d, mmt_signalling_message_parse_result: %d, message_instance_binary: %p, len: %d, atsc3_signature_binary: %p, len: %d, udp_packet remaining: %d",
+		__MMSM_WARN("mmt_si validation: failed - mmt_signed_atsc3_message_payload_parse binary validation, total_len: %d, mmt_signalling_message_parse_result: %d, message_instance_binary: %p, len: %d, atsc3_signature_binary: %p, len: %d, udp_packet remaining: %d",
 					mmt_signalling_message_header_and_payload->message_header.length,
 					mmt_signalling_message_parse_result,
 					block_Get(mmt_atsc3_signed_message_payload->message_instance_binary),

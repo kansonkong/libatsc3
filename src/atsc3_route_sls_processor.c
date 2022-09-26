@@ -165,7 +165,8 @@ void atsc3_route_sls_process_from_alc_packet_and_file(udp_flow_t* udp_flow, atsc
 													 (atsc3_smime_validation_context_ret && atsc3_smime_validation_context_ret->atsc3_smime_entity ? atsc3_smime_validation_context_ret->atsc3_smime_entity->cms_verified_extracted_mime_entity : NULL));
 
 				}
-				atsc3_smime_entity_free(&atsc3_smime_entity);
+				//jjustman-2022-09-25 - do not manually invoke atsc3_smime_entity_free here, as it will happen in atsc3_smime_validation_context_free
+				//	atsc3_smime_entity_free(&atsc3_smime_entity);
 				atsc3_smime_validation_context_free(&atsc3_smime_validation_context);
 				
 			} else {
