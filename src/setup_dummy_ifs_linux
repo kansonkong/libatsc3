@@ -1,0 +1,19 @@
+#!/bin/bash
+# jjustman-2022-10-20 - note - run this as root
+
+echo "Adding stltp i/f"
+ip link add stltp type dummy
+ip link set stltp up
+ip link set stltp mtu 65535
+ip link set stltp multicast on
+
+echo "Adding demux i/f"
+ip link add demux type dummy
+ip link set demux up
+ip link set demux mtu 65535
+ip link set demux multicast on
+
+echo "---"
+ip link
+echo "---"
+
