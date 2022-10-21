@@ -449,6 +449,180 @@ void mmtp_mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_mpu_packet_t* m
 	fclose(f);
 }
 
+
+void mmtp_mpu_persist_to_isobmff_fragments_per_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_mpu_packet_t* mmtp_mpu_packet) {
+    
+    block_t* du_block_to_write = NULL;
+    char* myFragmentFileName = NULL;
+    
+    FILE* mfuFragmentFp = NULL;
+    FILE* reassembledMpuFp = NULL;
+    
+    //sub_flow_vector is a global
+    mmtp_mpu_dump_header(mmtp_mpu_packet);
+    
+    mkdir("mpu", 0777);
+    mkdir("mpu/mfu", 0777);
+    
+    //for out-of-order mode, write our fragments first, then re-assemble on ft=1
+
+    //mpu_fragment_type == 0
+    char* myMfuFilePathNameInit = calloc(128, sizeof(char));
+    snprintf(myMfuFilePathNameInit, 64, "mpu/mfu/%d.%d.ft.%d.ip.%d.%d.%d.%d.p.%d.mp4",
+             mmtp_mpu_packet->mpu_sequence_number,
+             mmtp_mpu_packet->mmtp_packet_id,
+             0,
+             (dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
+             dst_port);
+    bool has_MfuFilePathNameINIT = (access(myMfuFilePathNameInit, F_OK) == 0) ;
+
+    
+    //mpu_fragment_type == 2
+    char* myMfuFilePathNameMDAT = calloc(128, sizeof(char));
+    snprintf(myMfuFilePathNameMDAT, 64, "mpu/mfu/%d.%d.ft.%d.ip.%d.%d.%d.%d.p.%d.mp4",
+             mmtp_mpu_packet->mpu_sequence_number,
+             mmtp_mpu_packet->mmtp_packet_id,
+             2,
+             (dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
+             dst_port);
+    bool has_MfuFilePathNameMDAT = (access(myMfuFilePathNameMDAT, F_OK) == 0) ;
+
+    //mpu_fragment_type == 1
+    char* myMfuFilePathNameMovieFragmentMetadata = calloc(128, sizeof(char));
+    snprintf(myMfuFilePathNameMovieFragmentMetadata, 64, "mpu/mfu/%d.%d.ft.%d.ip.%d.%d.%d.%d.p.%d.mp4",
+             mmtp_mpu_packet->mpu_sequence_number,
+             mmtp_mpu_packet->mmtp_packet_id,
+             1,
+             (dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
+             dst_port);
+    bool has_MfuFilePathNameMovieFragmentMetadata = (access(myMfuFilePathNameMovieFragmentMetadata, F_OK) == 0) ;
+
+    
+    char* myReassembledFilePathName = calloc(128, sizeof(char));
+    snprintf(myReassembledFilePathName, 64, "mpu/%d.%d.ip.%d.%d.%d.%d.p.%d.mp4",
+             mmtp_mpu_packet->mpu_sequence_number,
+             mmtp_mpu_packet->mmtp_packet_id,
+             (dst_ip>>24)&0xFF,(dst_ip>>16)&0xFF,(dst_ip>>8)&0xFF,(dst_ip)&0xFF,
+             dst_port);
+
+    if(mmtp_mpu_packet->du_mpu_metadata_block) {
+        __MMT_MPU_DEBUG("mmtp_mpu_persist_to_isobmff_fragments_per_flow: du_mpu_metadata_block   (0x0), file dump to: %s, size: %d", myMfuFilePathNameInit, block_Remaining_size(mmtp_mpu_packet->du_mpu_metadata_block));
+        myFragmentFileName = myMfuFilePathNameInit;
+        du_block_to_write = mmtp_mpu_packet->du_mpu_metadata_block;
+        block_Rewind(du_block_to_write);
+
+        //always write out our init fragment to reassembledMpuFp
+        
+        reassembledMpuFp = fopen(myReassembledFilePathName, "a");
+        if(!reassembledMpuFp) {
+            __MMT_MPU_ERROR("mmtp_mpu_persist_to_isobmff_fragments_per_flow: unable to open reassembledMpuFp: %s", myReassembledFilePathName);
+                return;
+        }
+        int blocks_written = fwrite(du_block_to_write->p_buffer, block_Remaining_size(du_block_to_write), 1, reassembledMpuFp);
+        if(blocks_written != 1) {
+            __MMT_MPU_WARN("mmtp_mpu_persist_to_isobmff_fragments_per_flow: reassembledMpuFp: mpu init metadata Incomplete block written for %s", myFragmentFileName);
+        }
+        fclose(reassembledMpuFp);
+        reassembledMpuFp = NULL;
+        
+        
+    } else if(mmtp_mpu_packet->du_movie_fragment_block) {
+        __MMT_MPU_DEBUG("mmtp_mpu_persist_to_isobmff_fragments_per_flow: du_movie_fragment_block (0x1), file dump to: %s, size: %d", myMfuFilePathNameMovieFragmentMetadata, block_Remaining_size(mmtp_mpu_packet->du_movie_fragment_block));
+        myFragmentFileName = myMfuFilePathNameMovieFragmentMetadata;
+        du_block_to_write = mmtp_mpu_packet->du_movie_fragment_block;
+        
+        
+    } else if(mmtp_mpu_packet->du_mfu_block) {
+        __MMT_MPU_DEBUG("mmtp_mpu_persist_to_isobmff_fragments_per_flow: du_mfu_block            (0x2), file dump to: %s, size: %d", myMfuFilePathNameMDAT, block_Remaining_size(mmtp_mpu_packet->du_mfu_block));
+        myFragmentFileName = myMfuFilePathNameMDAT;
+        du_block_to_write = mmtp_mpu_packet->du_mfu_block;
+    }
+
+    block_Rewind(du_block_to_write);
+    
+    __MMT_MPU_DEBUG("mmtp_mpu_persist_to_isobmff_fragments_per_flow: mfu dump to: %s", myFragmentFileName);
+    
+    //write our our MFU for debugging
+    mfuFragmentFp = fopen(myFragmentFileName, "a");
+    if(!mfuFragmentFp) {
+        __MMT_MPU_ERROR("mmtp_mpu_persist_to_isobmff_fragments_per_flow: unable to open mfuFragmentFp file: %s", myFragmentFileName);
+            return;
+    }
+    
+    int blocks_written = fwrite(du_block_to_write->p_buffer, block_Remaining_size(du_block_to_write), 1, mfuFragmentFp);
+    if(blocks_written != 1) {
+        __MMT_MPU_WARN("mmtp_mpu_persist_to_isobmff_fragments_per_flow: mfuFragmentFp: Incomplete block written for %s", myFragmentFileName);
+    }
+    fflush(mfuFragmentFp);
+    fclose(mfuFragmentFp);
+    
+    //check to see if we are ooo (out-of-order mode) or in-order, and perform re-assembly
+    if(has_MfuFilePathNameINIT) {
+        //only perform this if we have started recovery
+        
+        reassembledMpuFp = fopen(myReassembledFilePathName, "a");
+        if(!reassembledMpuFp) {
+            __MMT_MPU_ERROR("mmtp_mpu_persist_to_isobmff_fragments_per_flow: unable to open reassembledMpuFp: %s", myReassembledFilePathName);
+                return;
+        }
+        
+        if(mmtp_mpu_packet->mpu_fragment_type == 1) {
+            //if we have mpu_fragment_type==2 persisted already on disk, and we are mpu_fragment_type == 1, then perform a full re-assy
+            
+            if(has_MfuFilePathNameMDAT) {
+                if(mmtp_mpu_packet->mpu_fragmentation_indicator == 0x0 || mmtp_mpu_packet->mpu_fragmentation_indicator == 0x3) {
+                    //we should be safe to re-assemble here
+                    block_t* movie_fragment_metadata_block = block_Read_from_filename(myMfuFilePathNameMovieFragmentMetadata);
+                    block_t* mdat_block = block_Read_from_filename(myMfuFilePathNameMDAT);
+                    
+                    if(movie_fragment_metadata_block && mdat_block) {
+                        //dont rewind our movie_fragment_metadata_block, as we will append
+                        
+                        block_Append(movie_fragment_metadata_block, mdat_block);
+                        
+                        block_Rewind(movie_fragment_metadata_block);
+                        int blocks_written = fwrite(movie_fragment_metadata_block->p_buffer, block_Remaining_size(movie_fragment_metadata_block), 1, reassembledMpuFp);
+                    }
+                    block_Destroy(&movie_fragment_metadata_block);
+                    block_Destroy(&mdat_block);
+                                        
+                } else {
+                    //incomple media fragment metadata, defer reassembly..
+                }
+            } else {
+                //in-order mode
+                //append our movie fragment metadata here,
+                int blocks_written = fwrite(du_block_to_write->p_buffer, block_Remaining_size(du_block_to_write), 1, reassembledMpuFp);
+                if(blocks_written != 1) {
+                    __MMT_MPU_WARN("mmtp_mpu_persist_to_isobmff_fragments_per_flow: reassembledMpuFp: Incomplete block written for %s", myFragmentFileName);
+                }
+                
+            }
+        } else if(mmtp_mpu_packet->mpu_fragment_type == 2) {
+            //in-order mode
+            if(has_MfuFilePathNameMovieFragmentMetadata) {
+                //if we have our movie fragment metadata already on disk, then append our mdat data
+                int blocks_written = fwrite(du_block_to_write->p_buffer, block_Remaining_size(du_block_to_write), 1, reassembledMpuFp);
+                if(blocks_written != 1) {
+                    __MMT_MPU_WARN("mmtp_mpu_persist_to_isobmff_fragments_per_flow: reassembledMpuFp: Incomplete block written for %s", myFragmentFileName);
+                }
+            }
+        }
+    }
+    
+    
+
+
+    free(myMfuFilePathNameInit);
+    free(myMfuFilePathNameMDAT);
+    free(myMfuFilePathNameMovieFragmentMetadata);
+
+    free(myReassembledFilePathName);
+    if(reassembledMpuFp) {
+        fclose(reassembledMpuFp);
+    }
+}
+
 ////assumes in-order delivery
 //void mpu_dump_reconstitued(uint32_t dst_ip, uint16_t dst_port, mmtp_payload_fragments_union_t* mmtp_payload) {
 //	//sub_flow_vector is a global
