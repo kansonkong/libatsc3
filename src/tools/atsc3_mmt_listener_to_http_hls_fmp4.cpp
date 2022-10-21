@@ -224,46 +224,8 @@ static int http_output_response_from_player_pipe (void *cls,
 
 	return ret;
 }
-//
-//void* global_autoplay_run_thread(void*p) {
-//    uint16_t my_service_id = 3;
-//    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-//
-//    while(true) {
-//        sleep(1);
-//        lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, my_service_id);
-//        if(lls_sls_mmt_session) {
-//            lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-//            lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-//            lls_sls_mmt_monitor->service_id = my_service_id;
-//
-//            lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
-//            lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
-//
-//            lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
-//            lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
-//            sleep(3);
-//
-//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
-//
-//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
-//
-//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
-//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
-//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
-//            break;
-//        }
-//    }
-//
-//    return NULL;
-//}
 
 void* global_httpd_run_thread(void* lls_slt_monitor_ptr) {
-
-//
-//    lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)lls_slt_monitor_ptr;
-//    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-//    lls_sls_alc_monitor* lls_sls_alc_monitor = NULL;
 
     struct MHD_Daemon *daemon;
 
@@ -737,21 +699,21 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 //                lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
 //                lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
 //                lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
- //           }
-            
-//            if(lls_sls_mmt_monitor->video_packet_id) {
-//                lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
-//                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-//
-//                //todo - jjustman-2019-09-05 - refactor this logic out
-//
-//                if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer) {
-//                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
-//                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
-//                }
-//                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
 //            }
-//
+            
+            if(lls_sls_mmt_monitor->transients.lls_mmt_session->video_packet_id) {
+                lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
+                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+
+                //todo - jjustman-2019-09-05 - refactor this logic out
+
+                if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer) {
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
+                }
+                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
+            }
+
 			
 		}
 		return udp_packet_free(&udp_packet);
@@ -959,9 +921,6 @@ int main(int argc,char **argv) {
 	int pcap_ret = pthread_create(&global_pcap_thread_id, NULL, pcap_loop_run_thread, (void*)dev);
 	assert(!pcap_ret);
     
-//    pthread_t global_autoplay_thread_id;
-//    pthread_create(&global_autoplay_thread_id, NULL, global_autoplay_run_thread, NULL);
-
 	pthread_join(global_pcap_thread_id, NULL);
 
 #else

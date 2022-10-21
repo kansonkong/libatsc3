@@ -184,7 +184,9 @@ clean:
 	-rm -f listener_tests/atsc3_stltp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test
-	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan	
+	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan
+	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps
+	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap
@@ -350,6 +352,8 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan \
+				listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps \
+				listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap \
@@ -1700,6 +1704,20 @@ listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan: listener_tests/at
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan
 
+# jjustman-2022-10-20
+listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps: listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps.cpp libatsc3.o atsc3_logging_externs.o
+	$(CXX)  $(CFLAGS) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps.cpp libatsc3.o atsc3_logging_externs.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps
+		
+listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap: listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap.cpp libatsc3.o atsc3_logging_externs.o
+	$(CXX)  $(CFLAGS) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap.cpp libatsc3.o atsc3_logging_externs.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap
+		
+		
 listener_tests/atsc3_mmt_sls_listener_test: listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o
 	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \

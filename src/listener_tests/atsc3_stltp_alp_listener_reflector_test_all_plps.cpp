@@ -1,12 +1,13 @@
 /*
- * atsc3_stltp_alp_listener_reflector_test.cpp
+ * atsc3_stltp_alp_listener_reflector_test_all_plps.cpp
  *
- *  Created on: Mar 16, 2019
+ *  Created on: 2022-10-20
+
  *      Author: jjustman
  *
  * stltp listener for atsc a/324
  *
- * jjustman: 2020-06-02 - renamed from atsc3_stltp_listener_alp_reflector.cpp to atsc3_stltp_alp_listener_reflector_test.cpp to match makefile build artifact
+ *
  *
  */
 #include <pcap.h>
@@ -89,7 +90,6 @@ int main(int argc,char **argv) {
         println(" ip        : ip address for stltp");
         println(" port      : port for single stltp");
         println(" devInject : device to inject for ALP IP reflection");
-		println(" 	(optional) PLP_num: PLP number to extract (e.g. 0 -> STLTP inner port: 30000, 63 -> STLTP inner port 300063");
 
         exit(1);
     } else {
@@ -114,31 +114,12 @@ int main(int argc,char **argv) {
         dst_port_filter_int = atoi(filter_dst_port);
         dst_ip_port_filter = (uint16_t*)calloc(1, sizeof(uint16_t));
         *dst_ip_port_filter |= dst_port_filter_int & 0xFFFF;
-
+        
         atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr = *dst_ip_addr_filter;
         atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port = *dst_ip_port_filter;
-
-		if(argc == 6) {
-			//parse out custom PLP_num
-			filter_stltp_plp_id = argv[5];
-
-			uint8_t stltp_plp_id = atoi(filter_stltp_plp_id);
-			if(stltp_plp_id >=0 && stltp_plp_id <= 63) {
-				atsc3_stltp_depacketizer_context->inner_rtp_port_filter = stltp_plp_id + 30000;;
-				println("using PLP: %d (stltp inner port: %d)", stltp_plp_id, atsc3_stltp_depacketizer_context->inner_rtp_port_filter);
-			} else {
-				atsc3_stltp_depacketizer_context->inner_rtp_port_filter = 30000;
-				println("ignoring PLP: %d, defaulting to PLP 0 (stltp inner port: %d)", stltp_plp_id, atsc3_stltp_depacketizer_context->inner_rtp_port_filter);
-			}
-		}
     }
     
-    if(!atsc3_stltp_depacketizer_context->inner_rtp_port_filter) {
-    	atsc3_stltp_depacketizer_context->inner_rtp_port_filter = 30000;
-    }
-
-    
-    println("%s -an atsc3 stltp udp mulitcast reflector , listening on dev: %s, reflecting: %s, plp: %d", argv[0], dev, devInject, atsc3_stltp_depacketizer_context->inner_rtp_port_filter - 30000);
+    println("%s -an atsc3 stltp udp mulitcast reflector , listening on dev: %s, reflecting: %s, all plps", argv[0], dev, devInject);
     
     pcap_lookupnet(dev, &netp, &maskp, errbuf);
     descr = pcap_open_live(dev, MAX_PCAP_LEN, 1, 1, errbuf);
@@ -164,9 +145,9 @@ int main(int argc,char **argv) {
     pcap_t* descrInject = pcap_open_live(devInject, MAX_PCAP_LEN, 1, 1, errbufInject);
     
 
+    atsc3_stltp_depacketizer_context_set_all_plps(atsc3_stltp_depacketizer_context);
     atsc3_stltp_depacketizer_context->atsc3_stltp_baseband_alp_packet_collection_callback_with_pcap_device_reference = atsc3_reflect_alp_packet_collection;
     atsc3_stltp_depacketizer_context->atsc3_baseband_alp_output_pcap_device_reference = descrInject;
-
 
     pcap_loop(descr, -1, process_packet, NULL);
     
