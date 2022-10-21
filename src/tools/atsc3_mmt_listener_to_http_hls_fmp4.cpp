@@ -70,6 +70,11 @@ int PACKET_COUNTER=0;
 
 #include "../atsc3_logging_externs.h"
 
+
+#include "../atsc3_mmt_context_mfu_depacketizer.h"
+#include "../atsc3_mmt_context_mfu_depacketizer_callbacks_noop.h"
+
+
 #define _ENABLE_DEBUG true
 
 //commandline stream filtering
@@ -83,6 +88,7 @@ lls_slt_monitor_t* lls_slt_monitor = NULL;
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
 
 mmtp_flow_t* mmtp_flow;
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context;
 
 //todo: refactor me out for mpu recon persitance
 
@@ -541,6 +547,8 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
 
 
 void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
+    mmtp_packet_id_packets_container_t*     mmtp_packet_id_packets_container = NULL;
+    mmtp_asset_t*                           mmtp_asset = NULL;
 
 	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
 
@@ -557,6 +565,10 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
     if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor || !(lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id)) {
         goto cleanup;
     }
+    
+    mmtp_asset = atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_create_mmtp_asset(atsc3_mmt_mfu_context, udp_packet, lls_slt_monitor, matching_lls_sls_mmt_session);
+    mmtp_packet_id_packets_container = atsc3_mmt_mfu_context_mfu_depacketizer_update_find_or_create_mmtp_packet_id_packets_container(atsc3_mmt_mfu_context, mmtp_asset, mmtp_packet_header);
+
 
 	if(mmtp_packet_header->mmtp_payload_type == 0x0) {
 		mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
@@ -898,6 +910,8 @@ int main(int argc,char **argv) {
     /** setup global structs **/
 
     lls_slt_monitor = lls_slt_monitor_create();
+    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_callbacks_noop_new();
+
     mmtp_flow = mmtp_flow_new();
     
     udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
