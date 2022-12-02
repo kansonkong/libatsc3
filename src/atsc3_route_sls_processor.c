@@ -417,7 +417,7 @@ int32_t atsc3_sls_write_mime_multipart_related_payload_to_file(atsc3_mime_multip
 		}
 		freeclean((void**)&mbms_filename);
 	} else {
-		_ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_sls_write_mime_multipart_related_payload_to_file: sls mbms fragment dump, 0 byte payload? original content_location: %s,local path: %s, atsc3_mime_multipart_related_payload->payload: %p",atsc3_mime_multipart_related_payload->sanitizied_content_location, mbms_filename, atsc3_mime_multipart_related_payload->payload );
+		_ATSC3_ROUTE_SLS_PROCESSOR_WARN("atsc3_sls_write_mime_multipart_related_payload_to_file: sls mbms fragment dump, 0 byte payload? original content_location: %s, atsc3_mime_multipart_related_payload->payload: %p",atsc3_mime_multipart_related_payload->sanitizied_content_location, atsc3_mime_multipart_related_payload->payload );
 	}
 	
 	return bytes_written;

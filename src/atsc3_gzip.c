@@ -257,7 +257,10 @@ int32_t atsc3_unzip_gzip_payload_block_t_with_dynamic_realloc(block_t* src, bloc
 	ret = inflateInit2(&strm, 16+MAX_WBITS);
 
 	if (ret != Z_OK)
+	{
+	   freeclean((void**)&output_payload);
 	   return ret;
+	}
 
 	do {
 		strm.next_in = &input_payload[input_payload_offset];
