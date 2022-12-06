@@ -539,7 +539,7 @@ bool atsc3_stltp_depacketizer_from_blockt(block_t** packet_p, atsc3_stltp_depack
                 atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port = ip_udp_rtp_ctp_packet->udp_flow.dst_port;
                 atsc3_stltp_depacketizer_context->inner_rtp_port_filter = ATSC3_STLTP_DEPACKETIZER_ALL_PLPS_INNER_RTP_PORT;
                 atsc3_stltp_depacketizer_context->context_configured = true;
-                _ATSC3_STLTP_DEPACKETIZER_INFO("auto-assigning stltp_depacketizer_context with: dst_ip_addr: %d, dst_port: %d, inner_rtp_port_filter: %d",
+                _ATSC3_STLTP_DEPACKETIZER_INFO("auto-assigning stltp_depacketizer_context with: dst_ip_addr: %u, dst_port: %d, inner_rtp_port_filter: %d",
                                                atsc3_stltp_depacketizer_context->destination_flow_filter.dst_ip_addr,
                                                atsc3_stltp_depacketizer_context->destination_flow_filter.dst_port,
                                                atsc3_stltp_depacketizer_context->inner_rtp_port_filter);

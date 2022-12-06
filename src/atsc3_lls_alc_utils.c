@@ -241,7 +241,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
                                                    lls_sls_alc_monitor,
                                                    lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 					} else {
-						_ATSC3_LLS_ALC_UTILS_WARN("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] is %p, lls_slt_monitor->lls_sls_alc_monitor: %p: NULL!",
+						_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] is %p, lls_slt_monitor->lls_sls_alc_monitor: %p: NULL!",
 												   k,  lls_sls_alc_monitor, lls_slt_monitor->lls_sls_alc_monitor);
 					}
 
