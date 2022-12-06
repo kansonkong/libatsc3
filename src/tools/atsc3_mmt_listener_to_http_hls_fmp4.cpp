@@ -70,6 +70,11 @@ int PACKET_COUNTER=0;
 
 #include "../atsc3_logging_externs.h"
 
+
+#include "../atsc3_mmt_context_mfu_depacketizer.h"
+#include "../atsc3_mmt_context_mfu_depacketizer_callbacks_noop.h"
+
+
 #define _ENABLE_DEBUG true
 
 //commandline stream filtering
@@ -83,6 +88,7 @@ lls_slt_monitor_t* lls_slt_monitor = NULL;
 lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
 
 mmtp_flow_t* mmtp_flow;
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context;
 
 //todo: refactor me out for mpu recon persitance
 
@@ -224,46 +230,8 @@ static int http_output_response_from_player_pipe (void *cls,
 
 	return ret;
 }
-//
-//void* global_autoplay_run_thread(void*p) {
-//    uint16_t my_service_id = 3;
-//    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-//
-//    while(true) {
-//        sleep(1);
-//        lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, my_service_id);
-//        if(lls_sls_mmt_session) {
-//            lls_sls_mmt_monitor = lls_sls_mmt_monitor_create();
-//            lls_sls_mmt_monitor->lls_mmt_session = lls_sls_mmt_session;
-//            lls_sls_mmt_monitor->service_id = my_service_id;
-//
-//            lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
-//            lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
-//
-//            lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
-//            lls_slt_monitor->lls_sls_mmt_monitor = lls_sls_mmt_monitor;
-//            sleep(3);
-//
-//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.pipe_ffplay_buffer = pipe_create_ffplay_resolve_fps(&lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.video_output_buffer_isobmff);
-//
-//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.ffplay_output_enabled = true;
-//
-//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
-//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
-//            lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
-//            break;
-//        }
-//    }
-//
-//    return NULL;
-//}
 
 void* global_httpd_run_thread(void* lls_slt_monitor_ptr) {
-
-//
-//    lls_slt_monitor_t* lls_slt_monitor = (lls_slt_monitor_t*)lls_slt_monitor_ptr;
-//    lls_sls_mmt_monitor_t* lls_sls_mmt_monitor = NULL;
-//    lls_sls_alc_monitor* lls_sls_alc_monitor = NULL;
 
     struct MHD_Daemon *daemon;
 
@@ -579,6 +547,8 @@ void atsc3_mmt_hls_fmp4_update_manifest(lls_sls_mmt_session_t* lls_sls_mmt_sessi
 
 
 void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* matching_lls_sls_mmt_session) {
+    mmtp_packet_id_packets_container_t*     mmtp_packet_id_packets_container = NULL;
+    mmtp_asset_t*                           mmtp_asset = NULL;
 
 	mmtp_packet_header_t* mmtp_packet_header = mmtp_packet_header_parse_from_block_t(udp_packet->data);
 
@@ -595,6 +565,10 @@ void process_mmtp_payload(udp_packet_t *udp_packet, lls_sls_mmt_session_t* match
     if(!lls_slt_monitor || !lls_slt_monitor->lls_sls_mmt_monitor || !(lls_slt_monitor->lls_sls_mmt_monitor->transients.atsc3_lls_slt_service->service_id == matching_lls_sls_mmt_session->service_id)) {
         goto cleanup;
     }
+    
+    mmtp_asset = atsc3_mmt_mfu_context_mfu_depacketizer_context_update_find_or_create_mmtp_asset(atsc3_mmt_mfu_context, udp_packet, lls_slt_monitor, matching_lls_sls_mmt_session);
+    mmtp_packet_id_packets_container = atsc3_mmt_mfu_context_mfu_depacketizer_update_find_or_create_mmtp_packet_id_packets_container(atsc3_mmt_mfu_context, mmtp_asset, mmtp_packet_header);
+
 
 	if(mmtp_packet_header->mmtp_payload_type == 0x0) {
 		mmtp_mpu_packet_t* mmtp_mpu_packet = mmtp_mpu_packet_parse_and_free_packet_header_from_block_t(&mmtp_packet_header, udp_packet->data);
@@ -737,21 +711,21 @@ void process_packet(u_char *user, const struct pcap_pkthdr *pkthdr, const u_char
 //                lls_sls_mmt_session_t* lls_sls_mmt_session = lls_slt_mmt_session_find_from_service_id(lls_slt_monitor, lls_sls_mmt_monitor->lls_mmt_session->service_id);
 //                lls_sls_mmt_monitor->video_packet_id = lls_sls_mmt_session->video_packet_id;
 //                lls_sls_mmt_monitor->audio_packet_id = lls_sls_mmt_session->audio_packet_id;
- //           }
-            
-//            if(lls_sls_mmt_monitor->video_packet_id) {
-//                lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
-//                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
-//
-//                //todo - jjustman-2019-09-05 - refactor this logic out
-//
-//                if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer) {
-//                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
-//                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
-//                }
-//                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
 //            }
-//
+            
+            if(lls_sls_mmt_monitor->transients.lls_mmt_session->video_packet_id) {
+                lls_sls_mmt_monitor->lls_sls_monitor_output_buffer.has_written_init_box = false;
+                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.file_dump_enabled = true;
+
+                //todo - jjustman-2019-09-05 - refactor this logic out
+
+                if(!lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer) {
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer = (http_output_buffer_t*)calloc(1, sizeof(http_output_buffer_t));
+                    lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_buffer->http_payload_buffer_mutex = lls_sls_monitor_reader_mutext_create();
+                }
+                lls_slt_monitor->lls_sls_mmt_monitor->lls_sls_monitor_output_buffer_mode.http_output_enabled = true;
+            }
+
 			
 		}
 		return udp_packet_free(&udp_packet);
@@ -936,6 +910,8 @@ int main(int argc,char **argv) {
     /** setup global structs **/
 
     lls_slt_monitor = lls_slt_monitor_create();
+    atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_callbacks_noop_new();
+
     mmtp_flow = mmtp_flow_new();
     
     udp_flow_latest_mpu_sequence_number_container = udp_flow_latest_mpu_sequence_number_container_t_init();
@@ -959,9 +935,6 @@ int main(int argc,char **argv) {
 	int pcap_ret = pthread_create(&global_pcap_thread_id, NULL, pcap_loop_run_thread, (void*)dev);
 	assert(!pcap_ret);
     
-//    pthread_t global_autoplay_thread_id;
-//    pthread_create(&global_autoplay_thread_id, NULL, global_autoplay_run_thread, NULL);
-
 	pthread_join(global_pcap_thread_id, NULL);
 
 #else

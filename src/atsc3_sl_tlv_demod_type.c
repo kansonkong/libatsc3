@@ -182,6 +182,7 @@ restart_parsing:
 
         block_Seek_Relative(atsc3_sl_tlv_payload_unparsed_block, to_discard_from_unparsed_block_length);
 
+		free(atsc3_sl_tlv_payload);
 		return NULL;
 	} else {
 		//don't add this value yet if our TLV payload size is incomplete in our block_t, add it in "TLV packet is in this block_t boundary"

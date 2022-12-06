@@ -52,7 +52,8 @@ int main(int argc, char* argv[] ) {
     fp_out = fopen(RFCATCHER_TO_HACKRF_DOWNSAMPLER_OUTPUT_FILENAME, "w");
     
     if(!fp_out) {
-        _ATSC3_RFCATCHER_TO_HACKRF_DOWNSAMPLER_TEST_ERROR("atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test: %s, ERROR: unable to open output file, %s", RFCATCHER_TO_HACKRF_DOWNSAMPLER_OUTPUT_FILENAME);
+        _ATSC3_RFCATCHER_TO_HACKRF_DOWNSAMPLER_TEST_ERROR("atsc3_rfcatcher_iq_signed_12_bit_to_hackrf_8_bit_downsampler_test: ERROR: unable to open output file, %s", RFCATCHER_TO_HACKRF_DOWNSAMPLER_OUTPUT_FILENAME);
+        fclose(fp_in);
         return -3;
     }
 
@@ -81,7 +82,7 @@ int main(int argc, char* argv[] ) {
         fpos_out += 1;
         
         if((fpos_in % LOG_STATUS_PROGRESS_EVERY_N_BYTES == 0)) {
-            _ATSC3_RFCATCHER_TO_HACKRF_DOWNSAMPLER_TEST_TRACE("Read in sample value 0x%04x (%d), converted to 0x%02x (%d), fpos_in: %d, fpos_out: %d, remaining:  %zu",
+            _ATSC3_RFCATCHER_TO_HACKRF_DOWNSAMPLER_TEST_TRACE("Read in sample value 0x%04x (%d), converted to 0x%02x (%d), fpos_in: %ld, fpos_out: %ld, remaining:  %zu",
                                                           sample_in_12bit,
                                                           sample_in_12bit,
                                                           sample_out_8bit,

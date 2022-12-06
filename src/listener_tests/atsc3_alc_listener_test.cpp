@@ -186,7 +186,7 @@ int main(int argc,char **argv) {
 		dst_ip_addr_filter = &dst_ip_int;
 
 		__INFO("listening on dev: %s, dst_ip: %s, dst_port: %s", dev, dst_ip, dst_port);
-		uint16_t dst_port_int = parsePortIntoIntval(dst_port);
+		static uint16_t dst_port_int = parsePortIntoIntval(dst_port);
 		dst_ip_port_filter = &dst_port_int;
 
     } else {

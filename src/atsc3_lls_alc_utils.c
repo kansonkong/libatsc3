@@ -233,7 +233,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 				for(int k=0; k < lls_slt_monitor->lls_sls_alc_monitor_v.count; k++) {
 					lls_sls_alc_monitor_t* lls_sls_alc_monitor = lls_slt_monitor->lls_sls_alc_monitor_v.data[k];
 
-					if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service) {
+					if(lls_slt_monitor->lls_sls_alc_monitor && lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service) {
                         _ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] from: %p (service_id: %d) with: %p (service_id: %d)",
                                                    k,
                                                    lls_slt_monitor->lls_sls_alc_monitor,
@@ -241,15 +241,17 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
                                                    lls_sls_alc_monitor,
                                                    lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 					} else {
-						_ATSC3_LLS_ALC_UTILS_WARN("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] is %p, or atsc3_lls_slt_service is NULL!",
-												   k, lls_sls_alc_monitor);
+						_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: checking lls_slt_monitor->lls_sls_alc_monitor_v.data[%d] is %p, lls_slt_monitor->lls_sls_alc_monitor: %p: NULL!",
+												   k,  lls_sls_alc_monitor, lls_slt_monitor->lls_sls_alc_monitor);
 					}
 
 					if(lls_sls_alc_monitor && lls_sls_alc_monitor->atsc3_lls_slt_service && lls_sls_alc_monitor->atsc3_lls_slt_service->service_id == lls_sls_alc_session->service_id) {
 
 						_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: updating lls_slt_monitor->lls_sls_alc_monitor from: %p (service_id: %d) to: %p (service_id: %d)",
-												  lls_slt_monitor->lls_sls_alc_monitor, lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id,
-												  lls_sls_alc_monitor, lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
+												  lls_slt_monitor->lls_sls_alc_monitor,
+												   (lls_slt_monitor->lls_sls_alc_monitor ? lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id : -1),
+												  lls_sls_alc_monitor,
+												  lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
 					}
 				}
@@ -717,7 +719,7 @@ int lls_sls_alc_add_additional_ip_flows_from_route_s_tsid(lls_slt_monitor_t* lls
 
         if(!lls_sls_alc_session) {
             _ATSC3_LLS_ALC_UTILS_DEBUG("lls_sls_alc_add_additional_ip_flows_from_route_s_tsid: lls_sls_alc_session not found: creating with RS: sIpAddr: %u, dIpAddr: %u, dPort: %u,  atsc3_route_s_tsid_RS_LS_v.count: %d", atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr, atsc3_route_s_tsid_RS->atsc3_route_s_tsid_RS_LS_v.count);
-            lls_sls_alc_session = lls_slt_alc_session_create_from_ip_and_port_values(lls_sls_alc_monitor->atsc3_lls_slt_service, atsc3_route_s_tsid_RS->src_ip_addr, atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port);
+            lls_sls_alc_session = lls_slt_alc_session_create_from_ip_and_port_values(lls_sls_alc_monitor->atsc3_lls_slt_service, atsc3_route_s_tsid_RS->dest_ip_addr, atsc3_route_s_tsid_RS->dest_port, atsc3_route_s_tsid_RS->src_ip_addr);
 
             lls_sls_alc_session_flows_t* lls_sls_alc_session_flows = lls_sls_alc_session_flows_new();
             lls_sls_alc_session_flows_add_lls_sls_alc_session(lls_sls_alc_session_flows, lls_sls_alc_session);

@@ -84,6 +84,7 @@ static atsc3_lls_table_t* __lls_create_base_table_raw(block_t* lls_packet_block)
 
 	if(!remaining_payload_size || remaining_payload_size == 65536) {
 	    _LLS_ERROR("__lls_create_base_table_raw: remaining payload size is: %d, invalid, returning NULL!", remaining_payload_size);
+	    free(base_table);
 	    return NULL;
 	}
 

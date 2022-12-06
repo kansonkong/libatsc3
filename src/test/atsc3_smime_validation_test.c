@@ -19,15 +19,39 @@
 #define _ATSC3_SMIME_UTILS_TEST_DEBUG(...)   printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 #define _ATSC3_SMIME_UTILS_TEST_TRACE(...)   //printf("%s:%d:DEBUG:",__FILE__,__LINE__);_ATSC3_UTILS_PRINTLN(__VA_ARGS__);
 
-int parse_signed_sls_with_test_certificate_noverify(const char* sls_fragment_filename, const char* signing_certificate_filename) {
+int parse_signed_sls_with_root_certificate_noverify(const char* sls_fragment_filename, const char* signing_certificate_filename) {
 	int ret = 0;
+    
+    //mock out our
+    /*
+     
+     atsc3_smime_validation_context->atsc3_cms_validation_context->transients.atsc3_certification_data = lls_sls_alc_monitor->transients.atsc3_certification_data;
 
-	atsc3_smime_entity_t* atsc3_smime_entity = atsc3_smime_entity_new_parse_from_file(sls_fragment_filename);
-	atsc3_smime_validation_context_t* atsc3_smime_validation_context = atsc3_smime_validation_context_new(atsc3_smime_entity);
-	
+     atsc3_cms_validation_context->transients.atsc3_certification_data) {
+         _ATSC3_CMS_UTILS_WARN("atsc3_cms_validation_context->transients.atsc3_certification_data is NULL, returning NULL!");
+         return NULL;
+     }
+
+     if(!atsc3_cms_validation_context->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count) {
+         _ATSC3_CMS_UTILS_WARN("atsc3_cms_validation_context->transients.atsc3_certification_data->atsc3_certification_data_to_be_signed_data.atsc3_certification_data_to_be_signed_data_certificates_v.count is 0, may not resolve entity cert");
+         return NULL;
+     }
+
+     */
+    atsc3_lls_table_t* base_table = (atsc3_lls_table_t*)calloc(1, sizeof(atsc3_lls_table_t));
+
+    atsc3_certification_data_t* atsc3_certification_data = &base_table->certification_data;
+
+    atsc3_certification_data_to_be_signed_data_certificates_t* atsc3_certification_data_to_be_signed_data_certificates = atsc3_certification_data_to_be_signed_data_certificates_new();
+    
+    atsc3_certification_data_to_be_signed_data_add_atsc3_certification_data_to_be_signed_data_certificates(&atsc3_certification_data->atsc3_certification_data_to_be_signed_data, atsc3_certification_data_to_be_signed_data_certificates);
+    atsc3_smime_entity_t* atsc3_smime_entity = atsc3_smime_entity_new_parse_from_file(sls_fragment_filename);
+    atsc3_smime_validation_context_t* atsc3_smime_validation_context = atsc3_smime_validation_context_new(atsc3_smime_entity);
+    atsc3_smime_validation_context->atsc3_cms_validation_context->transients.atsc3_certification_data  = atsc3_certification_data;
+
 	atsc3_smime_validation_context_set_cms_noverify(atsc3_smime_validation_context, true);
-	atsc3_smime_validation_context_certificate_payload_parse_from_file(atsc3_smime_validation_context, signing_certificate_filename);
-	
+    atsc3_smime_validation_context_set_cms_no_content_verify(atsc3_smime_validation_context, true);
+    
 	atsc3_smime_validation_context_t* atsc3_smime_validation_context_ret = atsc3_smime_validate_from_context(atsc3_smime_validation_context);
 	
 	_ATSC3_SMIME_UTILS_TEST_INFO("###");
@@ -76,11 +100,11 @@ int main(int argc, char* argv[] ) {
 	//enensys sample 1 (SLS and cert-4.crt)
 	_ATSC3_SMIME_UTILS_TEST_INFO("--- Start: static test smime and crt payloads from 2020-11-17-signed-sls");
 
-	parse_signed_sls_with_test_certificate_noverify("testdata/2020-11-17-signed-sls/test-1-sls-smime.bin", "testdata/2020-11-17-signed-sls/test-1-cert-signer-e.crt");
+	parse_signed_sls_with_root_certificate_noverify("testdata/2022-09-17-test-sls-smime.bin", "testdata/2020-11-17-signed-sls/test-1-cert-signer-e.crt");
 	_ATSC3_SMIME_UTILS_TEST_INFO("--- Next: ");
-	
-	//enensys sample from ROUTE_SLS1.pcap, sls2.zip/signal-signing-enensys-SMT.crt
-	parse_signed_sls_with_test_certificate_noverify("testdata/2020-11-17-signed-sls/239.1.120.120.49152.0-458826", "testdata/2020-11-17-signed-sls/signal-signing-enensys-SMT.crt");
+//
+//	//enensys sample from ROUTE_SLS1.pcap, sls2.zip/signal-signing-enensys-SMT.crt
+//	parse_signed_sls_with_test_certificate_noverify("testdata/2020-11-17-signed-sls/239.1.120.120.49152.0-458826", "testdata/2020-11-17-signed-sls/signal-signing-enensys-SMT.crt");
 
 	_ATSC3_SMIME_UTILS_TEST_INFO("--- End: static test smime and crt payloads from 2020-11-17-signed-sls");
 

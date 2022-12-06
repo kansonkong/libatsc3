@@ -173,6 +173,8 @@ clean:
 	-rm -f listener_tests/atsc3_mmt_listener_test
 	-rm -f listener_tests/atsc3_mmt_listener_test_noasan
 	-rm -f listener_tests/atsc3_mmt_listener_test_dump_all_mmtp_packets
+	-rm -f listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap
+	-rm -f listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap_noasan
 	-rm -f listener_tests/atsc3_mmt_sls_listener_test
 	-rm -f listener_tests/atsc3_mmt_sls_listener_test_noasan
 	-rm -f listener_tests/atsc3_mmt_sls_listener_test_from_demuxed_pcap
@@ -182,7 +184,9 @@ clean:
 	-rm -f listener_tests/atsc3_stltp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_test
 	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test
-	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan	
+	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan
+	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps
+	-rm -f listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan
 	-rm -f listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap
@@ -348,6 +352,8 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test \
 				listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan \
+				listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps \
+				listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_noasan \
 				listener_tests/atsc3_mmt_context_mfu_depacketizer_test_from_demuxed_pcap \
@@ -355,7 +361,9 @@ listener_tests: listener_tests/atsc3_alc_listener_test \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_noasan \
 				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap \
-				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan
+				listener_tests/atsc3_mmt_context_stpp_depacketizer_test_from_demuxed_pcap_noasan \
+				listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap \
+				listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap_noasan
 
 a324_tests: a324_tests/a324_dstp_lls_aeat_emission_test
 
@@ -1696,6 +1704,20 @@ listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan: listener_tests/at
 		$(LOCAL_LD_LIBS) \
 		-o listener_tests/atsc3_stltp_alp_listener_reflector_test_noasan
 
+# jjustman-2022-10-20
+listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps: listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps.cpp libatsc3.o atsc3_logging_externs.o
+	$(CXX)  $(CFLAGS) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps.cpp libatsc3.o atsc3_logging_externs.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps
+		
+listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap: listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap.cpp libatsc3.o atsc3_logging_externs.o
+	$(CXX)  $(CFLAGS) $(DEBUG) listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap.cpp libatsc3.o atsc3_logging_externs.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_stltp_alp_listener_reflector_test_all_plps_from_stltp_pcap
+		
+		
 listener_tests/atsc3_mmt_sls_listener_test: listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o
 	$(CXX)  $(ASAN) $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_sls_listener_test.cpp libatsc3.o \
 		$(LOCAL_LD_LIBS_OPENSSL) \
@@ -1773,6 +1795,30 @@ listener_tests/atsc3_mmt_listener_test_noasan: listener_tests/atsc3_mmt_listener
 
 ifeq ($(HOST), "osx")
 	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_listener_test_noasan
+endif
+
+# jjustman-2022-10-20
+
+
+# simple MMT listener that builds a single ISOBMFF segment with v/a muxed in for each MPU
+listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap: listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap.cpp libatsc3.o
+	$(CXX)  $(ASAN) -D __ISOBMFF_LIB=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap
+
+
+listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap_noasan: listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap.cpp libatsc3.o
+	$(CXX) -D __ISOBMFF_LIB=true $(CFLAGS) $(DEBUG)  listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap.cpp \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap_noasan
+
+
+ifeq ($(HOST), "osx")
+	codesign -s - -v -f --entitlements debug.plist listener_tests/atsc3_mmt_listener_test_reassemble_to_isobmff_fragments_from_stltp_pcap_noasan
 endif
 		
 # simple MMT listener that dumps all mmt packets to mpu/ files for tracing
