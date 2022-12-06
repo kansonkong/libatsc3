@@ -249,7 +249,7 @@ lls_sls_alc_session_t* lls_slt_alc_session_find_from_udp_packet(lls_slt_monitor_
 
 						_ATSC3_LLS_ALC_UTILS_TRACE("lls_slt_alc_session_find_from_udp_packet: updating lls_slt_monitor->lls_sls_alc_monitor from: %p (service_id: %d) to: %p (service_id: %d)",
 												  lls_slt_monitor->lls_sls_alc_monitor,
-												   (lls_slt_monitor->lls_sls_alc_monitor ? lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id : NULL),
+												   (lls_slt_monitor->lls_sls_alc_monitor ? lls_slt_monitor->lls_sls_alc_monitor->atsc3_lls_slt_service->service_id : -1),
 												  lls_sls_alc_monitor,
 												  lls_sls_alc_monitor->atsc3_lls_slt_service->service_id);
 						lls_slt_monitor->lls_sls_alc_monitor = lls_sls_alc_monitor;
