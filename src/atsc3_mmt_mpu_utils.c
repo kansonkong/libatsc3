@@ -437,6 +437,10 @@ void mmtp_mpu_dump_flow(uint32_t dst_ip, uint16_t dst_port, mmtp_mpu_packet_t* m
 	} else if(mmtp_mpu_packet->du_mfu_block) {
 		__MMT_MPU_DEBUG("mmtp_mpu_dump_flow: du_mfu_block            (0x2), file dump to: %s, size: %d", myFilePathName, block_Remaining_size(mmtp_mpu_packet->du_mfu_block));
 		du_block_to_write = mmtp_mpu_packet->du_mfu_block;
+	} else {
+        __MMT_MPU_DEBUG("mmtp_mpu_dump_flow: no block written to file: %s", myFilePathName);
+        fclose(f);
+        return;
 	}
 
 	block_Rewind(du_block_to_write);

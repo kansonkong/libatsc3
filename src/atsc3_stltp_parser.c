@@ -208,6 +208,7 @@ atsc3_stltp_tunnel_packet_t* atsc3_stltp_raw_packet_extract_inner_from_outer_pac
     
 	if(!atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_outer) {
 		__STLTP_PARSER_ERROR("atsc3_stltp_tunnel_packet_extract_inner_from_outer_packet: atsc3_stltp_tunnel_packet_current->udp_packet_outer is null");
+		free(atsc3_stltp_tunnel_packet_current);
 		return NULL;
 	}
 
@@ -494,7 +495,8 @@ concatenation_check_for_outer_marker: ;
             bool last_inner_packet_complete = atsc3_stltp_tunnel_packet_extract_fragment_encapsulated_payload(atsc3_stltp_tunnel_packet_current);
 			//jjustman-2020-12-30 - hack - only free our ->data block as the inner packet is just a pointer to atsc3_stltp_tunnel_packet->ip_udp_rtp_ctp_packet_inner
 			//jjustman-2021-03-15 - BUT atsc3_stltp_tunnel_packet->ip_udp_rtp_ctp_packet_inner may have been free'd above, so don't ref inner_packet, only atsc3_stltp_tunnel_packet->ip_udp_rtp_ctp_packet_inner
-			if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner->data) {
+			if(atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner &&
+			   atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner->data) {
 				block_Destroy(&atsc3_stltp_tunnel_packet_current->ip_udp_rtp_ctp_packet_inner->data);
 			}
 			block_Destroy(&outer_reference_inner_payload_current);
@@ -828,7 +830,9 @@ atsc3_stltp_preamble_packet_t* atsc3_stltp_preamble_packet_extract(atsc3_stltp_t
     __STLTP_PARSER_DEBUG("       fragment %u length:  %u",  atsc3_stltp_preamble_packet_pending->fragment_count, block_remaining_length);
 
     memcpy(&atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset], block_Get(packet), block_remaining_length);
-	__STLTP_PARSER_DEBUG("       first bytes:         0x%02x 0x%02x", atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset], atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset+1]);
+    __STLTP_PARSER_DEBUG("       first bytes:         0x%02x 0x%02x",
+                         atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset],
+                         atsc3_stltp_preamble_packet_pending->payload_offset+1 < atsc3_stltp_preamble_packet_pending->payload_length ? atsc3_stltp_preamble_packet_pending->payload[atsc3_stltp_preamble_packet_pending->payload_offset+1] : 0);
     __STLTP_PARSER_DEBUG("       preamble_payload_length: %u", atsc3_stltp_preamble_packet_pending->payload_length);
 
     atsc3_stltp_preamble_packet_pending->fragment_count++;
