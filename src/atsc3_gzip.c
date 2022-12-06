@@ -64,7 +64,7 @@ int32_t atsc3_unzip_gzip_payload(uint8_t* input_payload, uint32_t input_payload_
 			break;
 
 		do {
-			strm.avail_out = output_payload_available;
+			strm.avail_out = output_payload_available - output_payload_offset;
 			strm.next_out = &output_payload[output_payload_offset];
 
 			ret = inflate(&strm, Z_NO_FLUSH);
@@ -179,7 +179,7 @@ int32_t atsc3_unzip_gzip_payload_block_t(block_t* src, block_t* dest) {
 			break;
 
 		do {
-			strm.avail_out = output_payload_available;
+			strm.avail_out = output_payload_available - output_payload_offset;
 			strm.next_out = &output_payload[output_payload_offset];
 
 			ret = inflate(&strm, Z_NO_FLUSH);
