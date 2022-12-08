@@ -368,8 +368,8 @@ void atsc3_stltp_depacketizer_from_ip_udp_rtp_ctp_packet(atsc3_ip_udp_rtp_ctp_pa
 
 							_ATSC3_STLTP_DEPACKETIZER_ERROR("  atsc3_baseband_packet->alp_payload_post_pointer, discarding atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending, was: %p, type 0x%02x, i_pos: %d, p_size: %d", atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending,
 									atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_packet_header.packet_type,
-									atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->i_pos,
-									atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->p_size);
+									atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload ? atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->i_pos : 0,
+									atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload ? atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending->alp_payload->p_size : 0);
 							atsc3_alp_packet_free(&atsc3_stltp_tunnel_packet_processed->atsc3_stltp_tunnel_baseband_packet_pending_by_plp->atsc3_alp_packet_pending);
 						}
 						
