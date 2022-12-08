@@ -679,6 +679,9 @@ atsc3_route_dash_metadata_t* atsc3_route_sls_extract_cenc_pssh_metadata_if_avail
 
 	block_Rewind(atsc3_mime_multipart_related_payload->payload);
 	xml_document_t* xml_document = xml_parse_document(block_Get(atsc3_mime_multipart_related_payload->payload), block_Remaining_size(atsc3_mime_multipart_related_payload->payload));
+	if(!xml_document) {
+	    return NULL;
+	}
 
 	//look for our first adaptation set
 
