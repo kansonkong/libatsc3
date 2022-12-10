@@ -223,6 +223,12 @@ udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_lengt
 	int udp_header_start = 20;
 	udp_packet_t* udp_packet = NULL;
 
+	if(packet_length < udp_header_start + 8) {
+		if((__udp_packet_process_from_ptr_error_count++ % 1000) == 0) {
+			__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: packet length too short!: %d", packet_length);
+		}
+		return NULL;
+	}
 	for (i = 0; i < udp_header_start; i++) {
 		ip_header[i] = packet[i];
 	}
