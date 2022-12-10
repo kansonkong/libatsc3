@@ -164,9 +164,12 @@ atsc3_route_package_extracted_envelope_metadata_and_payload_t* atsc3_route_packa
 						atsc3_mbms_metadata_item_t* atsc3_mbms_metadata_item = atsc3_route_package_extracted_envelope_metadata_and_payload->atsc3_mbms_metadata_envelope->atsc3_mbms_metadata_item_v.data[i-1];
 
 						__ROUTE_PACKAGE_UTILS_DEBUG("comparing atsc3_mbms_metadata_item->metadata_uri: %s, atsc3_mime_multipart_related_payload->unsafe_content_location: %s",
-								atsc3_mbms_metadata_item->metadata_uri, atsc3_mime_multipart_related_payload->unsafe_content_location);
+								atsc3_mbms_metadata_item->metadata_uri,
+								atsc3_mime_multipart_related_payload->unsafe_content_location ? atsc3_mime_multipart_related_payload->unsafe_content_location : "");
 
-						if(!strcasecmp(atsc3_mbms_metadata_item->metadata_uri, atsc3_mime_multipart_related_payload->unsafe_content_location)) {
+						if(atsc3_mime_multipart_related_payload->unsafe_content_location &&
+						   !strcasecmp(atsc3_mbms_metadata_item->metadata_uri, atsc3_mime_multipart_related_payload->unsafe_content_location)) {
+
 							atsc3_mime_multipart_related_payload->version = atsc3_mbms_metadata_item->version;
 							if(atsc3_mbms_metadata_item->content_type) {
 									atsc3_mime_multipart_related_payload->content_type = strdup(atsc3_mbms_metadata_item->content_type);
