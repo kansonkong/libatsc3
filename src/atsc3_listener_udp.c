@@ -233,7 +233,7 @@ udp_packet_t* udp_packet_process_from_ptr(uint8_t* packet, uint32_t packet_lengt
 		ip_header[i] = packet[i];
 	}
 
-	//check if we are a UDP packet, otherwise bail
+	//check if we are a UDP packet, otherwise bailx
 	if (ip_header[9] != 0x11) {
 		if((__udp_packet_process_from_ptr_error_count++ % 1000) == 0) {
 			__LISTENER_UDP_ERROR("udp_packet_process_from_ptr: not a UDP packet!");
