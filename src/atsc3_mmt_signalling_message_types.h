@@ -172,6 +172,18 @@ typedef struct mmt_atsc3_message_content_type_language_heaader {
 	char*		language;
 } mmt_atsc3_message_content_type_language_heaader_t;
 
+//used in mmt inband_event_descriptor(), see A:337/2022-03
+
+typedef struct mmt_atsc3_message_scheme_id_uri_header {
+    uint32_t        scheme_id_uri_length;
+    uint8_t*        scheme_id_uri_byte;
+} mmt_atsc3_message_scheme_id_uri_header_t;
+
+typedef struct mmt_atsc3_message_event_value {
+    uint32_t        event_value_length;
+    uint8_t*        event_value_bytes;
+} mmt_atsc3_message_event_value_t;
+
 
 //Used in MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription
 
@@ -207,10 +219,22 @@ typedef struct mmt_atsc3_held_message {
     block_t*    held_message;
 } mmt_atsc3_held_message_t;
 
-//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337
-typedef struct mmt_atsc3_message_content_type_application_event_information_a337 {
-	void* TODO;
+
+typedef struct mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset {
+    mmt_atsc3_message_content_type_asset_header_t       asset_header;
+    mmt_atsc3_message_scheme_id_uri_header_t            scheme_id_header;
+    mmt_atsc3_message_event_value_t                     event_value;
+} mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset_t;
+
+typedef struct mmt_atsc3_message_content_type_inband_event_descriptor_a337 {
+    mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t        descriptor_header;
+    
+    ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset);
+
 } mmt_atsc3_message_content_type_application_event_information_a337_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_application_event_information_a337, mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset);
+
+
 
 
 #define ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_SEI_NUT_DATA_CONTAINER_LEN_MAX 255
@@ -554,10 +578,8 @@ typedef struct mmt_atsc3_message_content_type_atsc_staggercast_descriptor {
 	void* TODO;
 } mmt_atsc3_message_content_type_atsc_staggercast_descriptor_t;
 
-//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337
-typedef struct mmt_atsc3_message_content_type_inband_event_descriptor_a337 {
-	void* TODO;
-} mmt_atsc3_message_content_type_inband_event_descriptor_a337_t;
+
+
 
 enum MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ROLE {
 	MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ROLE_MAIN =				0x0,
@@ -1000,6 +1022,8 @@ typedef struct mmt_atsc3_message_payload {
     
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
 	mmt_atsc3_held_message_t*       										mmt_atsc3_held_message;
+    
+    mmt_atsc3_message_content_type_application_event_information_a337_t*    mmt_atsc3_message_content_type_application_event_information_a337;
 
     //VSPD
 	mmt_atsc3_message_content_type_video_stream_properties_descriptor_t*	mmt_atsc3_message_content_type_video_stream_properties_descriptor;

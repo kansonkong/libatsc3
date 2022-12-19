@@ -216,6 +216,33 @@ void atsc3_mmt_signalling_information_on_held_message_present_noop(atsc3_mmt_mfu
 	__MMT_CONTEXT_MPU_DEBUG("mmt_atsc3_held_message ptr: %p, value:\n%s", mmt_atsc3_held_message, block_Get(mmt_atsc3_held_message->held_message));
 }
 
+void atsc3_mmt_signalling_information_on_application_event_information_a337_present_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_application_event_information_a337_t* mmt_atsc3_message_content_type_application_event_information_a337) {
+    __ATSC3_MMT_CONTEXT_MFU_DEPACKETIZER_CALLBACKS_NOOP_GUARD_AND_LOG_ATSC3_MMT_MFU_CONTEXT("mmt_atsc3_message_content_type_application_event_information_a337_t", mmt_atsc3_message_content_type_application_event_information_a337);
+    __MMT_CONTEXT_MPU_DEBUG("mmt_atsc3_message_content_type_application_event_information_a337 ptr: %p, num of assets:\n%d", mmt_atsc3_message_content_type_application_event_information_a337, mmt_atsc3_message_content_type_application_event_information_a337->descriptor_header.number_of_assets);
+    //jjustman-2022-12-19 - todo - iterate over our assets and dump schema/event binary data for debugging
+    for(int i=0; i < mmt_atsc3_message_content_type_application_event_information_a337->mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset_v.count; i++) {
+        mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset_t* mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset = mmt_atsc3_message_content_type_application_event_information_a337->mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset_v.data[i];
+        
+        //mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset
+        
+        if(mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->asset_header.asset_id_length) {
+            __MMT_CONTEXT_MPU_DEBUG("asset_id length: %d, value: %.*s", mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->asset_header.asset_id_length, mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->asset_header.asset_id_length,
+                mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->asset_header.asset_id);
+        }
+        
+        if(mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->scheme_id_header.scheme_id_uri_length) {
+            __MMT_CONTEXT_MPU_DEBUG("scheme_id_header length: %d, value: %.*s", mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->scheme_id_header.scheme_id_uri_length, mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->scheme_id_header.scheme_id_uri_length,
+                mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->scheme_id_header.scheme_id_uri_byte);
+        }
+
+        if(mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->event_value.event_value_length) {
+            __MMT_CONTEXT_MPU_DEBUG("asset_id length: %d, value: %.*s", mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->event_value.event_value_length, mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->event_value.event_value_length,
+                mmt_atsc3_message_content_type_inband_event_descriptor_a337_asset->event_value.event_value_bytes);
+        }
+    }
+}
+
+
 void mmt_atsc3_message_content_type_video_stream_properties_descriptor_present_noop(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_video_stream_properties_descriptor_t* mmt_atsc3_video_stream_properties_descriptor_message){
 	__ATSC3_MMT_CONTEXT_MFU_DEPACKETIZER_CALLBACKS_NOOP_GUARD_AND_LOG_ATSC3_MMT_MFU_CONTEXT("mmt_atsc3_video_stream_properties_descriptor_message", mmt_atsc3_video_stream_properties_descriptor_message);
 	
@@ -298,7 +325,7 @@ void atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_pr
 }
 
 
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_noop_new() {
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_noop_new(void) {
     atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context = atsc3_mmt_mfu_context_internal_flows_new();
 
 	//helper methods
@@ -343,6 +370,9 @@ atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_callbacks_noop_new() {
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
 	atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_held_message_present = &atsc3_mmt_signalling_information_on_held_message_present_noop;
 
+    //MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337
+    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_application_event_information_a337_present = &atsc3_mmt_signalling_information_on_application_event_information_a337_present_noop;
+    
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR
 	atsc3_mmt_mfu_context->mmt_atsc3_message_content_type_video_stream_properties_descriptor_present = &mmt_atsc3_message_content_type_video_stream_properties_descriptor_present_noop;
 

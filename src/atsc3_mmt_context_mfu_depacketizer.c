@@ -1227,6 +1227,14 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 					atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_userservicedescription_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_signalling_information_usbd_component);
 				}
 			}
+            
+            //MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337
+            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_application_event_information_a337) {
+                //dispatch our A337 message here
+                if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_application_event_information_a337_present) {
+                    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_application_event_information_a337_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_application_event_information_a337);
+                }
+            }
 
 			//MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message) {
