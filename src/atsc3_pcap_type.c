@@ -126,11 +126,8 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 		if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_global_header.magic_number == ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION) {
 			atsc3_pcap_replay_context_to_iterate->atsc3_pcap_needs_endian_correction = true; //true
 		}
-
-		if((atsc3_pcap_replay_context_to_iterate->atsc3_pcap_global_header.network & ATSC3_PCAP_GLOBAL_HEADER_NETWORK_MASK)  == ATSC3_PCAP_GLOBAL_HEADER_NETWORK_ALP_DEMUXED_TYPE) {
-			atsc3_pcap_replay_context_to_iterate->atsc3_pcap_format_is_alp_pcap = true;
-		}
 	}
+
     //sizeof(atsc3_pcap_packet_header_t) ->
 	fread((void*)&atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header, ATSC3_PCAP_PACKET_HEADER_SIZE_BYTES, 1, atsc3_pcap_replay_context_to_iterate->pcap_fp);
 
@@ -192,7 +189,8 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 	fread((void*)atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet->p_buffer, atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len, 1, atsc3_pcap_replay_context_to_iterate->pcap_fp);
 
 	//jjustman-2022-12-19 - todo - if we are an alp pcap, parse out our PLP num here as needed
-	if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_format_is_alp_pcap) {
+
+	if((atsc3_pcap_replay_context_to_iterate->atsc3_pcap_global_header.network & ATSC3_PCAP_GLOBAL_HEADER_NETWORK_MASK) == ATSC3_PCAP_GLOBAL_HEADER_NETWORK_LINKTYPE_ALP_DEMUXED) {
 		atsc3_alp_packet_t* atsc3_alp_packet = atsc3_alp_packet_parse(0, atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet);
 		if(atsc3_alp_packet) {
 			block_Rewind(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet);
@@ -200,9 +198,11 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 			block_Resize(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet, block_Len(atsc3_alp_packet->alp_payload));
 			block_Write(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet, block_Get(atsc3_alp_packet->alp_payload), block_Len(atsc3_alp_packet->alp_payload));
 			block_Rewind(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet);
-
+			atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet_network_linktype = ATSC3_PCAP_GLOBAL_HEADER_NETWORK_LINKTYPE_RAW;
 			atsc3_alp_packet_free(&atsc3_alp_packet);
 		}
+	} else {
+		atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.current_pcap_packet_network_linktype = atsc3_pcap_replay_context_to_iterate->atsc3_pcap_global_header.network & ATSC3_PCAP_GLOBAL_HEADER_NETWORK_MASK;
 	}
 
 	atsc3_pcap_replay_context_to_iterate->pcap_file_pos += atsc3_pcap_replay_context_to_iterate->atsc3_pcap_packet_instance.atsc3_pcap_packet_header.incl_len;
@@ -368,7 +368,7 @@ atsc3_pcap_writer_context_t* atsc3_pcap_writer_iterate_packet(atsc3_pcap_writer_
 		atsc3_pcap_writer_context->atsc3_pcap_global_header.thiszone = 0;
 		atsc3_pcap_writer_context->atsc3_pcap_global_header.sigfigs = 0;
 		atsc3_pcap_writer_context->atsc3_pcap_global_header.snaplen = htonl(ATSC3_PCAP_GLOBAL_HEADER_SNAPLEN);
-		atsc3_pcap_writer_context->atsc3_pcap_global_header.network = htonl(ATSC3_PCAP_GLOBAL_HEADER_NETWORK);
+		atsc3_pcap_writer_context->atsc3_pcap_global_header.network = htonl(ATSC3_PCAP_GLOBAL_HEADER_NETWORK_LINKTYPE_ETHERNET);
 
 		fwrite((void *) &atsc3_pcap_writer_context->atsc3_pcap_global_header, ATSC3_PCAP_GLOBAL_HEADER_SIZE_BYTES, 1, atsc3_pcap_writer_context->pcap_fp);
 		fflush(atsc3_pcap_writer_context->pcap_fp);

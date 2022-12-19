@@ -68,8 +68,14 @@ extern "C" {
 #define ATSC3_PCAP_GLOBAL_HEADER_MINOR_VERSION_NUMBER							4
 #define ATSC3_PCAP_GLOBAL_HEADER_SNAPLEN										65535
 #define ATSC3_PCAP_GLOBAL_HEADER_NETWORK_MASK									0x0FFFFFFF
-#define ATSC3_PCAP_GLOBAL_HEADER_NETWORK										1
-#define ATSC3_PCAP_GLOBAL_HEADER_NETWORK_ALP_DEMUXED_TYPE						0x00000121
+//pcap network link types: http://www.tcpdump.org/linktypes.html
+
+//linktype: 1
+#define ATSC3_PCAP_GLOBAL_HEADER_NETWORK_LINKTYPE_ETHERNET						0x00000001
+//linktype: 101
+#define ATSC3_PCAP_GLOBAL_HEADER_NETWORK_LINKTYPE_RAW							0x00000065
+//linktype 289
+#define ATSC3_PCAP_GLOBAL_HEADER_NETWORK_LINKTYPE_ALP_DEMUXED					0x00000121
 
 //global header length: 24 bytes
 	/*
@@ -139,8 +145,8 @@ typedef struct atsc3_pcap_packet_ethernet_header {
 
 typedef struct atsc3_pcap_packet_instance {
 	atsc3_pcap_packet_header_t		atsc3_pcap_packet_header;
-
-    block_t*						current_pcap_packet; //do NOT memset(0) this block...
+	block_t*						current_pcap_packet; //do NOT memset(0) this block...
+	uint32_t						current_pcap_packet_network_linktype; //use
 } atsc3_pcap_packet_instance_t;
 
 typedef struct atsc3_pcap_replay_context {
@@ -155,7 +161,6 @@ typedef struct atsc3_pcap_replay_context {
 	bool							has_read_atsc3_pcap_global_header;
 	atsc3_pcap_global_header_t		atsc3_pcap_global_header;
 	bool							atsc3_pcap_needs_endian_correction; //only if atsc3_pcap_global_header looks like ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION
-	bool							atsc3_pcap_format_is_alp_pcap;	//used for hdhomerun alp captures - network type == 289 - ATSC3_PCAP_GLOBAL_HEADER_NETWORK_ALP_DEMUXED_TYPE
 
 	uint32_t						pcap_read_packet_count;
     bool                            ATSC3_PCAP_TYPE_INFO_ENABLE_PCAP_READ_PACKET_COUNT_LOGGING;
