@@ -153,10 +153,10 @@ typedef struct atsc3_pcap_replay_context {
 	char* 							pcap_file_name;
 
 	FILE* 							pcap_fp;
-	uint32_t 						pcap_fd_start;
+	size_t 						pcap_fd_start;
 
-	uint32_t						pcap_file_len;
-	uint32_t						pcap_file_pos;
+	size_t		    				pcap_file_len;
+	size_t  						pcap_file_pos;
 
 	bool							has_read_atsc3_pcap_global_header;
 	atsc3_pcap_global_header_t		atsc3_pcap_global_header;
@@ -194,8 +194,11 @@ typedef struct atsc3_pcap_writer_context {
 
 	uint32_t						pcap_write_packet_count;
 
-	struct timeval 					first_packet_ts_timeval;
-
+    bool                            use_user_context_supplied_wallclock_timeval; //to manually set a non gettimeofday wallclock, call atsc3_pcap_writer_set_context_wallclock_timeval 
+    
+    struct timeval 					first_packet_ts_timeval;
+    bool                            has_set_first_packet_ts_timeval;
+    
 	struct timeval 					current_packet_wallclock_timeval;
 
 	struct {
@@ -224,6 +227,8 @@ void atsc3_pcap_replay_free(atsc3_pcap_replay_context_t** atsc3_pcap_replay_cont
 //jjustman-2022-07-12 - adding pcap_writer context support
 atsc3_pcap_writer_context_t* atsc3_pcap_writer_context_new();
 atsc3_pcap_writer_context_t* atsc3_pcap_writer_open_filename(const char* pcap_filename);
+
+atsc3_pcap_writer_context_t* atsc3_pcap_writer_set_context_wallclock_timeval(atsc3_pcap_writer_context_t* atsc3_pcap_writer_context, struct timeval current_packet_wallclock_timeval);
 atsc3_pcap_writer_context_t* atsc3_pcap_writer_iterate_packet(atsc3_pcap_writer_context_t* atsc3_pcap_writer_context, block_t* packet);
 atsc3_pcap_writer_context_t* atsc3_pcap_writer_context_close(atsc3_pcap_writer_context_t* atsc3_pcap_writer_context);
 

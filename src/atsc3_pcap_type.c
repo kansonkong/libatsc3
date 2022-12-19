@@ -13,7 +13,7 @@
 int _ATSC3_PCAP_TYPE_DEBUG_ENABLED = 0;
 int _ATSC3_PCAP_TYPE_TRACE_ENABLED = 0;
 
-atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_new() {
+atsc3_pcap_replay_context_t* atsc3_pcap_replay_context_new(void) {
 	atsc3_pcap_replay_context_t* atsc3_pcap_replay_context = calloc(1, sizeof(atsc3_pcap_replay_context_t));
 
 	//jjustman-2020-08-11 - pre-allocate our block_t for ~MAX_ATSC3_ETHERNET_PHY_FRAME_LENGTH 1518 bytes and then use block_Resize to adjust as needed (will null out slab alloc past p_size)
@@ -327,7 +327,7 @@ void atsc3_pcap_replay_free(atsc3_pcap_replay_context_t** atsc3_pcap_replay_cont
 	}
 }
 
-atsc3_pcap_writer_context_t* atsc3_pcap_writer_context_new() {
+atsc3_pcap_writer_context_t* atsc3_pcap_writer_context_new(void) {
 	atsc3_pcap_writer_context_t* atsc3_pcap_writer_context = calloc(1, sizeof(atsc3_pcap_writer_context_t));
 
 	//jjustman-2020-08-11 - pre-allocate our block_t for ~MAX_ATSC3_ETHERNET_PHY_FRAME_LENGTH 1518 bytes and then use block_Resize to adjust as needed (will null out slab alloc past p_size)
@@ -353,6 +353,17 @@ atsc3_pcap_writer_context_t* atsc3_pcap_writer_open_filename(const char* pcap_fi
 	return atsc3_pcap_writer_context;
 }
 
+atsc3_pcap_writer_context_t* atsc3_pcap_writer_set_context_wallclock_timeval(atsc3_pcap_writer_context_t* atsc3_pcap_writer_context, struct timeval current_packet_wallclock_timeval) {
+    atsc3_pcap_writer_context->use_user_context_supplied_wallclock_timeval = true;
+    if(!atsc3_pcap_writer_context->has_set_first_packet_ts_timeval) {
+        atsc3_pcap_writer_context->first_packet_ts_timeval = current_packet_wallclock_timeval;
+    }
+    
+    atsc3_pcap_writer_context->current_packet_wallclock_timeval = current_packet_wallclock_timeval;
+    
+    return atsc3_pcap_writer_context;
+}
+
 atsc3_pcap_writer_context_t* atsc3_pcap_writer_iterate_packet(atsc3_pcap_writer_context_t* atsc3_pcap_writer_context, block_t* packet) {
 
 	if(!atsc3_pcap_writer_context->pcap_fp) {
@@ -374,13 +385,18 @@ atsc3_pcap_writer_context_t* atsc3_pcap_writer_iterate_packet(atsc3_pcap_writer_
 		fflush(atsc3_pcap_writer_context->pcap_fp);
 
 		atsc3_pcap_writer_context->pcap_file_pos = sizeof(atsc3_pcap_global_header_t);
-
 		atsc3_pcap_writer_context->has_written_atsc3_pcap_global_header = true;
 
-		gettimeofday(&atsc3_pcap_writer_context->first_packet_ts_timeval, NULL);
-		atsc3_pcap_writer_context->current_packet_wallclock_timeval = atsc3_pcap_writer_context->first_packet_ts_timeval;
+        if(!atsc3_pcap_writer_context->use_user_context_supplied_wallclock_timeval) {
+            gettimeofday(&atsc3_pcap_writer_context->first_packet_ts_timeval, NULL);
+            atsc3_pcap_writer_context->has_set_first_packet_ts_timeval = true;
+         
+            atsc3_pcap_writer_context->current_packet_wallclock_timeval = atsc3_pcap_writer_context->first_packet_ts_timeval;
+        }
 	} else {
-		gettimeofday(&atsc3_pcap_writer_context->current_packet_wallclock_timeval, NULL);
+        if(!atsc3_pcap_writer_context->use_user_context_supplied_wallclock_timeval) {
+            gettimeofday(&atsc3_pcap_writer_context->current_packet_wallclock_timeval, NULL);
+        }
 	}
 
 	block_Rewind(packet);

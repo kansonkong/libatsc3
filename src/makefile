@@ -218,6 +218,7 @@ clean:
 	-rm -f tools/atsc3_mmt_listener_to_http_hls_fmp4
 	-rm -f tools/atsc3_pcap_stltp_preamble_timing_management_validate
 	-rm -f tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan
+	-rm -f tools/atsc3_convert_from_hdhomerun_alp_to_demuxed_ip_pcap
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_reflector_test
 	-rm -f test_sl/atsc3_sl_tlv_parser_to_alp_test_with_metrics
@@ -390,7 +391,8 @@ tools: tools/atsc3_listener_metrics_ncurses \
 	tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer \
 	tools/atsc3_srt_rx_stltp_virtual_phy_alc_listener_writer_noasan \
 	tools/atsc3_pcap_stltp_preamble_timing_management_validate \
-	tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan
+	tools/atsc3_pcap_stltp_preamble_timing_management_validate_asan \
+	tools/atsc3_convert_from_hdhomerun_alp_to_demuxed_ip_pcap
 
 atsc3_sl_phy: atsc3_sl_tlv_demod_type.o	\
 	test_sl/atsc3_sl_tlv_parser_to_alp_test \
@@ -1436,8 +1438,13 @@ test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7: test/atsc3_fdt_mbms_en
 	strnstr.o \
 	atsc3_utils.o -o test/atsc3_fdt_mbms_envelope_test_2019-09-07-esg-e.1.1.7
 
-test/atsc3_pcap_replay_test: test/atsc3_pcap_replay_test.c atsc3_pcap_type.o atsc3_utils.o
-	$(CC) $(ASAN) $(CFLAGS) $(DEBUG)  test/atsc3_pcap_replay_test.c atsc3_pcap_type.o  atsc3_utils.o -lz  -lm -lpthread -lpcap -o test/atsc3_pcap_replay_test 
+test/atsc3_pcap_replay_test: test/atsc3_pcap_replay_test.c libatsc3.o
+	$(CXX) $(ASAN) $(CFLAGS) $(DEBUG)  test/atsc3_pcap_replay_test.c \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-lz  -lm -lpthread -lpcap \
+		-o test/atsc3_pcap_replay_test
 
 
 test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
@@ -2243,6 +2250,14 @@ tools/atsc3_mmt_listener_to_http_hls_fmp4: tools/atsc3_mmt_listener_to_http_hls_
 		-L../libmicrohttpd/libmicrohttpd-0.9.63/build/lib -lmicrohttpd \
 		-o tools/atsc3_mmt_listener_to_http_hls_fmp4
 
+# jjustman-2022-12-19 - adding hdhomerun alp converter
+tools/atsc3_convert_from_hdhomerun_alp_to_demuxed_ip_pcap: tools/atsc3_convert_from_hdhomerun_alp_to_demuxed_ip_pcap.c \
+															libatsc3.o
+	$(CC) $(LIBATSC3_LOCAL_INCLUDE_PATHS) tools/atsc3_convert_from_hdhomerun_alp_to_demuxed_ip_pcap.c \
+		libatsc3.o \
+		$(LOCAL_LD_LIBS_OPENSSL) \
+		$(LOCAL_LD_LIBS) \
+		-o tools/atsc3_convert_from_hdhomerun_alp_to_demuxed_ip_pcap
 
 
 #SL Demod testing/tools:
