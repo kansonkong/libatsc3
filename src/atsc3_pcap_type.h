@@ -52,6 +52,9 @@ bytes	Name
 #define ATSC3_PCAP_TYPE_H_
 
 #include "atsc3_utils.h"
+#include "atsc3_alp_types.h"
+#include "atsc3_alp_parser.h"
+
 #include "atsc3_logging_externs.h"
 
 #if defined (__cplusplus)
@@ -64,19 +67,40 @@ extern "C" {
 #define ATSC3_PCAP_GLOBAL_HEADER_MAJOR_VERSION_NUMBER							2
 #define ATSC3_PCAP_GLOBAL_HEADER_MINOR_VERSION_NUMBER							4
 #define ATSC3_PCAP_GLOBAL_HEADER_SNAPLEN										65535
+#define ATSC3_PCAP_GLOBAL_HEADER_NETWORK_MASK									0x0FFFFFFF
 #define ATSC3_PCAP_GLOBAL_HEADER_NETWORK										1
 #define ATSC3_PCAP_GLOBAL_HEADER_NETWORK_ALP_DEMUXED_TYPE						0x00000121
 
-	//global header length: 24 bytes
+//global header length: 24 bytes
+	/*
+	 *
+	 *                            1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    0 |                          Magic Number                         |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    4 |          Major Version        |         Minor Version         |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    8 |                           Reserved1                           |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   12 |                           Reserved2                           |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   16 |                            SnapLen                            |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   20 | FCS |f|                   LinkType                            |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+	from	https://datatracker.ietf.org/doc/id/draft-gharris-opsawg-pcap-00.html
+	 */
 #pragma pack(push, 1)
 typedef struct atsc3_pcap_global_header {
 	uint32_t	magic_number;		//0xa1b2c3d4 (identical byte order), or 0xd4c3b2a1 (swapped)
 	uint16_t	version_major;		//2.4
 	uint16_t	version_minor;
-	int32_t		thiszone;
-	uint32_t	sigfigs;
+	int32_t		thiszone;			//reserved1
+	uint32_t	sigfigs;			//reserved2
 	uint32_t	snaplen;
-	uint32_t	network;			//type of datalink, 1 for ethernet
+	uint32_t	network;			//type of datalink, 1 for ethernet, 289 (or 0x121) - ATSC3_PCAP_GLOBAL_HEADER_NETWORK_ALP_DEMUXED_TYPE
 } atsc3_pcap_global_header_t;
 
 #define ATSC3_PCAP_PACKET_HEADER_SIZE_BYTES 16
@@ -131,6 +155,7 @@ typedef struct atsc3_pcap_replay_context {
 	bool							has_read_atsc3_pcap_global_header;
 	atsc3_pcap_global_header_t		atsc3_pcap_global_header;
 	bool							atsc3_pcap_needs_endian_correction; //only if atsc3_pcap_global_header looks like ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION
+	bool							atsc3_pcap_format_is_alp_pcap;	//used for hdhomerun alp captures - network type == 289 - ATSC3_PCAP_GLOBAL_HEADER_NETWORK_ALP_DEMUXED_TYPE
 
 	uint32_t						pcap_read_packet_count;
     bool                            ATSC3_PCAP_TYPE_INFO_ENABLE_PCAP_READ_PACKET_COUNT_LOGGING;
