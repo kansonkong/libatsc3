@@ -125,6 +125,8 @@ atsc3_pcap_replay_context_t* atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_
 		//jjustman-2022-08-29 - TODO - fix me?
 		if(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_global_header.magic_number == ATSC3_PCAP_GLOBAL_HEADER_MAGIC_NUMBER_NEEDING_NTOHx_ENDIAN_CORRECTION) {
 			atsc3_pcap_replay_context_to_iterate->atsc3_pcap_needs_endian_correction = true; //true
+			atsc3_pcap_replay_context_to_iterate->atsc3_pcap_global_header.network = htonl(atsc3_pcap_replay_context_to_iterate->atsc3_pcap_global_header.network);
+
 		}
 	}
 
