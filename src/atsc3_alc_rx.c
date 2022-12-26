@@ -85,6 +85,21 @@ int _ALC_RX_DEBUG_ENABLED = 0;
 int _ALC_RX_TRACE_ENABLED = 0;
 int _ALC_RX_TRACE_TAB_ENABLED = 0;
 
+atsc3_alc_lct_codepoint_mapping_t atsc3_alc_lct_codepoint_mappping_table[ATSC3_ALC_LCT_CODEPOINT_MAPPING_TABLE_MAX_ENTRIES] = {
+
+		//0 - atsc reserved (no used)
+		{ .codepoint = 0, .format_id = 0, .frag = 0, .order = false},
+		{ .codepoint = 1, .format_id = 1, .frag = 0, .order = true},
+		{ .codepoint = 2, .format_id = 2, .frag = 0, .order = true},
+		{ .codepoint = 3, .format_id = 3, .frag = 0, .order = true},
+		{ .codepoint = 4, .format_id = 4, .frag = 0, .order = true},
+		{ .codepoint = 5, .format_id = 1, .frag = 0, .order = true},
+		{ .codepoint = 6, .format_id = 1, .frag = 0, .order = true},
+		{ .codepoint = 7, .format_id = 1, .frag = 0, .order = true},
+		{ .codepoint = 8, .format_id = 1, .frag = 1, .order = true},
+		{ .codepoint = 9, .format_id = 2, .frag = 1, .order = true}
+};
+
 typedef struct route_fragment {
 	unsigned long long tsi;
 	unsigned long long toi;

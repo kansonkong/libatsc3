@@ -580,14 +580,22 @@ SL_Result_t TolkaPHYAndroid::SL3000_atsc3_init(Endeavour  *Endeavour_s, SL_Tuner
         SL_Printf("SUCCESS");
     }
 
+    int boot_status_spin_count = 0;
+
     do
     {
         slres = SL_DemodGetStatus(slUnit, SL_DEMOD_STATUS_TYPE_BOOT, (SL_DemodBootStatus_t*)&bootStatus);
         if (slres != SL_OK)
         {
             _TOLKA_PHY_ANDROID_ERROR("Error:SL_Demod Get Boot Status: res: %d", slres);
+            SL_SleepMS(100);
+            boot_status_spin_count++;
         }
-    } while (bootStatus != SL_DEMOD_BOOT_STATUS_COMPLETE);
+    } while (bootStatus != SL_DEMOD_BOOT_STATUS_COMPLETE && boot_status_spin_count < BOOT_STATUS_SPIN_COUNT_MAX);
+
+    if(boot_status_spin_count >= BOOT_STATUS_SPIN_COUNT_MAX) {
+        bootStatus = SL_DEMOD_BOOT_STATUS_ERROR;
+    }
 
     SL_Printf("\n Demod Boot Status 	 : ");
     if (bootStatus == SL_DEMOD_BOOT_STATUS_INPROGRESS)
@@ -600,7 +608,8 @@ SL_Result_t TolkaPHYAndroid::SL3000_atsc3_init(Endeavour  *Endeavour_s, SL_Tuner
     }
     else if (bootStatus == SL_DEMOD_BOOT_STATUS_ERROR)
     {
-        SL_Printf("%s", "ERROR");
+        SL_Printf("%s", "SL_DEMOD_BOOT_STATUS_ERROR");
+        return SL_ERR_OPERATION_FAILED;
         //goto TEST_ERROR;
     }
 

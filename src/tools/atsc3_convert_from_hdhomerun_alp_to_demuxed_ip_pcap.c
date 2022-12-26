@@ -68,6 +68,8 @@ int main(int argc, char* argv[] ) {
             //jjustman-2022-12-19 - todo - fix me to properly prepend network link type for this packet...
             block_Rewind(atsc3_pcap_reader_context->atsc3_pcap_packet_instance.current_pcap_packet);
             atsc3_pcap_writer_iterate_packet(atsc3_pcap_writer_context, atsc3_pcap_reader_context->atsc3_pcap_packet_instance.current_pcap_packet);
+            
+            //jjustman-2022-12-20 - todo - if we are a LLS packet, persist to make sure we are signalled at least every 5s for A/331 compliance
 
         }
     }
