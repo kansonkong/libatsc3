@@ -1455,6 +1455,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 										atsc3_pcre2_regex_utils.h \
 										atsc3_pcre2_regex_utils.o \
 										atsc3_route_dash_utils.o \
+										atsc3_alc_rx.o \
 										atsc3_alc_session.o \
 										atsc3_lls_mmt_utils.o \
 										atsc3_lls_sls_monitor_output_buffer_utils.o \
@@ -1495,6 +1496,7 @@ test/atsc3_route_dash_mpd_patch_test: test/atsc3_route_dash_mpd_patch_test.c \
 							atsc3_a360_certificates.o \
 							atsc3_pcre2_regex_utils.o \
 							atsc3_route_dash_utils.o \
+							atsc3_alc_rx.o \
 							atsc3_alc_session.o \
 							atsc3_lls_mmt_utils.o \
 							atsc3_lls_sls_monitor_output_buffer_utils.o \

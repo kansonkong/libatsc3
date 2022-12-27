@@ -944,10 +944,17 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
                 }
                 break;
 
-            // atsc3_message_content_type: 0x0004
+            // atsc3_message_content_type: 0x0004 - raw xml
             case MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337:
                 {
-                    __MMSM_INFO("mmt_atsc3_message_payload_parse, ignornig mmt_atsc3 message type: MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337 (0x%04x)", mmt_atsc3_message_payload->atsc3_message_content_type);
+                    __MMSM_INFO("mmt_atsc3_message_payload_parse, processing mmt_atsc3 message type: MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337 (0x%04x)", mmt_atsc3_message_payload->atsc3_message_content_type);
+                  
+                    
+                    mmt_atsc3_message_content_type_application_event_information_t* mmt_atsc3_message_content_type_application_event_information =                     mmt_atsc3_message_payload_add_mmt_atsc3_application_event_information(mmt_atsc3_message_payload);
+                    
+                    if(mmt_atsc3_message_content_type_application_event_information) {
+                        mmt_atsc3_message_content_type_application_event_information->raw_xml = block_Duplicate_from_ptr(mmt_atsc3_message_payload->atsc3_message_content, mmt_atsc3_message_payload->atsc3_message_content_length);
+                    }
                 }
                 break;
 
@@ -1151,8 +1158,45 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
             // atsc3_message_content_type: 0x0007
             case MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337:
                 {
-                    __MMSM_INFO("mmt_atsc3_message_payload_parse, ignornig mmt_atsc3 message type: MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337 (0x%04x)", mmt_atsc3_message_payload->atsc3_message_content_type);
+                    block_t* src = mmt_atsc3_message_payload->atsc3_message_content_blockt;
+                    __MMSM_INFO("mmt_atsc3_message_payload_parse, processing mmt_atsc3 message type: MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337 (0x%04x)", mmt_atsc3_message_payload->atsc3_message_content_type);
+                    
+                    
+                    mmt_atsc3_message_content_type_inband_event_descriptor_t* mmt_atsc3_message_content_type_inband_event_descriptor =                     mmt_atsc3_message_payload_add_mmt_atsc3_inband_event_descriptor(mmt_atsc3_message_payload);
+                    
+                    if(mmt_atsc3_message_content_type_inband_event_descriptor) {
+                        //parse internal attributes
+                        mmt_atsc3_message_content_type_inband_event_descriptor->descriptor_header.descriptor_tag = block_Read_uint16_ntohs(src);
+                        mmt_atsc3_message_content_type_inband_event_descriptor->descriptor_header.descriptor_length = block_Read_uint16_ntohs(src);
+                        mmt_atsc3_message_content_type_inband_event_descriptor->descriptor_header.number_of_assets = block_Read_uint8(src);
+                        
+                        if(mmt_atsc3_message_content_type_inband_event_descriptor->descriptor_header.descriptor_tag != MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337) {
+                            __MMSM_ERROR("MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337: descriptor_tag mismatch: mmt_atsc3_message_content_type_inband_event_descriptor->descriptor_header.descriptor_tag (0x%04x) != MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337 (0x%04x)",  mmt_atsc3_message_content_type_inband_event_descriptor->descriptor_header.descriptor_tag, MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337);
+                        } else if(!mmt_atsc3_message_content_type_inband_event_descriptor->descriptor_header.number_of_assets) {
+                            __MMSM_ERROR("MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337: number_of_assets is 0!");
+                        } else {
+                            for(int i = 0; i < mmt_atsc3_message_content_type_inband_event_descriptor->descriptor_header.number_of_assets; i++) {
+                                mmt_atsc3_message_content_type_inband_event_descriptor_asset_t* mmt_atsc3_message_content_type_inband_event_descriptor_asset = mmt_atsc3_message_content_type_inband_event_descriptor_asset_new();
+                                
+                                //asset_id
+                                __MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337: starting to parse asset: %d, %p", i, mmt_atsc3_message_content_type_inband_event_descriptor_asset);
+                                mmt_atsc3_message_content_type_inband_event_descriptor_asset->asset_header.asset_id_length = block_Read_uint32_ntohl(src);
+                                mmt_atsc3_message_content_type_inband_event_descriptor_asset->asset_header.asset_id = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_inband_event_descriptor_asset->asset_header.asset_id_length);
+                                
+                                //scheme_id_uri
+                                __MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337: starting to parse scheme_id_uri: %d, %p", i, mmt_atsc3_message_content_type_inband_event_descriptor_asset);
+                                mmt_atsc3_message_content_type_inband_event_descriptor_asset->scheme_id_header.scheme_id_uri_length = block_Read_uint8(src);
+                                mmt_atsc3_message_content_type_inband_event_descriptor_asset->scheme_id_header.scheme_id_uri_byte = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_inband_event_descriptor_asset->scheme_id_header.scheme_id_uri_length);
+                                
+                                //event value
+                                __MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337: starting to parse event_value: %d, %p", i, mmt_atsc3_message_content_type_inband_event_descriptor_asset);
+                                mmt_atsc3_message_content_type_inband_event_descriptor_asset->event_value.event_value_length = block_Read_uint8(src);
+                                mmt_atsc3_message_content_type_inband_event_descriptor_asset->event_value.event_value_bytes = block_Read_uint8_varlen(src, mmt_atsc3_message_content_type_inband_event_descriptor_asset->event_value.event_value_length);
+                            }
+                        }
+                    }
                 }
+                        
                 break;
 
             // atsc3_message_content_type: 0x0008
@@ -1241,7 +1285,6 @@ uint8_t* mmt_atsc3_message_payload_parse(mmt_signalling_message_header_and_paylo
 					} else if(!mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.number_of_assets) {
 						__MMSM_ERROR("MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR: number_of_assets is 0!");
 					} else {
-						
 						for(int i = 0; i < mmt_atsc3_message_content_type_audio_stream_properties_descriptor->descriptor_header.number_of_assets; i++) {
 							mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_t* mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset = mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset_new();
 							__MMSM_TRACE("MMT_ATSC3_MESSAGE_CONTENT_TYPE_AUDIO_STREAM_PROPERTIES_DESCRIPTOR: starting to parse asset: %d, %p", i, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_asset);
@@ -1843,6 +1886,25 @@ mmt_atsc3_held_message_t* mmt_atsc3_message_payload_add_mmt_atsc3_held_message(m
     return mmt_atsc3_held_message;
 }
 
+//0x0004 Application Event Information as given in A/337, Application Signaling [7].
+mmt_atsc3_message_content_type_application_event_information_t* mmt_atsc3_message_payload_add_mmt_atsc3_application_event_information(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload) {
+    if(!mmt_atsc3_message_payload) {
+        return NULL;
+    }
+    mmt_atsc3_message_content_type_application_event_information_t* mmt_atsc3_message_content_type_application_event_information = calloc(1, sizeof(mmt_atsc3_message_content_type_application_event_information_t));
+    mmt_atsc3_message_payload->mmt_atsc3_message_content_type_application_event_information = mmt_atsc3_message_content_type_application_event_information;
+    return mmt_atsc3_message_content_type_application_event_information;
+}
+
+//0x0007 Inband Event Descriptor as given in A/337, Application Signaling [7].
+mmt_atsc3_message_content_type_inband_event_descriptor_t* mmt_atsc3_message_payload_add_mmt_atsc3_inband_event_descriptor(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload) {
+    if(!mmt_atsc3_message_payload) {
+        return NULL;
+    }
+    mmt_atsc3_message_content_type_inband_event_descriptor_t* mmt_atsc3_message_content_type_inband_event_descriptor = calloc(1, sizeof(mmt_atsc3_message_content_type_inband_event_descriptor_t));
+    mmt_atsc3_message_payload->mmt_atsc3_message_content_type_inband_event_descriptor = mmt_atsc3_message_content_type_inband_event_descriptor;
+    return mmt_atsc3_message_content_type_inband_event_descriptor;
+}
 
 void signalling_message_mmtp_packet_header_dump(mmtp_packet_header_t* mmtp_packet_header) {
 	__MMSM_DEBUG("------------------");
