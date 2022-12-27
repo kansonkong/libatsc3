@@ -1227,6 +1227,14 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 					atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_userservicedescription_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_signalling_information_usbd_component);
 				}
 			}
+            
+            //MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337 - 0x0004
+            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_application_event_information) {
+                //dispatch our A337-APPLICATION_EVENT_INFORMATION message here
+                if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_application_event_information_present) {
+                    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_application_event_information_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_application_event_information);
+                }
+            }
 
 			//MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message) {
@@ -1242,6 +1250,15 @@ void mmt_signalling_message_dispatch_context_notification_callbacks(udp_packet_t
 					atsc3_mmt_mfu_context->mmt_atsc3_message_content_type_video_stream_properties_descriptor_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_video_stream_properties_descriptor);
 				}
 			}
+            
+            //MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337 - 0x0007
+            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_inband_event_descriptor) {
+                //dispatch our A337-INBAND_EVENT_DESCRIPTOR message here
+                if(atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_inband_event_descriptor_present) {
+                    atsc3_mmt_mfu_context->atsc3_mmt_signalling_information_on_inband_event_descriptor_present(atsc3_mmt_mfu_context, mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_inband_event_descriptor);
+                }
+            }
+            
 			
 			//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
 			if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_caption_asset_descriptor) {

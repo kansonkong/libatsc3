@@ -190,29 +190,38 @@ int PcapDemuxedVirtualPHY::PcapProducerThreadParserRun() {
         //_ATSC3_PCAP_REPLAY_TEST_DEBUG("Opening pcap: %s, context is: %p", PCAP_REPLAY_TEST_FILENAME, atsc3_pcap_replay_local_context);
         if(atsc3_pcap_replay_local_context) {
             while(pcapThreadShouldRun && (atsc3_pcap_replay_local_context = atsc3_pcap_replay_iterate_packet(atsc3_pcap_replay_local_context))) {
+                block_t* phy_payload = NULL;
+
                 atsc3_pcap_replay_usleep_packet(atsc3_pcap_replay_local_context);
                 //push block_t as packet buffer to consumer queue
 
-                if(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_buffer[0] == 0x45 && atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_buffer[1] == 0x00) {
+                //jjustman-2022-12-19 - dead code
+                //atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_buffer[0] == 0x45 && atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_buffer[1] == 0x00) {
+                //
+                if(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet_network_linktype == ATSC3_PCAP_GLOBAL_HEADER_NETWORK_LINKTYPE_RAW) {
                     //we start at our IP/UDP datagram header here
-                } else {
-                    //skip over our ethernet header frame here (e.g. 14 bytes) to get to the start of the ip/udp datagram
+                    phy_payload = block_Duplicate_from_position(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
+                } else if(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet_network_linktype == ATSC3_PCAP_GLOBAL_HEADER_NETWORK_LINKTYPE_ETHERNET) {
                     block_Seek(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet, ATSC3_PCAP_ETH_HEADER_LENGTH);
+                    phy_payload = block_Duplicate_from_position(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
+                    block_Rewind(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
+                } else {
+                    _PCAP_DEMUXED_VIRTUAL_PHY_WARN("PcapDemuxedVirtualPHY::RunPcapThreadParser - unknown current_pcap_packet_network_linktype: %d (0x%08x)",  atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet_network_linktype, atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet_network_linktype);
                 }
 
-                block_t* phy_payload = block_Duplicate_from_position(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
-                block_Rewind(atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet);
-                if(phy_payload->p_size && (packet_push_count++ % 10000) == 0) {
-                    _PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::RunPcapThreadParser - pushing to atsc3_core_service_bridge_process_packet_phy: count: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
-                            packet_push_count,
-                            atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_size,
-                            phy_payload,
-                            phy_payload->p_buffer[0], phy_payload->p_buffer[1],
-                            phy_payload->p_size);
-                }
+                if(phy_payload) {
+                    if(phy_payload->p_size && (packet_push_count++ % 10000) == 0) {
+                        _PCAP_DEMUXED_VIRTUAL_PHY_INFO("PcapDemuxedVirtualPHY::RunPcapThreadParser - pushing to atsc3_core_service_bridge_process_packet_phy: count: %d, len was: %d, new payload: %p (0x%02x 0x%02x), len: %d",
+                                packet_push_count,
+                                atsc3_pcap_replay_local_context->atsc3_pcap_packet_instance.current_pcap_packet->p_size,
+                                phy_payload,
+                                phy_payload->p_buffer[0], phy_payload->p_buffer[1],
+                                phy_payload->p_size);
+                    }
 
-                if(phy_payload->p_size) {
-                    to_dispatch_queue.push(phy_payload);
+                    if(phy_payload->p_size) {
+                        to_dispatch_queue.push(phy_payload);
+                    }
                 }
 
                 if(!atsc3_pcap_replay_local_context->delay_delta_behind_rt_replay || to_dispatch_queue.size() > 10) { //pcap_replay_buffer_queue.size() doesn't seem to be accurate...

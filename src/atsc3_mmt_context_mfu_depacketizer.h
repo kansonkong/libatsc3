@@ -43,7 +43,16 @@ typedef void (*atsc3_mmt_mpu_mfu_on_sample_missing_f)  (atsc3_mmt_mfu_context_t*
 typedef void (*atsc3_mmt_signalling_information_on_userservicedescription_present_f)				(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_signalling_information_usbd_component_t* mmt_atsc3_usbd_message);
 typedef bool (*atsc3_mmt_signalling_information_on_routecomponent_message_present_f)				(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_route_component_t* mmt_atsc3_route_component);
 typedef void (*atsc3_mmt_signalling_information_on_held_message_present_f) 							(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_held_message_t* mmt_atsc3_held_message);
+
+// atsc3_message_content_type: 0x0004 -  MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337:
+
+typedef void (*atsc3_mmt_signalling_information_on_application_event_information_present_f)         (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_application_event_information_t * mmt_atsc3_message_content_type_application_event_information);
+
 typedef void (*atsc3_mmt_signalling_information_on_video_stream_properties_descriptor_present_f) 	(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_video_stream_properties_descriptor_t* mmt_atsc3_video_stream_properties_descriptor_message);
+
+// atsc3_message_content_type: 0x0007 -  MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337:
+typedef void (*atsc3_mmt_signalling_information_on_inband_event_descriptor_present_f)               (atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_inband_event_descriptor_t* mmt_atsc3_message_content_type_inband_event_descriptor);
+
 typedef void (*atsc3_mmt_signalling_information_on_caption_asset_descriptor_present_f) 				(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_caption_asset_descriptor_t* mmt_atsc3_caption_asset_descriptor_message);
 typedef void (*atsc3_mmt_signalling_information_on_audio_stream_properties_descriptor_present_f) 	(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_audio_stream_properties_descriptor_t* mmt_atsc3_audio_stream_properties_descriptor_message);
 typedef void (*atsc3_mmt_signalling_information_on_security_properties_descriptor_LAURL_present_f) 	(atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context, mmt_atsc3_message_content_type_security_properties_descriptor_LAURL_t* mmt_atsc3_security_properties_descriptor_LAURL_message);
@@ -174,9 +183,15 @@ typedef struct atsc3_mmt_mfu_context {
 
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
     atsc3_mmt_signalling_information_on_held_message_present_f                                          atsc3_mmt_signalling_information_on_held_message_present;
+    
+    //MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337 - 0x0004
+    atsc3_mmt_signalling_information_on_application_event_information_present_f                         atsc3_mmt_signalling_information_on_application_event_information_present;
 	
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR
 	atsc3_mmt_signalling_information_on_video_stream_properties_descriptor_present_f                    mmt_atsc3_message_content_type_video_stream_properties_descriptor_present;
+
+    //MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337 - 0x0007
+    atsc3_mmt_signalling_information_on_inband_event_descriptor_present_f                               atsc3_mmt_signalling_information_on_inband_event_descriptor_present;
 
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
 	atsc3_mmt_signalling_information_on_caption_asset_descriptor_present_f                  	 		atsc3_mmt_signalling_information_on_caption_asset_descriptor_present;
@@ -201,7 +216,7 @@ typedef struct atsc3_mmt_mfu_context {
 
 } atsc3_mmt_mfu_context_t;
 
-atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_internal_flows_new();
+atsc3_mmt_mfu_context_t* atsc3_mmt_mfu_context_internal_flows_new(void);
 
 void atsc3_mmt_mfu_context_free(atsc3_mmt_mfu_context_t** atsc3_mmt_mfu_context_p);
 

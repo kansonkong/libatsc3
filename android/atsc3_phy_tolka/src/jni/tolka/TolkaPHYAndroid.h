@@ -51,6 +51,8 @@ using namespace std;
 #define TOLKA_R855_ATSC1_IF_OFFSET              (0.000)             // User can Update as needed
 #define TOLKA_ATSC1_BLOCK_SIZE                  (10000)             // User can Update as needed
 
+#define BOOT_STATUS_SPIN_COUNT_MAX 10
+
 #include "CircularBuffer.h"
 
 //#define TOLKA_USB_ENDPOINT_RX 1

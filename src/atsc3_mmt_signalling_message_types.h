@@ -172,6 +172,18 @@ typedef struct mmt_atsc3_message_content_type_language_heaader {
 	char*		language;
 } mmt_atsc3_message_content_type_language_heaader_t;
 
+//used in mmt inband_event_descriptor(), see A:337/2022-03
+
+typedef struct mmt_atsc3_message_scheme_id_uri_header {
+    uint32_t        scheme_id_uri_length;
+    uint8_t*        scheme_id_uri_byte;
+} mmt_atsc3_message_scheme_id_uri_header_t;
+
+typedef struct mmt_atsc3_message_event_value {
+    uint32_t        event_value_length;
+    uint8_t*        event_value_bytes;
+} mmt_atsc3_message_event_value_t;
+
 
 //Used in MMT_ATSC3_MESSAGE_CONTENT_TYPE_UserServiceDescription
 
@@ -207,10 +219,30 @@ typedef struct mmt_atsc3_held_message {
     block_t*    held_message;
 } mmt_atsc3_held_message_t;
 
-//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337
-typedef struct mmt_atsc3_message_content_type_application_event_information_a337 {
-	void* TODO;
-} mmt_atsc3_message_content_type_application_event_information_a337_t;
+
+//mmt_atsc3_message_content_type_application_event_information_t 0x0004
+typedef struct mmt_atsc3_message_content_type_application_event_information {
+    block_t* raw_xml;
+} mmt_atsc3_message_content_type_application_event_information_t;
+//jjustman-2022-12-20 - hack-ish
+//ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_application_event_information);
+
+
+typedef struct mmt_atsc3_message_content_type_inband_event_descriptor_asset {
+    mmt_atsc3_message_content_type_asset_header_t       asset_header;
+    mmt_atsc3_message_scheme_id_uri_header_t            scheme_id_header;
+    mmt_atsc3_message_event_value_t                     event_value;
+} mmt_atsc3_message_content_type_inband_event_descriptor_asset_t;
+
+typedef struct mmt_atsc3_message_content_type_inband_event_descriptor {
+    mmt_atsc3_message_content_type_descriptor_number_of_assets_header_t        descriptor_header;
+    
+    ATSC3_VECTOR_BUILDER_STRUCT(mmt_atsc3_message_content_type_inband_event_descriptor_asset);
+
+} mmt_atsc3_message_content_type_inband_event_descriptor_t;
+ATSC3_VECTOR_BUILDER_METHODS_INTERFACE(mmt_atsc3_message_content_type_inband_event_descriptor, mmt_atsc3_message_content_type_inband_event_descriptor_asset);
+
+
 
 
 #define ATSC3_MMT_SIGNALLING_MESSAGE_TYPES_SEI_NUT_DATA_CONTAINER_LEN_MAX 255
@@ -554,10 +586,8 @@ typedef struct mmt_atsc3_message_content_type_atsc_staggercast_descriptor {
 	void* TODO;
 } mmt_atsc3_message_content_type_atsc_staggercast_descriptor_t;
 
-//TODO: jjustman-2021-06-03: MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337
-typedef struct mmt_atsc3_message_content_type_inband_event_descriptor_a337 {
-	void* TODO;
-} mmt_atsc3_message_content_type_inband_event_descriptor_a337_t;
+
+
 
 enum MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ROLE {
 	MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR_ASSET_ROLE_MAIN =				0x0,
@@ -1000,9 +1030,17 @@ typedef struct mmt_atsc3_message_payload {
     
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_HELD
 	mmt_atsc3_held_message_t*       										mmt_atsc3_held_message;
+    
+    //MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337 - 0x0004
+    mmt_atsc3_message_content_type_application_event_information_t*         mmt_atsc3_message_content_type_application_event_information;
 
-    //VSPD
+    //VSPD - 0x0005
 	mmt_atsc3_message_content_type_video_stream_properties_descriptor_t*	mmt_atsc3_message_content_type_video_stream_properties_descriptor;
+    
+    //MMT_ATSC3_MESSAGE_CONTENT_TYPE_INBAND_EVENT_DESCRIPTOR_A337 - 0x0007
+    mmt_atsc3_message_content_type_inband_event_descriptor_t*               mmt_atsc3_message_content_type_inband_event_descriptor;
+
+    
     
 	//MMT_ATSC3_MESSAGE_CONTENT_TYPE_CAPTION_ASSET_DESCRIPTOR
 	mmt_atsc3_message_content_type_caption_asset_descriptor_t* 				mmt_atsc3_message_content_type_caption_asset_descriptor;
@@ -1373,13 +1411,20 @@ mp_table_asset_row_t* atsc3_mmt_mp_table_asset_row_duplicate(const mp_table_asse
 void atsc3_mmt_mp_table_asset_row_free_inner(mp_table_asset_row_t* mp_table_asset_row);
 
 //ATSC3 MMT SI: internal helper methods / aggregation for inner payload type marshalling
-mmt_atsc3_signalling_information_usbd_component_t* 		mmt_atsc3_message_payload_add_mmt_atsc3_signalling_information_usbd_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+mmt_atsc3_signalling_information_usbd_component_t* 		        mmt_atsc3_message_payload_add_mmt_atsc3_signalling_information_usbd_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
 
-mmt_atsc3_mpd_message_t*                                mmt_atsc3_message_payload_add_mmt_atsc3_mpd_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
-mmt_atsc3_route_component_t* 							mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
-void 													mmt_atsc3_route_component_dump(mmt_atsc3_route_component_t* mmt_atsc3_route_component);
+mmt_atsc3_mpd_message_t*                                        mmt_atsc3_message_payload_add_mmt_atsc3_mpd_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+mmt_atsc3_route_component_t* 							        mmt_atsc3_message_payload_add_mmt_atsc3_route_component(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+void 													        mmt_atsc3_route_component_dump(mmt_atsc3_route_component_t* mmt_atsc3_route_component);
 
-mmt_atsc3_held_message_t*    							mmt_atsc3_message_payload_add_mmt_atsc3_held_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+mmt_atsc3_held_message_t*                                       mmt_atsc3_message_payload_add_mmt_atsc3_held_message(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+
+//0x0004 Application Event Information as given in A/337, Application Signaling [7].
+mmt_atsc3_message_content_type_application_event_information_t* mmt_atsc3_message_payload_add_mmt_atsc3_application_event_information(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+
+//0x0007 Inband Event Descriptor as given in A/337, Application Signaling [7].
+mmt_atsc3_message_content_type_inband_event_descriptor_t*       mmt_atsc3_message_payload_add_mmt_atsc3_inband_event_descriptor(mmt_atsc3_message_payload_t* mmt_atsc3_message_payload);
+
 
 //free - make sure to call from mmt_signalling_message_header_and_payload_free
 void mmt_atsc3_signalling_information_usbd_component_free(mmt_atsc3_signalling_information_usbd_component_t** mmt_atsc3_signalling_information_usbd_component_p);
@@ -1387,7 +1432,12 @@ void mmt_atsc3_route_component_free(mmt_atsc3_route_component_t** mmt_atsc3_rout
 void mmt_atsc3_mpd_message_free(mmt_atsc3_mpd_message_t** mmt_atsc3_mpd_message_p);
 void mmt_atsc3_held_message_free(mmt_atsc3_held_message_t** mmt_atsc3_held_message_p);
 
+void mmt_atsc3_message_content_type_application_event_information_free(mmt_atsc3_message_content_type_application_event_information_t** mmt_atsc3_message_content_type_application_event_information_p);
+void mmt_atsc3_message_content_type_inband_event_descriptor_free(mmt_atsc3_message_content_type_inband_event_descriptor_t** mmt_atsc3_message_content_type_inband_event_descriptor_p);
+
 void mmt_atsc3_message_content_type_asset_header_free_asset_id(mmt_atsc3_message_content_type_asset_header_t* mmt_atsc3_message_content_type_asset_heaader);
+void mmt_atsc3_message_content_type_scheme_id_uri_header_free(mmt_atsc3_message_scheme_id_uri_header_t* mmt_atsc3_message_scheme_id_uri_header);
+void mmt_atsc3_message_content_type_event_value_free(mmt_atsc3_message_event_value_t* mmt_atsc3_message_event_value);
 
 void mmt_atsc3_message_content_type_video_stream_properties_descriptor_free(mmt_atsc3_message_content_type_video_stream_properties_descriptor_t** mmt_atsc3_message_content_type_video_stream_properties_descriptor_p);
 

@@ -22,9 +22,30 @@ void mmt_atsc3_message_content_type_asset_header_free_asset_id(mmt_atsc3_message
 	}
 }
 
+void mmt_atsc3_message_content_type_scheme_id_uri_header_free(mmt_atsc3_message_scheme_id_uri_header_t* mmt_atsc3_message_scheme_id_uri_header) {
+    if(mmt_atsc3_message_scheme_id_uri_header && mmt_atsc3_message_scheme_id_uri_header->scheme_id_uri_byte) {
+        freesafe((void*)mmt_atsc3_message_scheme_id_uri_header->scheme_id_uri_byte);
+        mmt_atsc3_message_scheme_id_uri_header->scheme_id_uri_length = 0;
+    }
+}
+
+void mmt_atsc3_message_content_type_event_value_free(mmt_atsc3_message_event_value_t* mmt_atsc3_message_event_value) {
+    if(mmt_atsc3_message_event_value) {
+        freesafe((void*)mmt_atsc3_message_event_value->event_value_bytes);
+        mmt_atsc3_message_event_value->event_value_length = 0;
+    }
+}
+
+
+//MMT_ATSC3_MESSAGE_CONTENT_TYPE_APPLICATION_EVENT_INFORMATION_A337
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_atsc3_message_content_type_inband_event_descriptor, mmt_atsc3_message_content_type_inband_event_descriptor_asset);
+ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(mmt_atsc3_message_content_type_inband_event_descriptor);
+//jjustman-2021-09-13 - todo:
+ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_atsc3_message_content_type_inband_event_descriptor_asset);
+
 
 //MMT_ATSC3_MESSAGE_CONTENT_TYPE_VIDEO_STREAM_PROPERTIES_DESCRIPTOR
- ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_atsc3_message_content_type_video_stream_properties_descriptor, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
+ATSC3_VECTOR_BUILDER_METHODS_IMPLEMENTATION(mmt_atsc3_message_content_type_video_stream_properties_descriptor, mmt_atsc3_message_content_type_video_stream_properties_descriptor_asset);
 //ATSC3_VECTOR_BUILDER_METHODS_ITEM_FREE(mmt_atsc3_message_content_type_video_stream_properties_descriptor);
 ATSC3_VECTOR_BUILDER_METHODS_PARENT_IMPLEMENTATION(mmt_atsc3_message_content_type_video_stream_properties_descriptor);
 //jjustman-2021-09-13 - todo:
@@ -127,7 +148,7 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 				}
 			}
             
-            //mmt_atsc3_held_message
+            //mmt_atsc3_mpd_message
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_mpd_message) {
                 mmt_atsc3_mpd_message_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_mpd_message);
             }
@@ -135,6 +156,10 @@ void mmt_signalling_message_header_and_payload_free(mmt_signalling_message_heade
 			//mmt_atsc3_held_message
             if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message) {
                 mmt_atsc3_held_message_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_held_message);
+            }
+            
+            if(mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_application_event_information) {
+//                mmt_atsc3_message_content_type_application_event_information_free(&mmt_signalling_message_header_and_payload->message_payload.mmt_atsc3_message_payload.mmt_atsc3_message_content_type_application_event_information);
             }
 
 
@@ -386,6 +411,42 @@ void mmt_atsc3_held_message_free(mmt_atsc3_held_message_t** mmt_atsc3_held_messa
         *mmt_atsc3_held_message_p = NULL;
     }
 }
+
+void mmt_atsc3_message_content_type_inband_event_descriptor_free(mmt_atsc3_message_content_type_inband_event_descriptor_t** mmt_atsc3_message_content_type_inband_event_descriptor_p) {
+    
+    if(mmt_atsc3_message_content_type_inband_event_descriptor_p) {
+        mmt_atsc3_message_content_type_inband_event_descriptor_t* mmt_atsc3_message_content_type_inband_event_descriptor = *mmt_atsc3_message_content_type_inband_event_descriptor_p;
+        if(mmt_atsc3_message_content_type_inband_event_descriptor) {
+            
+            
+            for(int i=0; i < mmt_atsc3_message_content_type_inband_event_descriptor->mmt_atsc3_message_content_type_inband_event_descriptor_asset_v.count; i++) {
+                mmt_atsc3_message_content_type_inband_event_descriptor_asset_t* mmt_atsc3_message_content_type_inband_event_descriptor_asset = mmt_atsc3_message_content_type_inband_event_descriptor->mmt_atsc3_message_content_type_inband_event_descriptor_asset_v.data[i];
+                
+                if(mmt_atsc3_message_content_type_inband_event_descriptor_asset) {
+                    mmt_atsc3_message_content_type_asset_header_free_asset_id(&mmt_atsc3_message_content_type_inband_event_descriptor_asset->asset_header);
+
+                    mmt_atsc3_message_content_type_scheme_id_uri_header_free(&mmt_atsc3_message_content_type_inband_event_descriptor_asset->scheme_id_header);
+                    mmt_atsc3_message_content_type_event_value_free(&mmt_atsc3_message_content_type_inband_event_descriptor_asset->event_value);
+                    
+                    
+                    freesafe(mmt_atsc3_message_content_type_inband_event_descriptor->mmt_atsc3_message_content_type_inband_event_descriptor_asset_v.data[i]);
+                    mmt_atsc3_message_content_type_inband_event_descriptor->mmt_atsc3_message_content_type_inband_event_descriptor_asset_v.data[i] = NULL;
+                }
+
+                freesafe(mmt_atsc3_message_content_type_inband_event_descriptor->mmt_atsc3_message_content_type_inband_event_descriptor_asset_v.data);
+                mmt_atsc3_message_content_type_inband_event_descriptor->mmt_atsc3_message_content_type_inband_event_descriptor_asset_v.count = 0;
+                mmt_atsc3_message_content_type_inband_event_descriptor->mmt_atsc3_message_content_type_inband_event_descriptor_asset_v.size = 0;
+
+            }
+                
+
+            free(mmt_atsc3_message_content_type_inband_event_descriptor);
+            mmt_atsc3_message_content_type_inband_event_descriptor = NULL;
+        }
+        *mmt_atsc3_message_content_type_inband_event_descriptor_p = NULL;
+    }
+}
+
 
 
 void mmt_atsc3_message_content_type_video_stream_properties_descriptor_free(mmt_atsc3_message_content_type_video_stream_properties_descriptor_t** mmt_atsc3_message_content_type_video_stream_properties_descriptor_p) {

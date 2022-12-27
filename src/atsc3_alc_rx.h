@@ -35,6 +35,61 @@
 extern "C" {
 #endif
 
+	/*
+	 *
+	 * Table A.3.6 Defined Values of Codepoint Field of LCT Header
+Codepoint value (CP)
+0 1 2 3
+4
+5
+6
+7
+8
+9
+10 – 127 128 – 255
+Semantics
+ATSC Reserved (not used) NRT- File Mode
+NRT – Entity Mode
+NRT – Unsigned Package Mode
+NRT – Signed Package Mode
+New IS, timeline changed New IS, timeline continued Redundant IS
+Media Segment, File Mode Media Segment, Entity Mode ATSC Reserved
+Attributes of this type of packet are signalled by attributes given in the SrcFlow.Payload element associated with the CodePoint vlaue
+@formatId
+1 (File Mode)
+2 (Entity Mode)
+3 (Unsigned Package Mode)
+4 (Signed Package Mode)
+1 (File Mode) 1
+1
+1
+2 (Entity Mode)
+Per Payload element
+@frag
+0 (arbitrary) 0
+0
+0
+0
+0
+0
+1 (sample) 1
+Per Payload element
+@order
+true true true
+true
+true true true true true
+Per Payload element
+	 */
+
+typedef struct atsc3_alc_lct_codepoint_mapping {
+		uint8_t 	codepoint;
+		uint8_t 	format_id;
+		uint8_t		frag;
+		bool		order;
+} atsc3_alc_lct_codepoint_mapping_t;
+
+#define ATSC3_ALC_LCT_CODEPOINT_MAPPING_TABLE_MAX_ENTRIES 10
+extern atsc3_alc_lct_codepoint_mapping_t atsc3_alc_lct_codepoint_mappping_table[];
 
 typedef struct atsc3_alc_packet {
 	atsc3_def_lct_hdr_t* 	def_lct_hdr;
