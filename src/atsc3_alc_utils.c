@@ -301,12 +301,29 @@ char* alc_packet_dump_to_object_get_s_tsid_filename_with_atsc3_fdt_file_p(udp_fl
 					//  * frame #0: 0x00000001000374fe atsc3_alc_listener_mde_writer`alc_packet_dump_to_object_get_s_tsid_filename(udp_flow=0x00000001015075b0, alc_packet=0x000000010150e8c0, lls_sls_alc_monitor=0x0000000100704ca0) at atsc3_alc_utils.c:298:13
 
 
-					if(atsc3_route_s_tsid_RS_LS->tsi == alc_packet->def_lct_hdr->tsi && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload) {
-					    //Process anything but entity mode (2), by default for $TOI$ replacement,
+					if(atsc3_route_s_tsid_RS_LS->tsi == alc_packet->def_lct_hdr->tsi && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow) {
+
+						uint8_t format_id = 0;
+
+						if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id) {
+							format_id = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id;
+						} else {
+							//derive from LCT codepoint
+							if(alc_packet->def_lct_hdr->codepoint < 10) {
+								format_id = atsc3_alc_lct_codepoint_mappping_table[alc_packet->def_lct_hdr->codepoint].format_id;
+							} else {
+								__ALC_UTILS_WARN("alc_packet_dump_to_object_get_s_tsid_filename_with_atsc3_fdt_file_p: invalid codepoint: %d, and missing SrcFlow.Payload element for format_id!  defaulting to format_id == 1 for route object recovery", alc_packet->def_lct_hdr);
+								format_id = 1;
+							}
+						}
+
+
+						//jjustman-2022-12-26 - payload is optional, if not present, fall back to alc_packet->def_lct_hdr->codepoint for relevant formatId/frag/order information
+
+						//Process anything but entity mode (2), by default for $TOI$ replacement,
 						//SrcFlow_Payload.format_id == 1 for file mode:
 
-					    if(!atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload ||
-						(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id != 2)) {
+						if(format_id != 2) {
                             //try to find our matching toi and content-location value
                             if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance && atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance->atsc3_fdt_file_v.count) {
                                 atsc3_fdt_instance_t* atsc3_fdt_instance = atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_fdt_instance;
@@ -389,131 +406,129 @@ char* alc_packet_dump_to_object_get_s_tsid_filename_with_atsc3_fdt_file_p(udp_fl
 
 					    //check if we are formatId==2 for entity mode
 						if(!content_location) {
-						    if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload) {
-                                __ALC_UTILS_DEBUG("received ALC as delivery object with formatId: %d", atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id);
+							__ALC_UTILS_DEBUG("received ALC as delivery object with formatId: %d", format_id);
 
-                                if(atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id == 2) {
-                                    __ALC_UTILS_DEBUG("processing ALC as Entity Mode (formatId: %d), tsi: %d, toi: %d",
-                                    		atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id,
-											alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+							if(format_id == 2) {
+								__ALC_UTILS_DEBUG("processing ALC as Entity Mode (formatId: %d), tsi: %d, toi: %d",
+										atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id,
+										alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 
-                                    //extract out our content_location from the ALC payload headers here
-                                    char* temp_content_location = alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow, alc_packet);
+								//extract out our content_location from the ALC payload headers here
+								char* temp_content_location = alc_packet_dump_to_object_get_temporary_recovering_filename(udp_flow, alc_packet);
 
-                                    struct stat st;
-                                    stat(temp_content_location, &st);
+								struct stat st;
+								stat(temp_content_location, &st);
 
-                                    //jjustman-2020-01-16 - parse first block of rfc 7231 headers...
-                                    char* temp_content_header = calloc(8193, sizeof(char)); //over-allocate for null pad at end
-                                    FILE* temp_fp = fopen(temp_content_location, "r+");
-                                    if(temp_fp) {
-                                        //jjustman-2020-01-16 - refactor me to proper RFC 7231 header handling
-                                        int read_len = fread(temp_content_header, 1, 8192, temp_fp); //try and get actual bytes read just in case
-                                        //"content-location: "
-                                        // 12345678901234567 = 18 bytes (w/ whitespace?)
+								//jjustman-2020-01-16 - parse first block of rfc 7231 headers...
+								char* temp_content_header = calloc(8193, sizeof(char)); //over-allocate for null pad at end
+								FILE* temp_fp = fopen(temp_content_location, "r+");
+								if(temp_fp) {
+									//jjustman-2020-01-16 - refactor me to proper RFC 7231 header handling
+									int read_len = fread(temp_content_header, 1, 8192, temp_fp); //try and get actual bytes read just in case
+									//"content-location: "
+									// 12345678901234567 = 18 bytes (w/ whitespace?)
 
-                                        char* location_found = strcasestr(temp_content_header, "content-location: ");
+									char* location_found = strcasestr(temp_content_header, "content-location: ");
 
-                                        if(location_found) {
-                                            location_found += 18; //move us forward 18 bytes for content-location: literal
-                                            //find newline char (either 0x0d|0x0a)
-                                            char* endofline = NULL;
-                                            int pos = 0;
-                                            while(true) {
-                                                if(!location_found[pos]) {
-                                                    __ALC_UTILS_DEBUG("ALC MDE: no content-location found after pos: %d", pos);
+									if(location_found) {
+										location_found += 18; //move us forward 18 bytes for content-location: literal
+										//find newline char (either 0x0d|0x0a)
+										char* endofline = NULL;
+										int pos = 0;
+										while(true) {
+											if(!location_found[pos]) {
+												__ALC_UTILS_DEBUG("ALC MDE: no content-location found after pos: %d", pos);
 
-                                                    break;
-                                                } else if(location_found[pos] == 0x0d || location_found[pos] == 0x0a) {
-                                                    endofline = location_found + (pos-1);
-                                                    content_location = strndup(location_found, pos);
-                                                    __ALC_UTILS_DEBUG("ALC MDE: local entity mode filename is: %s", content_location);
+												break;
+											} else if(location_found[pos] == 0x0d || location_found[pos] == 0x0a) {
+												endofline = location_found + (pos-1);
+												content_location = strndup(location_found, pos);
+												__ALC_UTILS_DEBUG("ALC MDE: local entity mode filename is: %s", content_location);
 
-                                                    bool has_additional_headers = false;
-                                                    int newline_count = 1;
-                                                    while(true) {
-                                                        pos++;
+												bool has_additional_headers = false;
+												int newline_count = 1;
+												while(true) {
+													pos++;
 
-                                                        //now we need to chomp off the remaining entity header(s) until we get to an empty newline
-                                                        //happy path
-                                                        if(location_found[pos] == 0x0d || location_found[pos] == 0x0a) {
-                                                            newline_count++;
-                                                            if(newline_count > 3) {
-                                                                pos++; //and get rid of our last linebreak..
-                                                                //break out and trim our file
-                                                                int trim_size = (location_found + pos) - temp_content_header;
-                                                                int new_mde_payload_size = st.st_size - trim_size;
-                                                                __ALC_UTILS_INFO("ALC MDE: entity mode, original size: %lld, header cut is: %d bytes, new mde size is: %d", st.st_size, trim_size, new_mde_payload_size);
+													//now we need to chomp off the remaining entity header(s) until we get to an empty newline
+													//happy path
+													if(location_found[pos] == 0x0d || location_found[pos] == 0x0a) {
+														newline_count++;
+														if(newline_count > 3) {
+															pos++; //and get rid of our last linebreak..
+															//break out and trim our file
+															int trim_size = (location_found + pos) - temp_content_header;
+															int new_mde_payload_size = st.st_size - trim_size;
+															__ALC_UTILS_INFO("ALC MDE: entity mode, original size: %lld, header cut is: %d bytes, new mde size is: %d", st.st_size, trim_size, new_mde_payload_size);
 
-                                                                if(trim_size > 0 && new_mde_payload_size > 0) {
-                                                                    uint8_t* to_trim_payload = calloc(new_mde_payload_size, sizeof(uint8_t));
+															if(trim_size > 0 && new_mde_payload_size > 0) {
+																uint8_t* to_trim_payload = calloc(new_mde_payload_size, sizeof(uint8_t));
 
-                                                                    fseek(temp_fp, trim_size, SEEK_SET);
-                                                                    fread(to_trim_payload, new_mde_payload_size, 1, temp_fp);
-                                                                    int ret = ftruncate(fileno(temp_fp), new_mde_payload_size);
-                                                                    //printf("ftruncate for fd: %d, ret is: %d", fileno(temp_fp), ret);
-																	//jjustman-2020-09-01 - grr
+																fseek(temp_fp, trim_size, SEEK_SET);
+																fread(to_trim_payload, new_mde_payload_size, 1, temp_fp);
+																int ret = ftruncate(fileno(temp_fp), new_mde_payload_size);
+																//printf("ftruncate for fd: %d, ret is: %d", fileno(temp_fp), ret);
+																//jjustman-2020-09-01 - grr
 #ifndef _WIN32
-                                                                    fsync(fileno(temp_fp));
+																fsync(fileno(temp_fp));
 #else
-																	fflush(temp_fp);
+																fflush(temp_fp);
 #endif
-                                                                    fseek(temp_fp, 0, SEEK_SET);
-                                                                    fwrite(to_trim_payload, new_mde_payload_size, 1, temp_fp);
-                                                                   /* for(int i=0; i < 32; i++) {
-                                                                        printf("to_trim_payload[%d]: 0x%02x (%c)", i, to_trim_payload[i], to_trim_payload[i]);
-                                                                    }*/
+																fseek(temp_fp, 0, SEEK_SET);
+																fwrite(to_trim_payload, new_mde_payload_size, 1, temp_fp);
+															   /* for(int i=0; i < 32; i++) {
+																	printf("to_trim_payload[%d]: 0x%02x (%c)", i, to_trim_payload[i], to_trim_payload[i]);
+																}*/
 
 #ifndef _WIN32
-																	fsync(fileno(temp_fp));
+																fsync(fileno(temp_fp));
 #else
-																	fflush(temp_fp);
+																fflush(temp_fp);
 #endif
 
-                                                                    free(to_trim_payload);
-                                                                    to_trim_payload = NULL;
+																free(to_trim_payload);
+																to_trim_payload = NULL;
 
-                                                                    break; //done
-                                                                }
-                                                            }
-                                                        } else {
-                                                            has_additional_headers = true;
-                                                            newline_count = 0;
-                                                        }
-                                                    }
+																break; //done
+															}
+														}
+													} else {
+														has_additional_headers = true;
+														newline_count = 0;
+													}
+												}
 
 
 
-                                                    break;
-                                                }
-                                                pos++;
-                                            }
-                                        }
-                                    }
+												break;
+											}
+											pos++;
+										}
+									}
+								}
 
-                                    if(temp_fp) {
-                                        fclose(temp_fp);
-                                        temp_fp = NULL;
-                                    }
-                                    if(temp_content_location) {
-                                        free(temp_content_location);
-                                        temp_content_location = NULL;
-                                    }
-                                    if(temp_content_header) {
-                                        free(temp_content_header);
-                                        temp_content_header = NULL;
-                                    }
-                                } else {
-                                	__ALC_UTILS_DEBUG("deferring processing ALC with formatId: %d, tsi: %d, toi: %d",
-                                			atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id,
-											alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
+								if(temp_fp) {
+									fclose(temp_fp);
+									temp_fp = NULL;
+								}
+								if(temp_content_location) {
+									free(temp_content_location);
+									temp_content_location = NULL;
+								}
+								if(temp_content_header) {
+									free(temp_content_header);
+									temp_content_header = NULL;
+								}
+							} else {
+								__ALC_UTILS_DEBUG("deferring processing ALC with formatId: %d, tsi: %d, toi: %d",
+										atsc3_route_s_tsid_RS_LS->atsc3_route_s_tsid_RS_LS_SrcFlow->atsc3_route_s_tsid_RS_LS_SrcFlow_Payload->format_id,
+										alc_packet->def_lct_hdr->tsi, alc_packet->def_lct_hdr->toi);
 
-                                }
+							}
 
-						    } else {
-                                __ALC_UTILS_WARN("processing ALC MDE - but no atsc3_route_s_tsid_RS_LS_SrcFlow_Payload!");
+						} else {
+							__ALC_UTILS_WARN("processing ALC MDE - but no atsc3_route_s_tsid_RS_LS_SrcFlow_Payload!");
 
-                            }
 						}
 					}
 				}
@@ -796,7 +811,7 @@ int atsc3_alc_packet_persist_to_toi_resource_process_sls_mbms_and_emit_callback(
 			}
 
 			//if our s_tsid_content_location is different than our 'temporary' recovery filename
-            if(strncmp(temporary_recovery_filename, s_tsid_content_location, __MIN(strlen(temporary_recovery_filename), strlen(s_tsid_content_location))) !=0) {
+            if((strlen(temporary_recovery_filename) != strlen(s_tsid_content_location)) || strncmp(temporary_recovery_filename, s_tsid_content_location, __MIN(strlen(temporary_recovery_filename), strlen(s_tsid_content_location))) !=0) {
                 snprintf(new_file_name_raw_buffer, 1024, __ALC_DUMP_OUTPUT_PATH__"%d/%s", lls_sls_alc_monitor->atsc3_lls_slt_service->service_id, s_tsid_content_location);
                 
                 //todo: jjustman-2019-11-15: sanatize path parameter for .. or other traversal attacks
